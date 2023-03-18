@@ -10,9 +10,6 @@ from common import const
 import os
 
 
-app = Flask(__name__)
-
-
 class AZURE:
 
     def __init__(self):
@@ -70,9 +67,6 @@ class AZURE:
 # - Serious：严肃风格，语调严谨庄重，适合表达严肃的内容，如新闻报道、公告等。
 
 
-
-
-
 def loopTest():
     # Get text from the console and synthesize to the default speaker.
     print("Enter some text that you want to speak >")
@@ -89,6 +83,3 @@ def loopTest():
             if cancellation_details.error_details:
                 print("Error details: {}".format(cancellation_details.error_details))
                 print("Did you set the speech resource key and region values?")
-
-
-app.run(debug=True)
