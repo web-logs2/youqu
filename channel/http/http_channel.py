@@ -90,6 +90,7 @@ def is_path_empty_or_nonexistent(path):
 class HttpChannel(Channel):
     def startup(self):
         ssl_certificate_path = channel_conf(const.HTTP).get('ssl_certificate_path')
+        http_app.debug = True
         if not ssl_certificate_path:
             ssl_certificate_path = script_directory = os.path.dirname(os.path.abspath(__file__)) + "/resources"
         if is_path_empty_or_nonexistent(ssl_certificate_path):
