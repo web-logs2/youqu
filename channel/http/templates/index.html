@@ -18,7 +18,46 @@
     <div class="no-border">
         <div id="chat" class="conv-form-wrapper">
         </div>
+
+
     </div>
+
+
+    <div>
+        <input type="text" id="text" placeholder="Enter text...">
+        <button id="synthesize">Synthesize</button>
+    </div>
+    <div>
+        <audio id="audio"></audio>
+    </div>
+
+  <script>
+    var synthesizeBtn = document.getElementById('synthesize');
+    var textInput = document.getElementById('text');
+    var audioPlayer = document.getElementById('audio');
+
+    synthesizeBtn.addEventListener('click', function() {
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', '/synthesize', true);
+      xhr.setRequestHeader('Content-Type', 'application/json');
+      xhr.responseType = 'blob';
+
+      xhr.onload = function() {
+        if (this.status == 200) {
+          var blob = this.response;
+          audioPlayer.src = URL.createObjectURL(blob);
+          audioPlayer.play();
+        }
+      };
+
+      var data = JSON.stringify({
+        'text': textInput.value
+      });
+
+      xhr.send(data);
+    });
+  </script>
+
 <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.3/jquery.min.js"></script>
 <script src="https://cdn.bootcdn.net/ajax/libs/marked/4.2.12/marked.min.js"></script>
 <script src="https://cdn.bootcdn.net/ajax/libs/autosize.js/6.0.1/autosize.min.js"></script>

@@ -70,16 +70,6 @@ class AZURE:
 # - Serious：严肃风格，语调严谨庄重，适合表达严肃的内容，如新闻报道、公告等。
 
 
-@app.route('/synthesize', methods=['POST'])
-def synthesize():
-    data = json.loads(request.data)
-    text = data['text']
-    azure = AZURE()
-    audio_data = azure.synthesize_speech(text).audio_data
-    buffer = io.BytesIO(audio_data)
-    mimetype = 'audio/mpeg'
-    return send_file(buffer, mimetype=mimetype, as_attachment=False)
-
 
 
 

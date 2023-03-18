@@ -1,12 +1,14 @@
 # encoding:utf-8
-
+import io
 import json
 from channel.http import auth
-from flask import Flask, request, render_template, make_response
+from flask import Flask, request, render_template, make_response, send_file
 from datetime import timedelta
 from common import const
 from config import channel_conf
 from channel.channel import Channel
+from model.azure.azure_model import AZURE
+
 http_app = Flask(__name__,)
 # 自动重载模板文件
 http_app.jinja_env.auto_reload = True
@@ -28,6 +30,17 @@ def chat():
         reply_text = HttpChannel().handle(data=data)
         return {'result': reply_text}
 
+
+
+@http_app.route('/synthesize', methods=['POST'])
+def synthesize():
+    data = json.loads(request.data)
+    text = data['text']
+    azure = AZURE()
+    audio_data = azure.synthesize_speech(text).audio_data
+    buffer = io.BytesIO(audio_data)
+    mimetype = 'audio/mpeg'
+    return send_file(buffer, mimetype=mimetype, as_attachment=False)
 
 @http_app.route("/", methods=['GET'])
 def index():
