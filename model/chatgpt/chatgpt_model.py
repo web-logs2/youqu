@@ -43,7 +43,7 @@ class ChatGPTModel(Model):
     def reply_text(self, query, user_id, retry_count=0):
         try:
             response = openai.ChatCompletion.create(
-                model=model_conf(const.OPEN_AI).get('model'),  # 对话模型的名称
+                model= model_conf(const.OPEN_AI).get("model") or "gpt-3.5-turbo",  # 对话模型的名称
                 messages=query,
                 temperature=0.9,  # 值在[0,1]之间，越大表示回复越具有不确定性
                 top_p=1,
@@ -70,11 +70,11 @@ class ChatGPTModel(Model):
         except openai.error.APIConnectionError as e:
             log.warn(e)
             log.warn("[CHATGPT] APIConnection failed")
-            return "我连接不到你的网络"
+            return "我连接不到网络，请稍后重试"
         except openai.error.Timeout as e:
             log.warn(e)
             log.warn("[CHATGPT] Timeout")
-            return "我没有收到你的消息"
+            return "我没有收到消息，请稍后重试"
         except Exception as e:
             # unknown exception
             log.exception(e)
@@ -109,11 +109,11 @@ class ChatGPTModel(Model):
         except openai.error.APIConnectionError as e:
             log.warn(e)
             log.warn("[CHATGPT] APIConnection failed")
-            return "我连接不到你的网络"
+            return "我连接不到网络，请稍后重试"
         except openai.error.Timeout as e:
             log.warn(e)
             log.warn("[CHATGPT] Timeout")
-            return "我没有收到你的消息"
+            return "我没有收到消息，请稍后重试"
         except Exception as e:
             # unknown exception
             log.exception(e)

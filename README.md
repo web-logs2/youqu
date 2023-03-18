@@ -102,14 +102,16 @@ pip3 install --upgrade openai
    
     "openai": {
       "api_key": "YOUR API KEY",
+      "model": "gpt-3.5-turbo",                         # 模型名称
       "proxy": "http://127.0.0.1:7890",
       "character_desc": "你是ChatGPT, 一个由OpenAI训练的大型语言模型, 你旨在回答并解决人们的任何问题，并且可以使用多种语言与人交流。"
     }
 }
 ```
  + `api_key`: 填入上面注册账号时创建的 `OpenAI API KEY`
+ + `model`: 模型名称，目前支持填入 `gpt-3.5-turbo`, `gpt-4`, `gpt-4-32k`  (其中gpt-4 api暂未开放)
  + `proxy`: 代理客户端的地址，详情参考  [#56](https://github.com/zhayujie/bot-on-anything/issues/56)
-+ `character_desc`: 配置中保存着你对chatgpt说的一段话，他会记住这段话并作为他的设定，你可以为他定制任何人格      
+ + `character_desc`: 配置中保存着你对chatgpt说的一段话，他会记住这段话并作为他的设定，你可以为他定制任何人格
 
 ### 2.GPT-3.0
 
@@ -352,14 +354,14 @@ Follow [官方文档](https://support.google.com/mail/answer/185833?hl=en) to cr
 
 ### 8.Slack
 
-**需要：** 服务器、 Slack 应用
+**❉不再需要服务器以及公网 IP**
 
-**Contributor:** [amao](https://github.com/amaoo)
+**Contributor:** [amaoo](https://github.com/amaoo)
 
 **依赖**
 
 ```bash
-pip3 install slack_bolt flask
+pip3 install slack_bolt
 ```
 
 **配置**
@@ -369,37 +371,35 @@ pip3 install slack_bolt flask
     "type": "slack",
     "slack": {
       "slack_bot_token": "xoxb-xxxx",
-      "slack_signing_secret": "xxxx"
+      "slack_app_token": "xapp-xxxx"
     }
   }
 ```
 
-需要 80 端口,可以在 **channel/slack/slack_channel.py:45** 修改相应端口
+**设置机器人令牌范围 - OAuth & Permission**
 
-将范围设置为机器人令牌范围 OAuth & Permission:
+将 Bot User OAuth Token 写入配置文件 slack_bot_token
 
 ```
 app_mentions:read
-channels:join
 chat:write
-im:history
-im:read
-im:writ
 ```
 
-在事件订阅中设置范围 - Subscribe to bot events
+
+**开启 Socket 模式 - Socket Mode**
+
+如未创建应用级令牌，会提示创建
+将创建的 token 写入配置文件 slack_app_token
+
+
+**事件订阅(Event Subscriptions) - Subscribe to bot events**
 
 ```
 app_mention
 ```
 
-订阅 URL，如果端口是 80 ，可不填
 
-```
-http:/你的固定公网ip或者域名:端口/slack/events
-```
-
-参考文档
+**参考文档**
 
 ```
 https://slack.dev/bolt-python/tutorial/getting-started

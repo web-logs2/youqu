@@ -5,6 +5,10 @@ import os
 
 from channel.http import auth
 from flask import Flask, request, render_template, make_response, send_file
+
+import json
+from channel.http import auth
+from flask import Flask, request, render_template, make_response
 from datetime import timedelta
 from common import const
 from config import channel_conf
@@ -53,9 +57,9 @@ def index():
 
 @http_app.route("/login", methods=['POST', 'GET'])
 def login():
-    response = make_response("<html></html>", 301)
-    response.headers.add_header('content-type', 'text/plain')
-    response.headers.add_header('location', './')
+    response = make_response("<html></html>",301)
+    response.headers.add_header('content-type','text/plain')
+    response.headers.add_header('location','./')
     if (auth.identify(request) == True):
         return response
     else:
@@ -66,7 +70,7 @@ def login():
                 return response
         else:
             return render_template('login.html')
-    response.headers.set('location', './login?err=登录失败')
+    response.headers.set('location','./login?err=登录失败')
     return response
 
 
@@ -102,3 +106,4 @@ class HttpChannel(Channel):
         id = data["id"]
         context['from_user_id'] = str(id)
         return super().build_reply_content(data["msg"], context)
+
