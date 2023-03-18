@@ -70,12 +70,32 @@ def login():
     return response
 
 
+
+def is_path_empty_or_nonexistent(path):
+    if not path:
+        return True
+    elif not os.path.exists(path):
+        return True
+    elif os.path.isfile(path):
+        return False
+    else:
+        return len(os.listdir(path)) == 0
+
+
+
 class HttpChannel(Channel):
     def startup(self):
-        certificatepath = os.path.dirname(os.path.abspath(__file__)) + "/resources"
+        ssl_certificate_path = channel_conf(const.HTTP).get('ssl_certificate_path')
+        if not ssl_certificate_path:
+            ssl_certificate_path = script_directory = os.path.dirname(os.path.abspath(__file__)) + "/resources"
+        if is_path_empty_or_nonexistent(ssl_certificate_path):
+            http_app.run(host='0.0.0.0', port=channel_conf(const.HTTP).get('port'))
+        else:
+            http_app.run(host='0.0.0.0', port=channel_conf(const.HTTP).get('port'),
+                         ssl_context=(ssl_certificate_path + '/fullchain.pem', ssl_certificate_path + '/privkey.pem'))
 
-        http_app.run(host='0.0.0.0', port=channel_conf(const.HTTP).get('port'),
-                     ssl_context=(certificatepath + '/server.crt', certificatepath + '/server.key'))
+
+
 
     def handle(self, data):
         context = dict()
