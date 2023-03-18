@@ -1,6 +1,8 @@
 # encoding:utf-8
 import io
 import json
+import os
+
 from channel.http import auth
 from flask import Flask, request, render_template, make_response, send_file
 from datetime import timedelta
@@ -51,9 +53,9 @@ def index():
 
 @http_app.route("/login", methods=['POST', 'GET'])
 def login():
-    response = make_response("<html></html>",301)
-    response.headers.add_header('content-type','text/plain')
-    response.headers.add_header('location','./')
+    response = make_response("<html></html>", 301)
+    response.headers.add_header('content-type', 'text/plain')
+    response.headers.add_header('location', './')
     if (auth.identify(request) == True):
         return response
     else:
@@ -64,16 +66,19 @@ def login():
                 return response
         else:
             return render_template('login.html')
-    response.headers.set('location','./login?err=登录失败')
+    response.headers.set('location', './login?err=登录失败')
     return response
+
 
 class HttpChannel(Channel):
     def startup(self):
-        http_app.run(host='0.0.0.0', port=channel_conf(const.HTTP).get('port'))
+        certificatepath = os.path.dirname(os.path.abspath(__file__)) + "/resources"
+
+        http_app.run(host='0.0.0.0', port=channel_conf(const.HTTP).get('port'),
+                     ssl_context=(certificatepath + '/server.crt', certificatepath + '/server.key'))
 
     def handle(self, data):
         context = dict()
         id = data["id"]
         context['from_user_id'] = str(id)
         return super().build_reply_content(data["msg"], context)
-
