@@ -34,7 +34,7 @@ class ChatGPTModel(Model):
             #     return self.reply_text_stream(query, new_query, from_user_id)
 
             reply_content = self.reply_text(new_query, from_user_id, 0)
-            #log.debug("[CHATGPT] new_query={}, user={}, reply_cont={}".format(new_query, from_user_id, reply_content))
+            log.debug("[CHATGPT] new_query={}, user={}, reply_cont={}".format(new_query, from_user_id, reply_content))
             return reply_content
 
         elif context.get('type', None) == 'IMAGE_CREATE':
@@ -43,7 +43,7 @@ class ChatGPTModel(Model):
     def reply_text(self, query, user_id, retry_count=0):
         try:
             response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",  # 对话模型的名称
+                model=model_conf(const.OPEN_AI).get('model'),  # 对话模型的名称
                 messages=query,
                 temperature=0.9,  # 值在[0,1]之间，越大表示回复越具有不确定性
                 top_p=1,
@@ -195,9 +195,9 @@ class Session(object):
     @staticmethod
     def save_session(query, answer, user_id, used_tokens=0):
         max_tokens = model_conf(const.OPEN_AI).get('conversation_max_tokens')
-        if not max_tokens or max_tokens > 4000:
+        if not max_tokens or max_tokens > 8000:
             # default value
-            max_tokens = 1000
+            max_tokens = 8000
         session = user_session.get(user_id)
         if session:
             # append conversation
