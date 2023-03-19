@@ -31,10 +31,18 @@ def chat():
     data = json.loads(request.data)
     if data:
         msg = data['msg']
+        request_type=request_type = data.get('request_type', None)
         if not msg:
             return
         reply_text = HttpChannel().handle(data=data)
-        return {'result': reply_text}
+        if request_type == "voice":
+            azure = AZURE()
+            audio_data = azure.synthesize_speech(reply_text).audio_data
+            buffer = io.BytesIO(audio_data)
+            mimetype = 'audio/mpeg'
+            return send_file(buffer, mimetype=mimetype, as_attachment=False)
+        else:
+            return {'result': reply_text}
 
 
 
