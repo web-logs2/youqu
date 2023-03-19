@@ -30,18 +30,18 @@ ConvState.prototype.sendMessage = function (msg) {
     setTimeout(function () {
         $(this.wrapper).find("#messages").append(message);
         this.scrollDown();
-    }.bind(this), 100);
+    }.bind(this), 1000);
 
     var messageObj = $('<div class="message to typing"><div class="typing_loader"></div></div>');
     setTimeout(function () {
         $(this.wrapper).find('#messages').append(messageObj);
         this.scrollDown();
-    }.bind(this), 150);
+    }.bind(this), 1500);
     var _this = this
     $.ajax({
         url: "./chat",
         type: "POST",
-        timeout:60000,
+        timeout:600000,
         data: JSON.stringify({
             "id": _this.id,
             "msg": msg
