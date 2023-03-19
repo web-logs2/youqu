@@ -15,7 +15,7 @@ from config import channel_conf
 from channel.channel import Channel
 from model.azure.azure_model import AZURE
 
-http_app = Flask(__name__,)
+http_app = Flask(__name__, )
 # 自动重载模板文件
 http_app.jinja_env.auto_reload = True
 http_app.config['TEMPLATES_AUTO_RELOAD'] = True
@@ -26,16 +26,17 @@ http_app.config['SEND_FILE_MAX_AGE_DEFAULT'] = timedelta(seconds=1)
 
 @http_app.route("/chat", methods=['POST'])
 def chat():
-    if (auth.identify(request) == False):
+    if not auth.identify(request):
         return
     data = json.loads(request.data)
     if data:
         msg = data['msg']
-        request_type=request_type = data.get('request_type', None)
+        response_type = data.get('response_type', "text")
+        request_type = data.get('request_type', "text")
         if not msg:
             return
         reply_text = HttpChannel().handle(data=data)
-        if request_type == "voice":
+        if response_type == "voice":
             azure = AZURE()
             audio_data = azure.synthesize_speech(reply_text).audio_data
             buffer = io.BytesIO(audio_data)
@@ -43,7 +44,6 @@ def chat():
             return send_file(buffer, mimetype=mimetype, as_attachment=False)
         else:
             return {'result': reply_text}
-
 
 
 @http_app.route('/synthesize', methods=['POST'])
@@ -56,6 +56,7 @@ def synthesize():
     mimetype = 'audio/mpeg'
     return send_file(buffer, mimetype=mimetype, as_attachment=False)
 
+
 @http_app.route("/", methods=['GET'])
 def index():
     if (auth.identify(request) == False):
@@ -65,9 +66,9 @@ def index():
 
 @http_app.route("/login", methods=['POST', 'GET'])
 def login():
-    response = make_response("<html></html>",301)
-    response.headers.add_header('content-type','text/plain')
-    response.headers.add_header('location','./')
+    response = make_response("<html></html>", 301)
+    response.headers.add_header('content-type', 'text/plain')
+    response.headers.add_header('location', './')
     if (auth.identify(request) == True):
         return response
     else:
@@ -78,9 +79,8 @@ def login():
                 return response
         else:
             return render_template('login.html')
-    response.headers.set('location','./login?err=登录失败')
+    response.headers.set('location', './login?err=登录失败')
     return response
-
 
 
 def is_path_empty_or_nonexistent(path):
@@ -92,7 +92,6 @@ def is_path_empty_or_nonexistent(path):
         return False
     else:
         return len(os.listdir(path)) == 0
-
 
 
 class HttpChannel(Channel):
@@ -107,12 +106,8 @@ class HttpChannel(Channel):
             http_app.run(host='0.0.0.0', port=channel_conf(const.HTTP).get('port'),
                          ssl_context=(ssl_certificate_path + '/fullchain.pem', ssl_certificate_path + '/privkey.pem'))
 
-
-
-
     def handle(self, data):
         context = dict()
         id = data["id"]
         context['from_user_id'] = str(id)
         return super().build_reply_content(data["msg"], context)
-
