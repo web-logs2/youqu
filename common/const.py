@@ -13,3 +13,6 @@ HTTP = "http"
 OPEN_AI = "openai"
 CHATGPT = "chatgpt"
 AZURE = "azure"
+
+BAIDU = "baidu"
+BING = "bing"
