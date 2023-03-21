@@ -4,10 +4,15 @@ from model.model import Model
 from config import model_conf
 from common import const
 from common import log
+from common.expired_dict import ExpiredDict
 import openai
 import time
 
-user_session = dict()
+if model_conf(const.OPEN_AI).get('expires_in_seconds'):
+    user_session = ExpiredDict(model_conf(const.OPEN_AI).get('expires_in_seconds'))
+else:
+    user_session = dict()
+
 
 # OpenAI对话模型API (可用)
 class ChatGPTModel(Model):

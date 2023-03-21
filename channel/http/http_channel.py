@@ -26,8 +26,9 @@ http_app.config['SEND_FILE_MAX_AGE_DEFAULT'] = timedelta(seconds=1)
 
 @http_app.route("/chat", methods=['POST'])
 def chat():
-    if not auth.identify(request):
-        return
+    # if not auth.identify(request):
+    #     logging.INFO("Cookie error")
+    #     return
     data = json.loads(request.data)
     if data:
         msg = data['msg']
