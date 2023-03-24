@@ -172,6 +172,7 @@ class ChatGPTModel(Model):
             return None
 
 
+
 class Session(object):
     @staticmethod
     def build_session_query(query, user_id):

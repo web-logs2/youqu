@@ -36,7 +36,7 @@ def hello_world(msg):
             if cache.get(key):
                 # request time
                 cache.get(key)['req_times'] += 1
-            return WechatSubsribeAccount().handle(msg)
+            return WechatSubsribeAccount().handle_text(msg)
 
 
 class WechatSubsribeAccount(Channel):
@@ -46,7 +46,7 @@ class WechatSubsribeAccount(Channel):
         robot.config['HOST'] = '0.0.0.0'
         robot.run()
 
-    def handle(self, msg, count=0):
+    def handle_text(self, msg, count=0):
         context = dict()
         context['from_user_id'] = msg.source
         key = msg.source
@@ -75,7 +75,7 @@ class WechatSubsribeAccount(Channel):
     def _do_send(self, query, context):
         key = context['from_user_id']
         cache[key] = {"status": "waiting"}
-        reply_text = super().build_reply_content(query, context)
+        reply_text = super().build_text_reply_content(query, context)
         logger.info('[WX_Public] reply content: {}'.format(reply_text))
 
         cache[key] = {"status": "success", "data": reply_text}

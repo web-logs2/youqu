@@ -18,7 +18,7 @@ class TerminalChannel(Channel):
 
             print("Bot:")
             sys.stdout.flush()
-            for res in super().build_reply_content(prompt, context):
+            for res in super().build_text_reply_content(prompt, context):
                 print(res, end="")
                 sys.stdout.flush()
             print("\n")

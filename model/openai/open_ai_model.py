@@ -9,11 +9,11 @@ import time
 
 user_session = dict()
 
+
 # OpenAI对话模型API (可用)
 class OpenAIModel(Model):
     def __init__(self):
         openai.api_key = model_conf(const.OPEN_AI).get('api_key')
-
 
     def reply(self, query, context=None):
         # acquire reply content
@@ -60,8 +60,8 @@ class OpenAIModel(Model):
             log.warn(e)
             if retry_count < 1:
                 time.sleep(5)
-                log.warn("[OPEN_AI] RateLimit exceed, 第{}次重试".format(retry_count+1))
-                return self.reply_text(query, user_id, retry_count+1)
+                log.warn("[OPEN_AI] RateLimit exceed, 第{}次重试".format(retry_count + 1))
+                return self.reply_text(query, user_id, retry_count + 1)
             else:
                 return "提问太快啦，请休息一下再问我吧"
         except Exception as e:
@@ -69,7 +69,6 @@ class OpenAIModel(Model):
             log.exception(e)
             Session.clear_session(user_id)
             return "请再问我一次吧"
-
 
     def reply_text_stream(self, query, new_query, user_id, retry_count=0):
         try:
@@ -91,8 +90,8 @@ class OpenAIModel(Model):
             log.warn(e)
             if retry_count < 1:
                 time.sleep(5)
-                log.warn("[OPEN_AI] RateLimit exceed, 第{}次重试".format(retry_count+1))
-                return self.reply_text(query, user_id, retry_count+1)
+                log.warn("[OPEN_AI] RateLimit exceed, 第{}次重试".format(retry_count + 1))
+                return self.reply_text(query, user_id, retry_count + 1)
             else:
                 return "提问太快啦，请休息一下再问我吧"
         except Exception as e:
@@ -100,7 +99,6 @@ class OpenAIModel(Model):
             log.exception(e)
             Session.clear_session(user_id)
             return "请再问我一次吧"
-
 
     def _process_reply_stream(
             self,
@@ -123,24 +121,25 @@ class OpenAIModel(Model):
         if query and full_response:
             Session.save_session(query, full_response, user_id)
 
-
     def create_img(self, query, retry_count=0):
         try:
             log.info("[OPEN_AI] image_query={}".format(query))
             response = openai.Image.create(
-                prompt=query,    #图片描述
-                n=1,             #每次生成图片的数量
-                size="256x256"   #图片大小,可选有 256x256, 512x512, 1024x1024
+                prompt=query,  # 图片描述
+                n=1,  # 每次生成图片的数量
+                size="1024x1024",  # 图片大小,可选有 256x256, 512x512, 1024x1024
+                response_format="b64_json"
             )
-            image_url = response['data'][0]['url']
-            log.info("[OPEN_AI] image_url={}".format(image_url))
-            return image_url
+            # image_url = response['data'][0]['url']
+            image_base64 = response['data'][0]['b64_json']
+            log.debug("[OPEN_AI] image={}".format(image_base64))
+            return image_base64
         except openai.error.RateLimitError as e:
             log.warn(e)
             if retry_count < 1:
                 time.sleep(5)
-                log.warn("[OPEN_AI] ImgCreate RateLimit exceed, 第{}次重试".format(retry_count+1))
-                return self.reply_text(query, retry_count+1)
+                log.warn("[OPEN_AI] ImgCreate RateLimit exceed, 第{}次重试".format(retry_count + 1))
+                return self.reply_text(query, retry_count + 1)
             else:
                 return "提问太快啦，请休息一下再问我吧"
         except Exception as e:
@@ -196,12 +195,11 @@ class Session(object):
         # discard exceed limit conversation
         Session.discard_exceed_conversation(user_session[user_id], max_tokens)
 
-
     @staticmethod
     def discard_exceed_conversation(session, max_tokens):
         count = 0
         count_list = list()
-        for i in range(len(session)-1, -1, -1):
+        for i in range(len(session) - 1, -1, -1):
             # count tokens of conversation list
             history_conv = session[i]
             count += len(history_conv["question"]) + len(history_conv["answer"])

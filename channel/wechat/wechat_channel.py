@@ -24,7 +24,7 @@ sw = SensitiveWord()
 
 @itchat.msg_register(TEXT)
 def handler_single_msg(msg):
-    WechatChannel().handle(msg)
+    WechatChannel().handle_text(msg)
     return None
 
 
@@ -46,7 +46,7 @@ class WechatChannel(Channel):
         itchat.run()
 
 
-    def handle(self, msg):
+    def handle_text(self, msg):
         logger.debug("[WX]receive msg: " + json.dumps(msg, ensure_ascii=False))
         from_user_id = msg['FromUserName']
         to_user_id = msg['ToUserName']              # 接收人id
@@ -133,7 +133,7 @@ class WechatChannel(Channel):
                 return
             context = dict()
             context['from_user_id'] = reply_user_id
-            reply_text = super().build_reply_content(query, context)
+            reply_text = super().build_text_reply_content(query, context)
             if reply_text:
                 self.send(channel_conf_val(const.WECHAT, "single_chat_reply_prefix") + reply_text, reply_user_id)
         except Exception as e:
@@ -145,7 +145,7 @@ class WechatChannel(Channel):
                 return
             context = dict()
             context['type'] = 'IMAGE_CREATE'
-            img_url = super().build_reply_content(query, context)
+            img_url = super().build_text_reply_content(query, context)
             if not img_url:
                 return
 
@@ -167,7 +167,7 @@ class WechatChannel(Channel):
             return
         context = dict()
         context['from_user_id'] = msg['ActualUserName']
-        reply_text = super().build_reply_content(query, context)
+        reply_text = super().build_text_reply_content(query, context)
         if reply_text:
             reply_text = '@' + msg['ActualNickName'] + ' ' + reply_text.strip()
             self.send(channel_conf_val(const.WECHAT, "group_chat_reply_prefix", "") + reply_text, msg['User']['UserName'])
