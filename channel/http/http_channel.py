@@ -28,9 +28,9 @@ http_app.config['SEND_FILE_MAX_AGE_DEFAULT'] = timedelta(seconds=1)
 
 @http_app.route("/text", methods=['POST'])
 def text():
-    # if not auth.identify(request):
-    #     logging.INFO("Cookie error")
-    #     return
+    if not auth.identify(request):
+        logging.INFO("Cookie error")
+        return
     data = json.loads(request.data)
     if data:
         msg = data['msg']
@@ -44,9 +44,9 @@ def text():
 
 @http_app.route("/voice", methods=['POST'])
 def voice():
-    # if not auth.identify(request):
-    #     logging.INFO("Cookie error")
-    #     return
+    if not auth.identify(request):
+        logging.INFO("Cookie error")
+        return
     data = json.loads(request.data)
     if data:
         msg = data['msg']
@@ -66,9 +66,9 @@ def voice():
 
 @http_app.route("/picture", methods=['POST'])
 def picture():
-    # if not auth.identify(request):
-    #     logging.INFO("Cookie error")
-    #     return
+    if not auth.identify(request):
+        logging.INFO("Cookie error")
+        return
     data = json.loads(request.data)
     if data:
         msg = data['msg']
