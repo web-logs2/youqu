@@ -11,7 +11,7 @@ class Channel(object):
         """
         raise NotImplementedError
 
-    def handle(self, msg):
+    def handle_text(self, msg):
         """
         process received msg
         :param msg: message object
@@ -27,5 +27,8 @@ class Channel(object):
         """
         raise NotImplementedError
 
-    def build_reply_content(self, query, context=None):
-        return Bridge().fetch_reply_content(query, context)
+    def build_text_reply_content(self, query, context=None):
+        return Bridge().fetch_text_reply_content(query, context)
+
+    def build_picture_reply_content(self, query, context=None):
+        return Bridge().fetch_picture_reply_content(query)

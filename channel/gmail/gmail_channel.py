@@ -63,7 +63,7 @@ class GmailChannel(Channel):
                     else:
                         if ques['subject']:
                             print("Nice: a new message coming...", end='\n')
-                            self.handle(ques) 
+                            self.handle_text(ques)
                             lastques = ques
                             wait_time = 0
                         else: 
@@ -71,12 +71,12 @@ class GmailChannel(Channel):
             else: 
                 process(randrange(MIN_DELAY, MAX_DELAY), STEP_TIME)
     
-    def handle(self, question):
+    def handle_text(self, question):
         message = dict()
         context = dict()
         print("INFO: From: %s Question: %s" % (question['from'], question['subject']))
         context['from_user_id'] = question['from']
-        answer = super().build_reply_content(question['subject'], context) #get answer from openai
+        answer = super().build_text_reply_content(question['subject'], context) #get answer from openai
         message = MIMEText(answer)
         message['subject'] = question['subject']
         message['from'] = self.host_email

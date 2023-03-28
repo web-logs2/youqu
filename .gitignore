@@ -11,3 +11,7 @@ go-cqhttp
 logs/
 session.token
 .vscode
+/channel/http/resources/fullchain.pem
+/channel/http/resources/privkey.pem
+/channel/http/resources/server.csr
+/channel/http/resources/server.key.org

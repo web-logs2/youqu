@@ -12,14 +12,25 @@ def create_bot(model_type):
     """
 
     if model_type == const.OPEN_AI:
-        # OpenAI 官方对话模型API (gpt-3.0)
+        # OpenAI 官方对话模型API (gpt-3.0), 以及图片生产模型DALL·E 2
         from model.openai.open_ai_model import OpenAIModel
         return OpenAIModel()
 
     elif model_type == const.CHATGPT:
         # ChatGPT API (gpt-3.5-turbo)
-        from model.chatgpt.chatgpt_model import ChatGPTModel
+        from model.openai.chatgpt_model import ChatGPTModel
         return ChatGPTModel()
+
+    elif model_type == const.BAIDU:
+        from model.baidu.yiyan_model import YiyanModel
+        return YiyanModel()
+
+    elif model_type == const.BING:
+        from model.bing.new_bing_model import BingModel
+        return BingModel()
+    elif model_type == const.BING:
+        from model.bing.new_bing_model import BingModel
+        return BingModel()
 
     raise RuntimeError
 

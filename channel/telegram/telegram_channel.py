@@ -17,7 +17,7 @@ def send_welcome(message):
 @bot.message_handler(content_types=['text'])
 def send_welcome(msg):
     # telegram消息处理
-    TelegramChannel().handle(msg)
+    TelegramChannel().handle_text(msg)
 
 class TelegramChannel(Channel):
     def __init__(self):
@@ -27,7 +27,7 @@ class TelegramChannel(Channel):
         logger.info("开始启动[telegram]机器人")
         bot.infinity_polling()
 
-    def handle(self, msg):
+    def handle_text(self, msg):
         logger.debug("[Telegram] receive msg: " + msg.text)
         img_match_prefix = self.check_prefix(msg, channel_conf_val(const.TELEGRAM, 'image_create_prefix'))
         # 如果是图片请求
@@ -39,7 +39,7 @@ class TelegramChannel(Channel):
     def _dosend(self,query,msg):
         context= dict()
         context['from_user_id'] = str(msg.chat.id)
-        reply_text = super().build_reply_content(query, context)
+        reply_text = super().build_text_reply_content(query, context)
         logger.info('[Telegram] reply content: {}'.format(reply_text))
         bot.reply_to(msg,reply_text)
         
@@ -49,7 +49,7 @@ class TelegramChannel(Channel):
                 return
             context = dict()
             context['type'] = 'IMAGE_CREATE'
-            img_url = super().build_reply_content(msg.text, context)
+            img_url = super().build_text_reply_content(msg.text, context)
             if not img_url:
                 return
 

@@ -20,14 +20,14 @@ def handle_mention(event, say):
         ts = event["thread_ts"]
     else:
         ts = event["ts"]
-    reply_text = SlackChannel().handle(event)
+    reply_text = SlackChannel().handle_text(event)
     say(text=f"{reply_text}", thread_ts=ts)
 
 class SlackChannel(Channel):
     def startup(self):
         handler.start()
 
-    def handle(self, event):
+    def handle_text(self, event):
         context = dict()
         if 'thread_ts' in event:
             ts = event["thread_ts"]
@@ -36,4 +36,4 @@ class SlackChannel(Channel):
         context['from_user_id'] = str(ts)
         # 使用正则表达式去除 @xxxx
         plain_text = re.sub(r"<@\w+>", "", event["text"])
-        return super().build_reply_content(plain_text, context)
+        return super().build_text_reply_content(plain_text, context)
