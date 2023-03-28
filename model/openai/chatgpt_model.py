@@ -1,4 +1,5 @@
 # encoding:utf-8
+import logging
 
 from model.model import Model
 from config import model_conf
@@ -10,6 +11,7 @@ import time
 
 if model_conf(const.OPEN_AI).get('expires_in_seconds'):
     user_session = ExpiredDict(model_conf(const.OPEN_AI).get('expires_in_seconds'))
+    logging.info("Set dict expire time "+model_conf(const.OPEN_AI).get('expires_in_seconds'))
 else:
     user_session = dict()
 
