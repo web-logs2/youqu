@@ -5,15 +5,15 @@ from model.model import Model
 from config import model_conf
 from common import const
 from common import log
-from common.expired_dict import ExpiredDict
 import openai
 import time
+from expiring_dict import ExpiringDict
 
 if model_conf(const.OPEN_AI).get('expires_in_seconds'):
-    user_session = ExpiredDict(model_conf(const.OPEN_AI).get('expires_in_seconds'))
-    #logging.info("Set dict expire time "+model_conf(const.OPEN_AI).get('expires_in_seconds'))
+    user_session = ExpiringDict(model_conf(const.OPEN_AI).get('expires_in_seconds'))
+    # logging.info("Set dict expire time "+model_conf(const.OPEN_AI).get('expires_in_seconds'))
 else:
-    user_session = dict()
+    user_session = ExpiringDict(3600)
 
 
 # OpenAI对话模型API (可用)
@@ -34,7 +34,7 @@ class ChatGPTModel(Model):
                 return '记忆已清除'
 
             new_query = Session.build_session_query(query, from_user_id)
-            log.debug("[CHATGPT] session query={}".format(new_query))
+            log.debug("userid:{} [CHATGPT] session query={}".format(from_user_id,new_query))
 
             # if context.get('stream'):
             #     # reply in stream
@@ -50,7 +50,7 @@ class ChatGPTModel(Model):
     def reply_text(self, query, user_id, retry_count=0):
         try:
             response = openai.ChatCompletion.create(
-                model= model_conf(const.OPEN_AI).get("model") or "gpt-3.5-turbo",  # 对话模型的名称
+                model=model_conf(const.OPEN_AI).get("model") or "gpt-3.5-turbo",  # 对话模型的名称
                 messages=query,
                 temperature=0.9,  # 值在[0,1]之间，越大表示回复越具有不确定性
                 top_p=1,
@@ -70,8 +70,8 @@ class ChatGPTModel(Model):
             log.warn(e)
             if retry_count < 1:
                 time.sleep(5)
-                log.warn("[CHATGPT] RateLimit exceed, 第{}次重试".format(retry_count+1))
-                return self.reply_text(query, user_id, retry_count+1)
+                log.warn("[CHATGPT] RateLimit exceed, 第{}次重试".format(retry_count + 1))
+                return self.reply_text(query, user_id, retry_count + 1)
             else:
                 return "提问太快啦，请休息一下再问我吧"
         except openai.error.APIConnectionError as e:
@@ -88,14 +88,13 @@ class ChatGPTModel(Model):
             Session.clear_session(user_id)
             return "请再问我一次吧"
 
-
     def reply_text_stream(self, query, new_query, user_id, retry_count=0):
         try:
             res = openai.Completion.create(
                 model="text-davinci-003",  # 对话模型的名称
                 prompt=new_query,
                 temperature=0.9,  # 值在[0,1]之间，越大表示回复越具有不确定性
-                #max_tokens=4096,  # 回复最大的字符数
+                # max_tokens=4096,  # 回复最大的字符数
                 top_p=1,
                 frequency_penalty=0.0,  # [-2,2]之间，该值越大则更倾向于产生不同的内容
                 presence_penalty=0.0,  # [-2,2]之间，该值越大则更倾向于产生不同的内容
@@ -109,8 +108,8 @@ class ChatGPTModel(Model):
             log.warn(e)
             if retry_count < 1:
                 time.sleep(5)
-                log.warn("[CHATGPT] RateLimit exceed, 第{}次重试".format(retry_count+1))
-                return self.reply_text_stream(query, user_id, retry_count+1)
+                log.warn("[CHATGPT] RateLimit exceed, 第{}次重试".format(retry_count + 1))
+                return self.reply_text_stream(query, user_id, retry_count + 1)
             else:
                 return "提问太快啦，请休息一下再问我吧"
         except openai.error.APIConnectionError as e:
@@ -126,7 +125,6 @@ class ChatGPTModel(Model):
             log.exception(e)
             Session.clear_session(user_id)
             return "请再问我一次吧"
-
 
     def _process_reply_stream(
             self,
@@ -149,14 +147,13 @@ class ChatGPTModel(Model):
         if query and full_response:
             Session.save_session(query, full_response, user_id)
 
-
     def create_img(self, query, retry_count=0):
         try:
             log.info("[OPEN_AI] image_query={}".format(query))
             response = openai.Image.create(
-                prompt=query,    #图片描述
-                n=1,             #每次生成图片的数量
-                size="256x256"   #图片大小,可选有 256x256, 512x512, 1024x1024
+                prompt=query,  # 图片描述
+                n=1,  # 每次生成图片的数量
+                size="256x256"  # 图片大小,可选有 256x256, 512x512, 1024x1024
             )
             image_url = response['data'][0]['url']
             log.info("[OPEN_AI] image_url={}".format(image_url))
@@ -165,14 +162,13 @@ class ChatGPTModel(Model):
             log.warn(e)
             if retry_count < 1:
                 time.sleep(5)
-                log.warn("[OPEN_AI] ImgCreate RateLimit exceed, 第{}次重试".format(retry_count+1))
-                return self.reply_text(query, retry_count+1)
+                log.warn("[OPEN_AI] ImgCreate RateLimit exceed, 第{}次重试".format(retry_count + 1))
+                return self.reply_text(query, retry_count + 1)
             else:
                 return "提问太快啦，请休息一下再问我吧"
         except Exception as e:
             log.exception(e)
             return None
-
 
 
 class Session(object):
@@ -220,4 +216,3 @@ class Session(object):
     @staticmethod
     def clear_session(user_id):
         user_session[user_id] = []
-

@@ -16,6 +16,7 @@ from channel.channel import Channel
 from model.azure.azure_model import AZURE
 from flask import jsonify
 import base64
+from common.generator import generate_uuid
 
 http_app = Flask(__name__, )
 # 自动重载模板文件
@@ -112,6 +113,7 @@ def login():
             token = auth.authenticate(request.form['password'])
             if (token != False):
                 response.set_cookie(key='Authorization', value=token)
+                response.set_cookie(key='id', value=generate_uuid())
                 return response
         else:
             return render_template('login.html')
