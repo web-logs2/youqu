@@ -9,19 +9,20 @@ config = {}
 def load_config():
     global config
     root_path = os.path.dirname(os.path.abspath(__file__))
-    config_path = root_path+"/config.json"
+    config_path = root_path + "/config.json"
     if not os.path.exists(config_path):
         raise Exception('配置文件不存在，请根据config-template.json模板创建config.json文件')
 
     config_str = read_file(config_path)
     # 将json字符串反序列化为dict类型
     config = json.loads(config_str)
-    print("载入环节" )
+    print("载入环节")
     print(config)
     return config
 
+
 def get_root():
-    return os.path.dirname(os.path.abspath( __file__ ))
+    return os.path.dirname(os.path.abspath(__file__))
 
 
 def read_file(path):
@@ -35,6 +36,11 @@ def conf():
 
 def model_conf(model_type):
     return config.get('model').get(model_type)
+
+
+def project_conf(model_type):
+    return config.get('project').get(model_type)
+
 
 def model_conf_val(model_type, key):
     val = config.get('model').get(model_type).get(key)
