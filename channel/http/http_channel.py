@@ -3,6 +3,8 @@ import io
 import json
 import os
 
+from boto.gs.cors import CORS
+
 from channel.http import auth
 from flask import Flask, request, render_template, make_response, send_file
 
