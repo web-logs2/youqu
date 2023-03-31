@@ -10,7 +10,7 @@ class DcoumentList(MenuFunction):
         return "文档列表"
     
     def getDescription(self)-> str:
-        return "查询文档列表"
+        return "#查询文档  <page index>"
     
  
     def getCmd(self)-> str:
@@ -19,6 +19,11 @@ class DcoumentList(MenuFunction):
    
     def excetu(self, arg):
         page_number = 1
+        if(len(arg)>= 2):
+            try:
+              page_number = int(arg[1])
+            except  Exception as e:
+              return '页码错误'
         result = '```java\n'
         documents: list[DocumentRecord] = DocumentRecord.select().where(DocumentRecord.deleted == False).paginate(page_number, 50)
         for row  in documents:
