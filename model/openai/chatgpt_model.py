@@ -1,6 +1,7 @@
 # encoding:utf-8
 import logging
 
+
 from model.model import Model
 from config import model_conf
 from common import const
@@ -8,6 +9,10 @@ from common import log
 import openai
 import time
 from expiring_dict import ExpiringDict
+
+from model.openai.menuFunctions.pre_train_documnt import TrainDcoumnet
+from model.openai.menuFunctions.query_document import QueryDcoumnet
+
 
 if model_conf(const.OPEN_AI).get('expires_in_seconds'):
     user_session = ExpiringDict(model_conf(const.OPEN_AI).get('expires_in_seconds'))
@@ -170,6 +175,8 @@ class ChatGPTModel(Model):
             log.exception(e)
             return None
 
+    def menuList(self, arg):
+        return [TrainDcoumnet(),QueryDcoumnet()]
 
 class Session(object):
     @staticmethod

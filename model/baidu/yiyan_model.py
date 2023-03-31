@@ -116,3 +116,6 @@ class YiyanModel(Model):
             'Cookie': self.cookie
         }
         return headers
+    
+    def menuList(self, arg):
+        return []  

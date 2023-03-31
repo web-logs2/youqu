@@ -49,6 +49,17 @@ cd bot-on-anything/
 cp config-template.json config.json
 ```
 
+运行 python -m venv venv
+运行 pip install -r requirements.txt
+
+
+mysql 配置
+ "mysql": {
+    "host": "127.0.0.1",
+    "userName": "root",
+    "password": "123456",
+    "db": "youqu"
+  }
 每一个模型和应用都有自己的配置块，最终组成完整的配置文件，整体结构如下：
 
 ```bash

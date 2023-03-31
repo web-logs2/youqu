@@ -59,3 +59,6 @@ class BingModel(Model):
 
     def reset_chat(self, from_user_id):
         asyncio.run(user_session.get(from_user_id, None).reset())
+        
+    def menuList(self, arg):
+      return []    

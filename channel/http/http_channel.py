@@ -13,12 +13,15 @@ from channel.http import auth
 from flask import Flask, request, render_template, make_response
 from datetime import timedelta
 from common import const
+from common.db.document_record import DocumentRecord
 from config import channel_conf
 from channel.channel import Channel
 from model.azure.azure_model import AZURE
 from flask import jsonify
 import base64
 from common.generator import generate_uuid
+import datetime
+import uuid
 
 http_app = Flask(__name__, )
 # 自动重载模板文件
@@ -85,6 +88,38 @@ def picture():
         return jsonify(response)
 
 
+@http_app.route('/upload', methods=['POST'])
+def upload_file():
+    # 检查文件是否存在
+    if len(request.files) <=0:
+        return jsonify({'error': 'No file selected'})
+    
+    file = request.files['files']
+       # 检查文件名是否为空
+    if file.filename == '':
+      return jsonify({'error': 'No file selected'})
+    
+    # 保存文件
+    upload_dir = './data/'+uuid.uuid1().hex  # 上传文件保存的目录
+    filename = file.filename.replace(" ", "")
+    os.mkdir(upload_dir)
+    file.save(os.path.join(upload_dir, filename))
+    try:
+      new_document = DocumentRecord(
+        user_id=1,
+        title=filename,
+        path=upload_dir,
+        deleted=False,
+        read_count=0,
+        created_time=datetime.datetime.now(),
+        updated_time=datetime.datetime.now(),
+        trained=False
+      )
+      new_document.save()
+    except Exception as e:
+      return jsonify({'fail': json.dumps(e.args)})  
+    
+    return jsonify({'success': 'File uploaded successfully'})
 # @http_app.route('/synthesize', methods=['POST'])
 # def synthesize():
 #     data = json.loads(request.data)
