@@ -1,17 +1,17 @@
-import smtplib
-import imaplib
-import email
-import re
 import base64
+import email
+import imaplib
+import re
+import smtplib
 import time
-from random import randrange
-from email.mime.text import MIMEText
-from email.header import decode_header
-from channel.channel import Channel
 from concurrent.futures import ThreadPoolExecutor
-from common import const
-from config import channel_conf_val, channel_conf
+from email.header import decode_header
+from email.mime.text import MIMEText
+from random import randrange
 
+from channel.channel import Channel
+from common import const
+from config import channel_conf_val
 
 smtp_ssl_host = 'smtp.gmail.com: 587'
 imap_ssl_host = 'imap.gmail.com'
@@ -22,6 +22,7 @@ LATESTN = 5
 wait_time = 0
 thread_pool = ThreadPoolExecutor(max_workers=8)
 
+
 def checkEmail(email):
     # regex = '^[a-z0-9]+[\._]?[a-z0-9]+[@]\w+[.]\w{2,3}$'
     regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
@@ -30,35 +31,37 @@ def checkEmail(email):
     else:
         return False
 
+
 def process(max, speed):
     global wait_time
-    i=0
-    while i<=max:
-        i=i+1
+    i = 0
+    while i <= max:
+        i = i + 1
         time.sleep(speed)
-        print("\r"+"Waited: "+str(i+wait_time)+"s", end='')
+        print("\r" + "Waited: " + str(i + wait_time) + "s", end='')
         # print("\r"+"==="*int(i-1)+":-)"+"==="*int(max-i)+"$"+str(max)+'  waited:'+str(i)+"%", end='')
-    wait_time += max*speed
-    
+    wait_time += max * speed
+
+
 class GmailChannel(Channel):
     def __init__(self):
         self.host_email = channel_conf_val(const.GMAIL, 'host_email')
         self.host_password = channel_conf_val(const.GMAIL, 'host_password')
         # self.addrs_white_list = channel_conf_val(const.GMAIL, 'addrs_white_list')
         self.subject_keyword = channel_conf_val(const.GMAIL, 'subject_keyword')
-        
+
     def startup(self):
         global wait_time
         ques_list = list()
         lastques = {'from': None, 'subject': None, 'content': None}
         print("INFO: let's go...")
-        while(True):
+        while (True):
             ques_list = self.receiveEmail()
             if ques_list:
                 for ques in ques_list:
                     if ques['subject'] is None:
                         print("WARN: question from:%s is empty " % ques['from'])
-                    elif(lastques['subject'] == ques['subject'] and lastques['from'] == ques['from']):
+                    elif (lastques['subject'] == ques['subject'] and lastques['from'] == ques['from']):
                         print("INFO: this question has already been answered. Q:%s" % (ques['subject']))
                     else:
                         if ques['subject']:
@@ -66,23 +69,23 @@ class GmailChannel(Channel):
                             self.handle_text(ques)
                             lastques = ques
                             wait_time = 0
-                        else: 
+                        else:
                             print("WARN: the question in subject is empty")
-            else: 
+            else:
                 process(randrange(MIN_DELAY, MAX_DELAY), STEP_TIME)
-    
+
     def handle_text(self, question):
         message = dict()
         context = dict()
         print("INFO: From: %s Question: %s" % (question['from'], question['subject']))
         context['from_user_id'] = question['from']
-        answer = super().build_text_reply_content(question['subject'], context) #get answer from openai
+        answer = super().build_text_reply_content(question['subject'], context)  # get answer from openai
         message = MIMEText(answer)
         message['subject'] = question['subject']
         message['from'] = self.host_email
         message['to'] = question['from']
         thread_pool.submit(self.sendEmail, message)
-        
+
     def sendEmail(self, message: list) -> dict:
         smtp_server = smtplib.SMTP(smtp_ssl_host)
         smtp_server.starttls()
@@ -109,7 +112,7 @@ class GmailChannel(Channel):
         mail_ids = []
         for block in data:
             mail_ids += block.split()
-        #only fetch the latest 5 messages
+        # only fetch the latest 5 messages
         mail_ids = mail_ids[-LATESTN:]
         for i in mail_ids:
             status, data = imap_server.fetch(i, '(RFC822)')
@@ -119,8 +122,8 @@ class GmailChannel(Channel):
                     mail_from = message['from'].split('<')[1].replace(">", "")
                     # if mail_from not in self.addrs_white_list:
                     #     continue
-                    
-                    #subject do not support chinese
+
+                    # subject do not support chinese
                     mail_subject = decode_header(message['subject'])[0][0]
                     if isinstance(mail_subject, bytes):
                         # UnicodeDecodeError: 'utf-8' codec can't decode byte 0xc5
@@ -128,20 +131,20 @@ class GmailChannel(Channel):
                             mail_subject = mail_subject.decode()
                         except UnicodeDecodeError:
                             mail_subject = mail_subject.decode('latin-1')
-                    if not self.check_contain(mail_subject, self.subject_keyword):   #check subject here
+                    if not self.check_contain(mail_subject, self.subject_keyword):  # check subject here
                         continue
-                    if message.is_multipart(): 
+                    if message.is_multipart():
                         mail_content = ''
                         for part in message.get_payload():
-                            flag=False
-                            if isinstance(part.get_payload(), list): 
-                                    part = part.get_payload()[0]
-                                    flag = True
-                            if part.get_content_type()  in ['text/plain', 'multipart/alternative']: 
-                                #TODO some string can't be decode
+                            flag = False
+                            if isinstance(part.get_payload(), list):
+                                part = part.get_payload()[0]
+                                flag = True
+                            if part.get_content_type() in ['text/plain', 'multipart/alternative']:
+                                # TODO some string can't be decode
                                 if flag:
                                     mail_content += str(part.get_payload())
-                                else: 
+                                else:
                                     try:
                                         mail_content += base64.b64decode(str(part.get_payload())).decode("utf-8")
                                     except UnicodeDecodeError:
@@ -156,25 +159,17 @@ class GmailChannel(Channel):
                     # print(f'Content: {mail_content.replace(" ", "")}')
                     question_list.append(question)
                     question = {'from': None, 'subject': None, 'content': None}
-                    imap_server.store(i, "+FLAGS", "\\Deleted") #delete the mail i
+                    imap_server.store(i, "+FLAGS", "\\Deleted")  # delete the mail i
                     print("INFO: deleting mail: %s" % mail_subject)
         imap_server.expunge()
         imap_server.close()
         imap_server.logout()
         return question_list
-    
+
     def check_contain(self, content, keyword_list):
         if not keyword_list:
             return None
         for ky in keyword_list:
             if content.find(ky) != -1:
                 return True
-        return None 
-        
-
-
-
-
-
-
-
+        return None

@@ -102,5 +102,5 @@ servers:
       middlewares:
         <<: *default # 引用默认中间件
       # 反向HTTP POST地址列表
-      post: 
+      post:
         - url: http://127.0.0.1:8080

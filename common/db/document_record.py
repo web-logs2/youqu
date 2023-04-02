@@ -1,7 +1,7 @@
-
-from config import config
-from common import const
 from playhouse.pool import PooledMySQLDatabase
+
+from common import const
+from config import config
 
 host = config.get(const.MYSQL).get('host')
 userName = config.get(const.MYSQL).get('userName')
@@ -14,8 +14,7 @@ from peewee import (
     CharField,
     BooleanField,
     DateTimeField,
-    AutoField,
-    BlobField
+    AutoField
 )
 
 db = PooledMySQLDatabase(
@@ -40,12 +39,13 @@ class DocumentRecord(Model):
     created_time = DateTimeField()
     updated_time = DateTimeField()
     trained = BooleanField()
+    trained_file_path = CharField(unique=True, max_length=512)
 
     class Meta:
         database = db
         table_name = "document_reocrd"
 
+
 # 如果数据库中不存在表，则创建表
 db.connect()
 db.create_tables([DocumentRecord], safe=True)
-    

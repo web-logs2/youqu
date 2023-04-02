@@ -1,28 +1,19 @@
 # encoding:utf-8
-import io
+import base64
 import json
 import os
-import shutil
-
-from boto.gs.cors import CORS
-
-from channel.http import auth
-from flask import Flask, request, render_template, make_response, send_file
-
-import json
-from channel.http import auth
-from flask import Flask, request, render_template, make_response
 from datetime import timedelta
-from common import const
-from common.db.document_record import DocumentRecord
-from config import channel_conf
-from channel.channel import Channel
-from model.azure.azure_model import AZURE
+
+from flask import Flask, request, render_template, make_response
 from flask import jsonify
-import base64
+
+from channel.channel import Channel
+from channel.http import auth
+from common import const
 from common.generator import generate_uuid
-import datetime
-import uuid
+from config import channel_conf
+from model.azure.azure_model import AZURE
+from service.file_training_service import upload_file_service
 
 http_app = Flask(__name__, template_folder='templates', static_folder='static', )
 # 自动重载模板文件
@@ -92,39 +83,16 @@ def picture():
 @http_app.route('/upload', methods=['POST'])
 def upload_file():
     # 检查文件是否存在
-    if len(request.files) <=0:
+    if len(request.files) <= 0:
         return jsonify({'result': 'No file selected'})
-    
+
     file = request.files['files']
-       # 检查文件名是否为空
+    # 检查文件名是否为空
     if file.filename == '':
-      return jsonify({'result': 'No file selected'})
-    
-    # 保存文件
-    upload_dir = './data/'+uuid.uuid1().hex  # 上传文件保存的目录
-    filename = file.filename.replace(" ", "")
-    # 创建根目录（若不存在）
-    if not os.path.exists('./data/'):
-        os.mkdir('./data/')
-    os.mkdir(upload_dir)
-    file.save(os.path.join(upload_dir, filename))
-    try:
-      new_document = DocumentRecord(
-        user_id=1,
-        title=filename,
-        path=upload_dir,
-        deleted=False,
-        read_count=0,
-        created_time=datetime.datetime.now(),
-        updated_time=datetime.datetime.now(),
-        trained=False
-      )
-      new_document.save()
-    except Exception as e:
-        shutil.rmtree(upload_dir)
-        return jsonify({'result': json.dumps(e.args)})
-    
-    return jsonify({'result': 'File uploaded successfully'})
+        return jsonify({'result': 'No file selected'})
+    return upload_file_service(file)
+
+
 # @http_app.route('/synthesize', methods=['POST'])
 # def synthesize():
 #     data = json.loads(request.data)

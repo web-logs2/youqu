@@ -1,7 +1,8 @@
+import sys
+
 from channel.channel import Channel
 from common import log
 
-import sys
 
 class TerminalChannel(Channel):
     def startup(self):
@@ -22,7 +23,6 @@ class TerminalChannel(Channel):
                 print(res, end="")
                 sys.stdout.flush()
             print("\n")
-
 
     def get_input(self, prompt):
         """

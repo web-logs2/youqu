@@ -1,23 +1,29 @@
-from concurrent.futures import ThreadPoolExecutor
 import io
+from concurrent.futures import ThreadPoolExecutor
+
 import requests
 import telebot
+
+from channel.channel import Channel
 from common import const
 from common.log import logger
-from channel.channel import Channel
 from config import channel_conf_val, channel_conf
+
 bot = telebot.TeleBot(token=channel_conf(const.TELEGRAM).get('bot_token'))
 thread_pool = ThreadPoolExecutor(max_workers=8)
 
+
 @bot.message_handler(commands=['help'])
 def send_welcome(message):
-    bot.send_message(message.chat.id, "<a>我是chatGPT机器人，开始和我聊天吧!</a>", parse_mode = "HTML")
+    bot.send_message(message.chat.id, "<a>我是chatGPT机器人，开始和我聊天吧!</a>", parse_mode="HTML")
+
 
 # 处理文本类型消息
 @bot.message_handler(content_types=['text'])
 def send_welcome(msg):
     # telegram消息处理
     TelegramChannel().handle_text(msg)
+
 
 class TelegramChannel(Channel):
     def __init__(self):
@@ -34,15 +40,15 @@ class TelegramChannel(Channel):
         if img_match_prefix:
             thread_pool.submit(self._do_send_img, msg, str(msg.chat.id))
         else:
-            thread_pool.submit(self._dosend,msg.text,msg)
-        
-    def _dosend(self,query,msg):
-        context= dict()
+            thread_pool.submit(self._dosend, msg.text, msg)
+
+    def _dosend(self, query, msg):
+        context = dict()
         context['from_user_id'] = str(msg.chat.id)
         reply_text = super().build_text_reply_content(query, context)
         logger.info('[Telegram] reply content: {}'.format(reply_text))
-        bot.reply_to(msg,reply_text)
-        
+        bot.reply_to(msg, reply_text)
+
     def _do_send_img(self, msg, reply_user_id):
         try:
             if not msg:
@@ -62,7 +68,7 @@ class TelegramChannel(Channel):
 
             # 图片发送
             logger.info('[Telegrame] sendImage, receiver={}'.format(reply_user_id))
-            bot.send_photo(msg.chat.id,image_storage)
+            bot.send_photo(msg.chat.id, image_storage)
         except Exception as e:
             logger.exception(e)
 

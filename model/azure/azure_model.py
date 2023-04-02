@@ -1,13 +1,8 @@
-import os
 import azure.cognitiveservices.speech as speechsdk
-from model.model import Model
-from config import model_conf
-from flask import Flask, request, send_file
-import json
+
 import config
-import io
 from common import const
-import os
+from config import model_conf
 
 
 class AZURE:
@@ -84,5 +79,6 @@ def loopTest():
                 print("Error details: {}".format(cancellation_details.error_details))
                 print("Did you set the speech resource key and region values?")
 
+
 def menuList(self, arg):
-    return []  
+    return []

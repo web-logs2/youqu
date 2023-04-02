@@ -1,20 +1,25 @@
-from channel.channel import Channel
-from aiocqhttp import CQHttp, Event
-from common import log
 from concurrent.futures import ThreadPoolExecutor
+
+from aiocqhttp import CQHttp, Event
+
+from channel.channel import Channel
+from common import log
 
 bot = CQHttp(api_root='http://127.0.0.1:5700')
 thread_pool = ThreadPoolExecutor(max_workers=8)
+
 
 @bot.on_message('private')
 def handle_private_msg(event: Event):
     log.info("event: {}", event)
     QQChannel().handle_text(event)
 
+
 @bot.on_message('group')
 def handle_private_msg(event: Event):
     log.info("event: {}", event)
     QQChannel().handle_group(event)
+
 
 class QQChannel(Channel):
     def startup(self):

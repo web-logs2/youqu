@@ -4,6 +4,7 @@ channel factory
 
 from common import const
 
+
 def create_bot(model_type):
     """
     create a channel instance
@@ -33,4 +34,3 @@ def create_bot(model_type):
         return BingModel()
 
     raise RuntimeError
-

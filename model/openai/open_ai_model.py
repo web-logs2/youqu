@@ -1,11 +1,13 @@
 # encoding:utf-8
 
-from model.model import Model
-from config import model_conf
+import time
+
+import openai
+
 from common import const
 from common import log
-import openai
-import time
+from config import model_conf
+from model.model import Model
 
 user_session = dict()
 

@@ -5,19 +5,19 @@ class MenuFunction:
     @abstractmethod
     def getName(self) -> str:
         pass
-    
+
     @abstractmethod
-    def getDescription(self)-> str:
+    def getDescription(self) -> str:
         pass
-    
+
     @abstractmethod
-    def getCmd(self)-> str:
+    def getCmd(self) -> str:
         pass
-    
+
     @abstractmethod
-    def excetu(self, arg)-> any:
+    def execute(self, arg) -> any:
         pass
-    
+
     @abstractmethod
-    def getOrder(self)-> int:
+    def getOrder(self) -> int:
         pass
