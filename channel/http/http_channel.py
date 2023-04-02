@@ -2,6 +2,7 @@
 import io
 import json
 import os
+import shutil
 
 from boto.gs.cors import CORS
 
@@ -23,7 +24,7 @@ from common.generator import generate_uuid
 import datetime
 import uuid
 
-http_app = Flask(__name__, )
+http_app = Flask(__name__, template_folder='templates', static_folder='static', )
 # 自动重载模板文件
 http_app.jinja_env.auto_reload = True
 http_app.config['TEMPLATES_AUTO_RELOAD'] = True
@@ -92,16 +93,19 @@ def picture():
 def upload_file():
     # 检查文件是否存在
     if len(request.files) <=0:
-        return jsonify({'error': 'No file selected'})
+        return jsonify({'result': 'No file selected'})
     
     file = request.files['files']
        # 检查文件名是否为空
     if file.filename == '':
-      return jsonify({'error': 'No file selected'})
+      return jsonify({'result': 'No file selected'})
     
     # 保存文件
     upload_dir = './data/'+uuid.uuid1().hex  # 上传文件保存的目录
     filename = file.filename.replace(" ", "")
+    # 创建根目录（若不存在）
+    if not os.path.exists('./data/'):
+        os.mkdir('./data/')
     os.mkdir(upload_dir)
     file.save(os.path.join(upload_dir, filename))
     try:
@@ -117,9 +121,10 @@ def upload_file():
       )
       new_document.save()
     except Exception as e:
-      return jsonify({'fail': json.dumps(e.args)})  
+        shutil.rmtree(upload_dir)
+        return jsonify({'result': json.dumps(e.args)})
     
-    return jsonify({'success': 'File uploaded successfully'})
+    return jsonify({'result': 'File uploaded successfully'})
 # @http_app.route('/synthesize', methods=['POST'])
 # def synthesize():
 #     data = json.loads(request.data)

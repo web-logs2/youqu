@@ -3,8 +3,8 @@ Message sending channel abstract class
 """
 
 from bridge.bridge import Bridge
-from model.commonMenuFunctions.demo import DemoFunction
-from model.commonMenuFunctions.document_list import DcoumentList
+from model.menuFunctions.demo import DemoFunction
+from model.menuFunctions.document_list import DcoumentList
 from model.menu_function import MenuFunction
 
 class Channel(object):
@@ -12,9 +12,9 @@ class Channel(object):
     menuString = '菜单列表 \n\n  ```java\n'
     menuDict: dict[ str ,MenuFunction] = {}
     def __init__(self):
-        self.menuList: list[MenuFunction] =  Bridge.fetch_menu_list(self)
-        self.menuList.append(DcoumentList())
-        self.menuList.append(DemoFunction())
+        self.menuList: list[MenuFunction] = Bridge.fetch_menu_list(self)
+        #self.menuList.append(DcoumentList())
+        #self.menuList.append(DemoFunction())
         meuns = sorted(self.menuList, key=lambda x: x.getOrder())
         for item in meuns:
           self.menuDict[item.getCmd()] = item 
@@ -43,7 +43,7 @@ class Channel(object):
         raise NotImplementedError
 
     def build_text_reply_content(self, query, context=None):
-        if(query == '@菜单'):
+        if(query == '#菜单'):
            return self.menuString
         if(query.startswith("#")):
            cmds = query.split()

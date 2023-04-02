@@ -8,7 +8,7 @@ from config import model_conf
 os.environ["OPENAI_API_KEY"] = model_conf(const.OPEN_AI).get('api_key')
 
 
-class TrainDcoumnet(MenuFunction):
+class PreTrainDcoumnet(MenuFunction):
     
     def getName(self) -> str:
         return "训练书籍"
