@@ -38,8 +38,12 @@ def model_conf(model_type):
     return config.get('model').get(model_type)
 
 
-def project_conf(model_type):
-    return config.get('project').get(model_type)
+def project_conf(key):
+    return config.get('project').get(key)
+
+
+def feishu_conf(key):
+    return config.get('feishu').get(key)
 
 
 def model_conf_val(model_type, key):
