@@ -69,21 +69,8 @@ def handle(ctx, conf, card):
 
 
 set_card_callback(conf, handle)
-app = Flask(__name__)
 
 
-@app.route('/webhook/card', methods=['POST'])
-def webhook_card():
-    oapi_request = OapiRequest(uri=request.path, body=request.data, header=OapiHeader(request.headers))
-    resp = make_response()
-    oapi_resp = handle_card(conf, oapi_request)
-    resp.headers['Content-Type'] = oapi_resp.content_type
-    resp.data = oapi_resp.body
-    resp.status_code = oapi_resp.status_code
-    return resp
 
 
-# 设置 "开发者后台" -> "应用功能" -> "机器人" 消息卡片请求网址：https://domain/webhook/card
-# startup event http server, port: 8089
-if __name__ == '__main__':
-    app.run(port=8089, host="0.0.0.0")
+

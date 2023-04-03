@@ -7,13 +7,18 @@ from datetime import timedelta
 
 from flask import Flask, request, render_template, make_response
 from flask import jsonify
+from larksuiteoapi import OapiHeader
+from larksuiteoapi.card import handle_card
+from larksuiteoapi.model import OapiRequest
 
+import app
 from channel.channel import Channel
 from channel.http import auth
 from common import const
 from common.generator import generate_uuid
 from config import channel_conf
 from model.azure.azure_model import AZURE
+from model.feishu.common_service import conf
 from service.file_training_service import upload_file_service
 from common.db.dbconfig import db
 
@@ -133,10 +138,10 @@ def login():
     return response
 
 
-
 @http_app.teardown_request
 def teardown_request(exception):
     db.close()
+
 
 def is_path_empty_or_nonexistent(path):
     if not path:
@@ -172,3 +177,15 @@ class HttpChannel(Channel):
         id = data["id"]
         context['from_user_id'] = str(id)
         return super().build_picture_reply_content(data["msg"])
+
+
+@http_app.route('/webhook/card', methods=['POST'])
+def webhook_card():
+    logging.info("/webhook/card:"+request.data.decode())
+    oapi_request = OapiRequest(uri=request.path, body=request.data, header=OapiHeader(request.headers))
+    resp = make_response()
+    oapi_resp = handle_card(conf, oapi_request)
+    resp.headers['Content-Type'] = oapi_resp.content_type
+    resp.data = oapi_resp.body
+    resp.status_code = oapi_resp.status_code
+    return resp
