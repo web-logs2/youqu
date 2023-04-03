@@ -49,4 +49,4 @@ class QueryDcoumnet(MenuFunction):
             return '读取失败，请重试'
 
     def getOrder(self) -> int:
-        return 2
+        return 3
