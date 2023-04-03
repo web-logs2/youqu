@@ -8,7 +8,7 @@ from flask import jsonify
 from llama_index import SimpleDirectoryReader, GPTSimpleVectorIndex
 
 from common.db.document_record import DocumentRecord
-from model.menuFunctions.document_list import DocumentList
+from model.menu_functions.document_list import DocumentList
 
 from config import project_conf
 from pathlib import Path

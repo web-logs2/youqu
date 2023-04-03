@@ -8,9 +8,9 @@ from expiring_dict import ExpiringDict
 from common import const
 from common import log
 from config import model_conf
-from model.menuFunctions.document_list import DocumentList
-from model.menuFunctions.pre_train_documnt import PreTrainDcoumnet
-from model.menuFunctions.query_document import QueryDcoumnet
+from model.menu_functions.document_list import DocumentList
+from model.menu_functions.pre_train_documnt import PreTrainDcoumnet
+from model.menu_functions.query_document import QueryDcoumnet
 from model.model import Model
 
 if model_conf(const.OPEN_AI).get('expires_in_seconds'):
