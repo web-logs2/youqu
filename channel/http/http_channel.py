@@ -5,7 +5,6 @@ import logging
 import os
 from datetime import timedelta
 
-from feishu.models.events import app
 from flask import Flask, request, render_template, make_response
 from flask import jsonify
 from larksuiteoapi import OapiHeader
