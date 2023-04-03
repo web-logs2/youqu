@@ -35,10 +35,10 @@ class PreTrainDcoumnet(MenuFunction):
             index = GPTSimpleVectorIndex.from_documents(documents)
             # save to disk
             # records[0].trained_data = index.save_to_string()
-            path = records[0].path + '/train'
+            records[0].trained_file_path = records[0].path + 'index_' + os.path.splitext(os.path.basename(records[0].path + records[0].title))[0] + ".json"
             # if not os.path.exists(path):
             #   os.mkdir(path)
-            index.save_to_disk(path)
+            index.save_to_disk(records[0].trained_file_path)
             records[0].trained = True
             records[0].save()
             return '训练完成'

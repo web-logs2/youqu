@@ -38,7 +38,8 @@ def upload_file_service(file):
             read_count=0,
             created_time=datetime.datetime.now(),
             updated_time=datetime.datetime.now(),
-            trained=False
+            trained=False,
+            trained_file_path = upload_dir + 'index_' + Path(filename).stem + ".json"
         )
         new_document.save()
     except Exception as e:
