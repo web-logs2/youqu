@@ -1,5 +1,4 @@
 import logging
-
 from common.db.document_record import DocumentRecord
 from model.menu_function import MenuFunction
 
@@ -26,7 +25,7 @@ class DocumentList(MenuFunction):
             except Exception as e:
                 return '页码错误'
         result = '```java\n'
-
+        
         documents: list[DocumentRecord] = DocumentRecord.select().where(DocumentRecord.deleted == 0).paginate(
             page_number, 50)
         logging.info("Documents size:{}".format(len(documents)))

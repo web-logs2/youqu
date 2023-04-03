@@ -15,6 +15,7 @@ from common.generator import generate_uuid
 from config import channel_conf
 from model.azure.azure_model import AZURE
 from service.file_training_service import upload_file_service
+from common.db.dbconfig import db
 
 http_app = Flask(__name__, template_folder='templates', static_folder='static', )
 # 自动重载模板文件
@@ -131,6 +132,11 @@ def login():
     response.headers.set('location', './login?err=登录失败')
     return response
 
+
+
+@http_app.teardown_request
+def teardown_request(exception):
+    db.close()
 
 def is_path_empty_or_nonexistent(path):
     if not path:
