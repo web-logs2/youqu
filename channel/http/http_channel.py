@@ -5,13 +5,13 @@ import logging
 import os
 from datetime import timedelta
 
+from feishu.models.events import app
 from flask import Flask, request, render_template, make_response
 from flask import jsonify
 from larksuiteoapi import OapiHeader
 from larksuiteoapi.card import handle_card
 from larksuiteoapi.model import OapiRequest
 
-import app
 from channel.channel import Channel
 from channel.http import auth
 from common import const
@@ -181,7 +181,6 @@ class HttpChannel(Channel):
 
 @http_app.route('/webhook/card', methods=['POST'])
 def webhook_card():
-    logging.info("/webhook/card:"+request.data.decode())
     oapi_request = OapiRequest(uri=request.path, body=request.data, header=OapiHeader(request.headers))
     resp = make_response()
     oapi_resp = handle_card(conf, oapi_request)

@@ -19,3 +19,4 @@ torch
 transformers
 docx2txt
 sentencepiece
+larksuite-oapi
