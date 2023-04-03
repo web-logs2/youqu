@@ -1,7 +1,7 @@
 import logging
 from typing import Any, Union, Dict
 
-from larksuiteoapi import Config, Context, DOMAIN_FEISHU, DefaultLogger, LEVEL_DEBUG
+from larksuiteoapi import Config, Context, DOMAIN_FEISHU, DefaultLogger, LEVEL_DEBUG, LEVEL_INFO
 
 from larksuiteoapi.card import Card, set_card_callback, handle_card
 
@@ -18,8 +18,8 @@ app_settings = Config.new_internal_app_settings(app_id="cli_a4a0ee7eb839500c", a
                                                 verification_token="NL71IjxADs7JTj59FfLTubxitI7mRxAq", encrypt_key="=E12=QY]1as./32Ju!{PjD523Mq",)
 
 # 当前访问的是飞书，使用默认存储、默认日志（Error级别），更多可选配置，请看：README.zh.md->如何构建整体配置（Config）。
-conf = Config(DOMAIN_FEISHU, app_settings, log_level=LEVEL_DEBUG)
-logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
+conf = Config(DOMAIN_FEISHU, app_settings, log_level=LEVEL_INFO)
+logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
 
 # 设置消息卡片的处理
