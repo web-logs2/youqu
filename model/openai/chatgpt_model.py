@@ -13,6 +13,8 @@ from model.menu_functions.pre_train_documnt import PreTrainDcoumnet
 from model.menu_functions.query_document import QueryDcoumnet
 from model.model import Model
 
+from model.menu_functions.cnblogs_query_document import CnblogsQueryDcoumnet
+
 if model_conf(const.OPEN_AI).get('expires_in_seconds'):
     user_session = ExpiringDict(model_conf(const.OPEN_AI).get('expires_in_seconds'))
     # logging.info("Set dict expire time "+model_conf(const.OPEN_AI).get('expires_in_seconds'))
@@ -175,7 +177,7 @@ class ChatGPTModel(Model):
             return None
 
     def menuList(self, arg):
-        return [PreTrainDcoumnet(), QueryDcoumnet(), DocumentList()]
+        return [PreTrainDcoumnet(), QueryDcoumnet(), DocumentList(), CnblogsQueryDcoumnet()]
 
 
 class Session(object):
