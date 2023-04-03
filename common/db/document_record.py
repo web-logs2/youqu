@@ -19,7 +19,7 @@ from peewee import (
 
 db = PooledMySQLDatabase(
     db,
-    max_connections=8,  # 连接池允许的最大连接数量
+    max_connections=20,  # 连接池允许的最大连接数量
     stale_timeout=10,  # 一个连接未使用多长时间后被视为“过时”并丢弃
     host=host,
     port=3306,
