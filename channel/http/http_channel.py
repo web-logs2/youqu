@@ -1,6 +1,7 @@
 # encoding:utf-8
 import base64
 import json
+import logging
 import os
 from datetime import timedelta
 
