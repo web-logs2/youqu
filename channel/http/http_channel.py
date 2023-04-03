@@ -180,6 +180,7 @@ class HttpChannel(Channel):
 
 @http_app.route('/webhook/card', methods=['POST'])
 def webhook_card():
+    logging.info("/webhook/card:"+request.data.decode())
     oapi_request = OapiRequest(uri=request.path, body=request.data, header=OapiHeader(request.headers))
     resp = make_response()
     oapi_resp = handle_card(conf, oapi_request)
