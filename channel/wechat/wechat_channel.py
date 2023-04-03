@@ -4,23 +4,23 @@
 wechat channel
 """
 
-import itchat
-import json
-from itchat.content import *
-from channel.channel import Channel
-from concurrent.futures import ThreadPoolExecutor
-from common.log import logger
-from common import const
-from config import channel_conf_val
-import requests
-
-from common.sensitive_word import SensitiveWord
-
 import io
+import json
+from concurrent.futures import ThreadPoolExecutor
 
+import itchat
+import requests
+from itchat.content import *
+
+from channel.channel import Channel
+from common import const
+from common.log import logger
+from common.sensitive_word import SensitiveWord
+from config import channel_conf_val
 
 thread_pool = ThreadPoolExecutor(max_workers=8)
 sw = SensitiveWord()
+
 
 @itchat.msg_register(TEXT)
 def handler_single_msg(msg):
@@ -45,12 +45,11 @@ class WechatChannel(Channel):
         # start message listener
         itchat.run()
 
-
     def handle_text(self, msg):
         logger.debug("[WX]receive msg: " + json.dumps(msg, ensure_ascii=False))
         from_user_id = msg['FromUserName']
-        to_user_id = msg['ToUserName']              # 接收人id
-        other_user_id = msg['User']['UserName']     # 对手方id
+        to_user_id = msg['ToUserName']  # 接收人id
+        other_user_id = msg['User']['UserName']  # 对手方id
         content = msg['Text']
 
         # 调用敏感词检测函数
@@ -85,7 +84,6 @@ class WechatChannel(Channel):
             else:
                 thread_pool.submit(self._do_send, content, to_user_id)
 
-
     def handle_group(self, msg):
         logger.debug("[WX]receive group msg: " + json.dumps(msg, ensure_ascii=False))
         group_name = msg['User'].get('NickName', None)
@@ -101,9 +99,11 @@ class WechatChannel(Channel):
         elif len(content_list) == 2:
             content = content_list[1]
 
-        
-
-        match_prefix = (msg['IsAt'] and not channel_conf_val(const.WECHAT, "group_at_off", False)) or self.check_prefix(origin_content, channel_conf_val(const.WECHAT, 'group_chat_prefix')) or self.check_contain(origin_content, channel_conf_val(const.WECHAT, 'group_chat_keyword'))
+        match_prefix = (msg['IsAt'] and not channel_conf_val(const.WECHAT, "group_at_off", False)) or self.check_prefix(
+            origin_content, channel_conf_val(const.WECHAT, 'group_chat_prefix')) or self.check_contain(origin_content,
+                                                                                                       channel_conf_val(
+                                                                                                           const.WECHAT,
+                                                                                                           'group_chat_keyword'))
 
         # 如果在群里被at了 或 触发机器人关键字，则调用敏感词检测函数
         if match_prefix is True:
@@ -112,8 +112,11 @@ class WechatChannel(Channel):
                 return
 
         group_white_list = channel_conf_val(const.WECHAT, 'group_name_white_list')
-        
-        if ('ALL_GROUP' in group_white_list or group_name in group_white_list or self.check_contain(group_name, channel_conf_val(const.WECHAT, 'group_name_keyword_white_list'))) and match_prefix:
+
+        if ('ALL_GROUP' in group_white_list or group_name in group_white_list or self.check_contain(group_name,
+                                                                                                    channel_conf_val(
+                                                                                                            const.WECHAT,
+                                                                                                            'group_name_keyword_white_list'))) and match_prefix:
 
             img_match_prefix = self.check_prefix(content, channel_conf_val(const.WECHAT, 'image_create_prefix'))
             if img_match_prefix:
@@ -170,15 +173,14 @@ class WechatChannel(Channel):
         reply_text = super().build_text_reply_content(query, context)
         if reply_text:
             reply_text = '@' + msg['ActualNickName'] + ' ' + reply_text.strip()
-            self.send(channel_conf_val(const.WECHAT, "group_chat_reply_prefix", "") + reply_text, msg['User']['UserName'])
-
+            self.send(channel_conf_val(const.WECHAT, "group_chat_reply_prefix", "") + reply_text,
+                      msg['User']['UserName'])
 
     def check_prefix(self, content, prefix_list):
         for prefix in prefix_list:
             if content.startswith(prefix):
                 return prefix
         return None
-
 
     def check_contain(self, content, keyword_list):
         if not keyword_list:

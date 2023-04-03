@@ -1,26 +1,22 @@
 # encoding:utf-8
-import io
-import json
-import os
-
-from boto.gs.cors import CORS
-
-from channel.http import auth
-from flask import Flask, request, render_template, make_response, send_file
-
-import json
-from channel.http import auth
-from flask import Flask, request, render_template, make_response
-from datetime import timedelta
-from common import const
-from config import channel_conf
-from channel.channel import Channel
-from model.azure.azure_model import AZURE
-from flask import jsonify
 import base64
-from common.generator import generate_uuid
+import json
+import logging
+import os
+from datetime import timedelta
 
-http_app = Flask(__name__, )
+from flask import Flask, request, render_template, make_response
+from flask import jsonify
+
+from channel.channel import Channel
+from channel.http import auth
+from common import const
+from common.generator import generate_uuid
+from config import channel_conf
+from model.azure.azure_model import AZURE
+from service.file_training_service import upload_file_service
+
+http_app = Flask(__name__, template_folder='templates', static_folder='static', )
 # 自动重载模板文件
 http_app.jinja_env.auto_reload = True
 http_app.config['TEMPLATES_AUTO_RELOAD'] = True
@@ -83,6 +79,19 @@ def picture():
             "picture_data": reply_picture
         }
         return jsonify(response)
+
+
+@http_app.route('/upload', methods=['POST'])
+def upload_file():
+    # 检查文件是否存在
+    if len(request.files) <= 0:
+        return jsonify({'result': 'No file selected'})
+
+    file = request.files['files']
+    # 检查文件名是否为空
+    if file.filename == '':
+        return jsonify({'result': 'No file selected'})
+    return upload_file_service(file)
 
 
 # @http_app.route('/synthesize', methods=['POST'])

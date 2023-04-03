@@ -1,12 +1,15 @@
+from concurrent.futures import ThreadPoolExecutor
+
 import werobot
-from config import channel_conf
+
+from channel.channel import Channel
 from common import const
 from common.log import logger
-from channel.channel import Channel
-from concurrent.futures import ThreadPoolExecutor
+from config import channel_conf
 
 robot = werobot.WeRoBot(token=channel_conf(const.WECHAT_MP).get('token'))
 thread_pool = ThreadPoolExecutor(max_workers=8)
+
 
 @robot.text
 def hello_world(msg):
@@ -28,7 +31,6 @@ class WechatServiceAccount(Channel):
         context['from_user_id'] = msg.source
         thread_pool.submit(self._do_send, msg.content, context)
         return "正在思考中..."
-
 
     def _do_send(self, query, context):
         reply_text = super().build_text_reply_content(query, context)

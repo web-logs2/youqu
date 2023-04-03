@@ -1,13 +1,16 @@
 # encoding:utf-8
 
-from model.model import Model
-from config import model_conf
-from common import const
-from common.log import logger
-import requests
 import time
 
+import requests
+
+from common import const
+from common.log import logger
+from config import model_conf
+from model.model import Model
+
 sessions = {}
+
 
 class YiyanModel(Model):
     def __init__(self):
@@ -39,18 +42,16 @@ class YiyanModel(Model):
 
         return context['reply']
 
-
     def new_session(self, context):
         data = {
             "sessionName": context['query'],
             "timestamp": int(time.time() * 1000),
             "deviceType": "pc"
         }
-        res = requests.post(url=self.base_url+'/session/new', headers=self._create_header(), json=data)
+        res = requests.post(url=self.base_url + '/session/new', headers=self._create_header(), json=data)
         # print(res.headers)
         context['chat_session_id'] = res.json()['data']['sessionId']
         logger.info("[BAIDU] newSession: id={}".format(context['chat_session_id']))
-
 
     def new_chat(self, context):
         headers = self._create_header()
@@ -65,14 +66,13 @@ class YiyanModel(Model):
             "code": 0,
             "msg": ""
         }
-        res = requests.post(url=self.base_url+'/chat/new', headers=headers, json=data).json()
+        res = requests.post(url=self.base_url + '/chat/new', headers=headers, json=data).json()
         if res['code'] != 0:
             logger.error("[BAIDU] New chat error, msg={}", res['msg'])
             return False
         context['chat_id'] = res['data']['botChat']['id']
         context['parent_chat_id'] = res['data']['botChat']['parent']
         return True
-
 
     def query(self, context, sentence_id, count):
         headers = self._create_header()
@@ -101,10 +101,9 @@ class YiyanModel(Model):
 
         time.sleep(1)
         if not res['data']['text']:
-            return self.query(context, sentence_id, count+1)
+            return self.query(context, sentence_id, count + 1)
         else:
-            return self.query(context, sentence_id+1, count+1)
-
+            return self.query(context, sentence_id + 1, count + 1)
 
     def _create_header(self):
         headers = {
@@ -116,3 +115,6 @@ class YiyanModel(Model):
             'Cookie': self.cookie
         }
         return headers
+
+    def menuList(self, arg):
+        return []

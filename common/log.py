@@ -1,9 +1,11 @@
 # encoding:utf-8
 
+import inspect
 import logging
 import sys
-import inspect
+
 SWITCH = True
+
 
 def _get_logger():
     log = logging.getLogger('log')
@@ -14,8 +16,9 @@ def _get_logger():
     log.addHandler(console_handle)
     return log
 
+
 def close_log():
-    global  SWITCH
+    global SWITCH
     SWITCH = False
 
 
@@ -34,6 +37,7 @@ def debug(arg, *args):
             logger.debug(arg)
         else:
             logger.debug(arg.format(*args))
+
 
 def info(arg, *args):
     # 获取调用者的栈帧信息
@@ -67,6 +71,7 @@ def warn(arg, *args):
     else:
         logger.warning(arg.format(*args))
 
+
 def error(arg, *args):
     # 获取调用者的栈帧信息
     caller_frame = inspect.stack()[1]
@@ -81,6 +86,7 @@ def error(arg, *args):
         logger.error(arg)
     else:
         logger.error(arg.format(*args))
+
 
 def exception(e):
     logger.exception(e)

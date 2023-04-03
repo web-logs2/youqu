@@ -3,13 +3,14 @@ channel factory
 """
 from common import const
 
+
 def create_channel(channel_type):
     """
     create a channel instance
     :param channel_type: channel type code
     :return: channel instance
     """
-    if channel_type== const.TERMINAL:
+    if channel_type == const.TERMINAL:
         from channel.terminal.terminal_channel import TerminalChannel
         return TerminalChannel()
 
@@ -36,7 +37,7 @@ def create_channel(channel_type):
     elif channel_type == const.TELEGRAM:
         from channel.telegram.telegram_channel import TelegramChannel
         return TelegramChannel()
-    
+
     elif channel_type == const.SLACK:
         from channel.slack.slack_channel import SlackChannel
         return SlackChannel()

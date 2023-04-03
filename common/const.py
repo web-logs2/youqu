@@ -16,3 +16,6 @@ AZURE = "azure"
 
 BAIDU = "baidu"
 BING = "bing"
+
+# db
+MYSQL = "mysql"

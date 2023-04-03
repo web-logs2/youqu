@@ -1,24 +1,24 @@
+import os
+from concurrent.futures import ThreadPoolExecutor
+
 import werobot
-import time
-from config import channel_conf
+
+from channel.channel import Channel
 from common import const
 from common.log import logger
-from channel.channel import Channel
-from concurrent.futures import ThreadPoolExecutor
-import os
-
-
+from config import channel_conf
 
 robot = werobot.WeRoBot(token=channel_conf(const.WECHAT_MP).get('token'))
 thread_pool = ThreadPoolExecutor(max_workers=8)
 cache = {}
 
+
 @robot.text
 def hello_world(msg):
-    with open('sensitive_words.txt', 'r', encoding='utf-8') as f: #加入检测违规词
-        sensitive_wordss = [msg.content[i:i+2] for i in range(0, len(msg.content), 2)]
+    with open('sensitive_words.txt', 'r', encoding='utf-8') as f:  # 加入检测违规词
+        sensitive_wordss = [msg.content[i:i + 2] for i in range(0, len(msg.content), 2)]
         found = False
-        #判断文件是否为空
+        # 判断文件是否为空
         if not os.path.getsize('sensitive_words.txt'):
             found = False
         else:
@@ -57,7 +57,7 @@ class WechatSubsribeAccount(Channel):
             if res.get("status") == "waiting":
                 return "还在处理中，请稍后再试"
             elif res.get("status") == "success":
-                cache[key] = {"status":"done"}
+                cache[key] = {"status": "done"}
                 return res.get("data")
             else:
                 return "目前不在等待回复状态，请输入对话"

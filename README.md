@@ -1,29 +1,29 @@
 # 简介
 
-将 **AI模型** 接入各类 **消息应用**，开发者通过轻量配置即可在二者之间选择一条连线，运行起一个智能对话机器人，在一个项目中轻松完成多条链路的切换。该架构扩展性强，每接入一个应用可复用已有的算法能力，同样每接入一个模型也可作用于所有应用之上。
+将 **AI模型** 接入各类 **消息应用**
+，开发者通过轻量配置即可在二者之间选择一条连线，运行起一个智能对话机器人，在一个项目中轻松完成多条链路的切换。该架构扩展性强，每接入一个应用可复用已有的算法能力，同样每接入一个模型也可作用于所有应用之上。
 
 **模型：**
 
- - [x] [ChatGPT (gpt-3.5)](https://github.com/zhayujie/bot-on-anything#1-chatgpt)
- - [x] [GPT-3.0](https://github.com/zhayujie/bot-on-anything#2gpt-30)
- - [x] 文心一言 (测试版)
- - [x] [New Bing](https://github.com/zhayujie/bot-on-anything#4newbing)
+- [x] [ChatGPT (gpt-3.5)](https://github.com/zhayujie/bot-on-anything#1-chatgpt)
+- [x] [GPT-3.0](https://github.com/zhayujie/bot-on-anything#2gpt-30)
+- [x] 文心一言 (测试版)
+- [x] [New Bing](https://github.com/zhayujie/bot-on-anything#4newbing)
 
- 
 **应用：**
 
- - [x] [终端](https://github.com/zhayujie/bot-on-anything#1%E5%91%BD%E4%BB%A4%E8%A1%8C%E7%BB%88%E7%AB%AF)
- - [x] [Web](https://github.com/zhayujie/bot-on-anything#9web)
- - [x] [个人微信](https://github.com/zhayujie/bot-on-anything#2%E4%B8%AA%E4%BA%BA%E5%BE%AE%E4%BF%A1)
- - [x] [订阅号](https://github.com/zhayujie/bot-on-anything#3%E4%B8%AA%E4%BA%BA%E8%AE%A2%E9%98%85%E5%8F%B7)
- - [x] [服务号](https://github.com/zhayujie/bot-on-anything#4%E4%BC%81%E4%B8%9A%E6%9C%8D%E5%8A%A1%E5%8F%B7)
- - [ ] 企业微信
- - [x] [Telegram](https://github.com/zhayujie/bot-on-anything#6telegram)
- - [x] [QQ](https://github.com/zhayujie/bot-on-anything#5qq)
- - [ ] 钉钉 
- - [ ] 飞书
- - [x] [Gmail](https://github.com/zhayujie/bot-on-anything#7gmail)
- - [x] [Slack](https://github.com/zhayujie/bot-on-anything#8slack)
+- [x] [终端](https://github.com/zhayujie/bot-on-anything#1%E5%91%BD%E4%BB%A4%E8%A1%8C%E7%BB%88%E7%AB%AF)
+- [x] [Web](https://github.com/zhayujie/bot-on-anything#9web)
+- [x] [个人微信](https://github.com/zhayujie/bot-on-anything#2%E4%B8%AA%E4%BA%BA%E5%BE%AE%E4%BF%A1)
+- [x] [订阅号](https://github.com/zhayujie/bot-on-anything#3%E4%B8%AA%E4%BA%BA%E8%AE%A2%E9%98%85%E5%8F%B7)
+- [x] [服务号](https://github.com/zhayujie/bot-on-anything#4%E4%BC%81%E4%B8%9A%E6%9C%8D%E5%8A%A1%E5%8F%B7)
+- [ ] 企业微信
+- [x] [Telegram](https://github.com/zhayujie/bot-on-anything#6telegram)
+- [x] [QQ](https://github.com/zhayujie/bot-on-anything#5qq)
+- [ ] 钉钉
+- [ ] 飞书
+- [x] [Gmail](https://github.com/zhayujie/bot-on-anything#7gmail)
+- [x] [Slack](https://github.com/zhayujie/bot-on-anything#8slack)
 
 # 快速开始
 
@@ -39,6 +39,7 @@
 git clone https://github.com/zhayujie/bot-on-anything
 cd bot-on-anything/
 ```
+
 > 或在 Realase 直接手动下载源码。
 
 ### 2.配置说明
@@ -49,7 +50,15 @@ cd bot-on-anything/
 cp config-template.json config.json
 ```
 
-每一个模型和应用都有自己的配置块，最终组成完整的配置文件，整体结构如下：
+运行 python -m venv venv 运行 pip install -r requirements.txt
+
+mysql 配置
+"mysql": {
+"host": "127.0.0.1",
+"userName": "root",
+"password": "123456",
+"db": "youqu"
+} 每一个模型和应用都有自己的配置块，最终组成完整的配置文件，整体结构如下：
 
 ```bash
 {
@@ -70,10 +79,10 @@ cp config-template.json config.json
   }
 }
 ```
+
 配置文件在最外层分成 `model` 和 `channel` 两部分，model部分为模型配置，其中的 `type` 指定了选用哪个模型；channel部分包含了应用渠道的配置，`type` 字段指定了接入哪个应用。
 
 在使用时只需要更改 model 和 channel 配置块下的 type 字段，即可在任意模型和应用间完成切换，连接不同的通路。下面将依次介绍各个 模型 及 应用 的配置和运行过程。
-
 
 ## 二、选择模型
 
@@ -83,7 +92,8 @@ cp config-template.json config.json
 
 #### (1) 注册 OpenAI 账号
 
-前往 [OpenAI注册页面](https://beta.openai.com/signup) 创建账号，参考这篇 [教程](https://www.cnblogs.com/damugua/p/16969508.html) 可以通过虚拟手机号来接收验证码。创建完账号则前往 [API管理页面](https://beta.openai.com/account/api-keys) 创建一个 API Key 并保存下来，后面需要在项目中配置这个key。
+前往 [OpenAI注册页面](https://beta.openai.com/signup) 创建账号，参考这篇 [教程](https://www.cnblogs.com/damugua/p/16969508.html)
+可以通过虚拟手机号来接收验证码。创建完账号则前往 [API管理页面](https://beta.openai.com/account/api-keys) 创建一个 API Key 并保存下来，后面需要在项目中配置这个key。
 
 > 项目中使用的对话模型是 davinci，计费方式是约每 750 字 (包含请求和回复) 消耗 $0.02，图片生成是每张消耗 $0.016，账号创建有免费的 $18 额度，使用完可以更换邮箱重新注册。
 
@@ -92,8 +102,8 @@ cp config-template.json config.json
 ```bash
 pip3 install --upgrade openai
 ```
-> 注： openai版本需要`0.27.0`以上。如果安装失败可先升级pip，`pip3 install --upgrade pip`
 
+> 注： openai版本需要`0.27.0`以上。如果安装失败可先升级pip，`pip3 install --upgrade pip`
 
 #### (3) 配置项说明
 
@@ -110,21 +120,23 @@ pip3 install --upgrade openai
     }
 }
 ```
- + `api_key`: 填入上面注册账号时创建的 `OpenAI API KEY`
- + `model`: 模型名称，目前支持填入 `gpt-3.5-turbo`, `gpt-4`, `gpt-4-32k`  (其中gpt-4 api暂未开放)
- + `proxy`: 代理客户端的地址，详情参考  [#56](https://github.com/zhayujie/bot-on-anything/issues/56)
- + `character_desc`: 配置中保存着你对chatgpt说的一段话，他会记住这段话并作为他的设定，你可以为他定制任何人格
+
++ `api_key`: 填入上面注册账号时创建的 `OpenAI API KEY`
++ `model`: 模型名称，目前支持填入 `gpt-3.5-turbo`, `gpt-4`, `gpt-4-32k`  (其中gpt-4 api暂未开放)
++ `proxy`: 代理客户端的地址，详情参考  [#56](https://github.com/zhayujie/bot-on-anything/issues/56)
++ `character_desc`: 配置中保存着你对chatgpt说的一段话，他会记住这段话并作为他的设定，你可以为他定制任何人格
 
 ### 2.GPT-3.0
 
-使用的模型是 `text-davinci-003`，详情参考[官方文档]([https://platform.openai.com/docs/guides/chat](https://platform.openai.com/docs/guides/completion/introduction))。
+使用的模型是 `text-davinci-003`
+，详情参考[官方文档]([https://platform.openai.com/docs/guides/chat](https://platform.openai.com/docs/guides/completion/introduction))。
 
 使用步骤和上述GPT-3.5基本相同：
 
 1. 注册OpenAI账号并配置API KEY
-2. 安装openai依赖，要求版本高于 `0.25.0` 
+2. 安装openai依赖，要求版本高于 `0.25.0`
 3. 修改`config.json`配置中的type字段为 `openai`
- 
+
 ```bash
 {
   "model": {
@@ -140,7 +152,6 @@ pip3 install --upgrade openai
 ### 3.文心一言 (测试版)
 
 参考: [#154](https://github.com/zhayujie/bot-on-anything/issues/154)
-
 
 ### 4.NewBing
 
@@ -188,8 +199,6 @@ cookie示例:
 
 ![terminal_demo.png](docs/images/terminal_demo.png)
 
-
-
 ### 2.个人微信
 
 与项目 [chatgpt-on-wechat](https://github.com/zhayujie/chatgpt-on-wechat) 的使用方式相似。
@@ -200,8 +209,8 @@ cookie示例:
 pip3 install itchat-uos==1.5.0.dev0
 pip3 install --upgrade openai
 ```
-注：`itchat-uos`使用指定版本1.5.0.dev0，`openai`使用最新版本，需高于0.27.0。
 
+注：`itchat-uos`使用指定版本1.5.0.dev0，`openai`使用最新版本，需高于0.27.0。
 
 **配置项说明：**
 
@@ -219,10 +228,10 @@ pip3 install --upgrade openai
     }
 }
 ```
+
 个人微信的配置项放在和 `type` 同级的层次，表示这些为公共配置，会复用于其他应用。配置加载时会优先使用模块内的配置，如果未找到便使用公共配置。
 
 在项目根目录下执行 `python3 app.py` 即可启动程序，用手机扫码后完成登录，使用详情参考 [chatgpt-on-wechat](https://github.com/zhayujie/chatgpt-on-wechat)。
-
 
 ### 3.个人订阅号
 
@@ -267,20 +276,18 @@ Hit Ctrl-C to quit.
 
 ![wx_mp_config.png](docs/images/wx_mp_config.png)
 
-**服务器地址 (URL) 配置**： 如果在浏览器上通过配置的URL 能够访问到服务器上的Python程序 (默认监听8088端口)，则说明配置有效。由于公众号只能配置 80/443端口，可以修改配置为直接监听 80 端口 (需要sudo权限)，或者使用反向代理进行转发 (如nginx)。 根据官方文档说明，此处填写公网ip或域名均可。
+**服务器地址 (URL) 配置**： 如果在浏览器上通过配置的URL 能够访问到服务器上的Python程序 (默认监听8088端口)，则说明配置有效。由于公众号只能配置 80/443端口，可以修改配置为直接监听 80 端口 (
+需要sudo权限)，或者使用反向代理进行转发 (如nginx)。 根据官方文档说明，此处填写公网ip或域名均可。
 
 **令牌 (Token) 配置**：需和 `config.json` 配置中的token一致。
 
 详细操作过程参考 [官方文档](https://developers.weixin.qq.com/doc/offiaccount/Getting_Started/Getting_Started_Guide.html)
-
 
 #### 2.3 使用
 
 用户关注订阅号后，发送消息即可。
 
 > 注：用户发送消息后，微信后台会向配置的URL地址推送，但如果5s内未回复就会断开连接，同时重试3次，但往往请求openai接口不止5s。本项目中通过异步和缓存将5s超时限制优化至15s，但超出该时间仍无法正常回复。 同时每次5s连接断开时web框架会报错，待后续优化。
-
-
 
 ### 4.企业服务号
 
@@ -313,7 +320,8 @@ Hit Ctrl-C to quit.
 
 #### 5.1 下载 go-cqhttp
 
-在 [go-cqhttp的Release](https://github.com/Mrs4s/go-cqhttp/releases) 中下载对应机器的程序，解压后将 `go-cqhttp` 二进制文件放置在我们的 `bot-on-anything/channel/qq` 目录下。 同时这里已经准备好了一个 `config.yml` 配置文件，仅需要填写其中的 QQ 账号配置 (account-uin)。
+在 [go-cqhttp的Release](https://github.com/Mrs4s/go-cqhttp/releases) 中下载对应机器的程序，解压后将 `go-cqhttp`
+二进制文件放置在我们的 `bot-on-anything/channel/qq` 目录下。 同时这里已经准备好了一个 `config.yml` 配置文件，仅需要填写其中的 QQ 账号配置 (account-uin)。
 
 #### 5.2 安装 aiocqhttp
 
@@ -347,10 +355,12 @@ python3 app.py    # 此时会监听8080端口
 cd channel/qq
 ./go-cqhttp
 ```
-注意：
-+ 目前未设置任何 关键词匹配 及 群聊白名单，对所有私聊均会自动回复，在群聊中只要被@也会自动回复。
-+ 如果出现 账号被冻结 等异常提示，可将 go-cqhttp 同目录下的 device.json 文件中`protocol`的值由5改为2，参考该[Issue](https://github.com/Mrs4s/go-cqhttp/issues/1942)。
 
+注意：
+
++ 目前未设置任何 关键词匹配 及 群聊白名单，对所有私聊均会自动回复，在群聊中只要被@也会自动回复。
++ 如果出现 账号被冻结 等异常提示，可将 go-cqhttp 同目录下的 device.json 文件中`protocol`
+  的值由5改为2，参考该[Issue](https://github.com/Mrs4s/go-cqhttp/issues/1942)。
 
 ### 6.Telegram
 
@@ -359,8 +369,6 @@ Contributor: [brucelt1993](https://github.com/brucelt1993)
 **6.1 获取token**
 
 telegram 机器人申请可以自行谷歌下，很简单，重要的是获取机器人的token id。
-
-
 
 **6.2 依赖安装**
 
@@ -383,7 +391,8 @@ pip install pyTelegramBotAPI
 
 **Contributor:** [Simon](https://github.com/413675377)
 
-Follow [官方文档](https://support.google.com/mail/answer/185833?hl=en) to create APP password for google account, config as below, then cheers!!!
+Follow [官方文档](https://support.google.com/mail/answer/185833?hl=en) to create APP password for google account, config as
+below, then cheers!!!
 
 ```bash
 "channel": {
@@ -429,19 +438,15 @@ app_mentions:read
 chat:write
 ```
 
-
 **开启 Socket 模式 - Socket Mode**
 
-如未创建应用级令牌，会提示创建
-将创建的 token 写入配置文件 slack_app_token
-
+如未创建应用级令牌，会提示创建 将创建的 token 写入配置文件 slack_app_token
 
 **事件订阅(Event Subscriptions) - Subscribe to bot events**
 
 ```
 app_mention
 ```
-
 
 **参考文档**
 

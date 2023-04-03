@@ -1,15 +1,18 @@
 # encoding:utf-8
 import asyncio
-from model.model import Model
-from config import model_conf_val
-from common import log
+
 from EdgeGPT import Chatbot, ConversationStyle
 
+from common import log
+from config import model_conf_val
+from model.model import Model
+
 user_session = dict()
+
+
 # newBing对话模型逆向网页gitAPI
 
 class BingModel(Model):
-
     style = ConversationStyle.creative
     bot: Chatbot = None
 
@@ -35,10 +38,10 @@ class BingModel(Model):
             for i, attribution in enumerate(reply["sourceAttributions"]):
                 display_name = attribution["providerDisplayName"]
                 url = attribution["seeMoreUrl"]
-                reference += f"{i+1}、[{display_name}]({url})\n\n"
+                reference += f"{i + 1}、[{display_name}]({url})\n\n"
 
             if len(reference) > 0:
-                reference = "***\n"+reference
+                reference = "***\n" + reference
             throttling = answer["item"]["throttling"]
             throttling_str = ""
 
@@ -59,3 +62,6 @@ class BingModel(Model):
 
     def reset_chat(self, from_user_id):
         asyncio.run(user_session.get(from_user_id, None).reset())
+
+    def menuList(self, arg):
+        return []

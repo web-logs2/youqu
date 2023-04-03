@@ -1,24 +1,25 @@
 <!doctype html>
-<html lang="en" dir="ltr">
+<html dir="ltr" lang="en">
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge"><!-- Title -->
+    <meta content="width=device-width, initial-scale=1" name="viewport">
+    <meta content="IE=edge" http-equiv="X-UA-Compatible"><!-- Title -->
     <title>ChatGPT</title><!-- Bootstrap Css -->
-    <link href="./static/1.css" rel="stylesheet" />
+    <link href="./static/1.css" rel="stylesheet"/>
     <style>
         button {
             font-family: 'Microsoft YaHei';
         }
+
     </style>
 </head>
 
 <body class="">
-    <div class="no-border">
-        <div id="chat" class="conv-form-wrapper">
-        </div>
+<div class="no-border">
+    <div class="conv-form-wrapper" id="chat">
     </div>
+</div>
 <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.3/jquery.min.js"></script>
 <script src="https://cdn.bootcdn.net/ajax/libs/marked/4.2.12/marked.min.js"></script>
 <script src="https://cdn.bootcdn.net/ajax/libs/autosize.js/6.0.1/autosize.min.js"></script>
@@ -45,6 +46,7 @@
     jQuery(function (a) {
         var b = a("#chat").convform()
     });
+
 </script>
 </body>
 

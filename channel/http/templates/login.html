@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en" dir="ltr">
+<html dir="ltr" lang="en">
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge"><!-- Title -->
+    <meta content="width=device-width, initial-scale=1" name="viewport">
+    <meta content="IE=edge" http-equiv="X-UA-Compatible"><!-- Title -->
     <title>登录</title><!-- Bootstrap Css -->
     <style>
         .login-form {
@@ -33,19 +33,20 @@
             color: #FFF;
             border-radius: 5px;
         }
+
     </style>
 </head>
 
 <body class="">
-    <form name="login" class="login-form" action="./login" method="post" autocomplete="off">
-        <input type="password" name="password" placeholder="Password" style="border: none; height: 25px;width: 250px;"
-            required>
-        </input>
-        <input type="submit" class="Button" value="登录" />
-        <span style="color:red">
+<form action="./login" autocomplete="off" class="login-form" method="post" name="login">
+    <input name="password" placeholder="Password" required style="border: none; height: 25px;width: 250px;"
+           type="password">
+    </input>
+    <input class="Button" type="submit" value="登录"/>
+    <span style="color:red">
             <p id="err"></p>
         </span>
-    </form>
+</form>
 </body>
 <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.3/jquery.min.js"></script>
 <script>
@@ -58,6 +59,7 @@
         var r = window.location.search.substr(1).match(reg);
         if (r != null) return decodeURI(r[2]); return null;
     }
+
 </script>
 
 </html>

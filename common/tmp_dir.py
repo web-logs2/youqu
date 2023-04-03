@@ -1,6 +1,6 @@
-
 import os
 import pathlib
+
 from config import conf
 
 
@@ -9,7 +9,7 @@ class TmpDir(object):
     """
 
     tmpFilePath = pathlib.Path('./tmp/')
-    
+
     def __init__(self):
         pathExists = os.path.exists(self.tmpFilePath)
         if not pathExists and conf().get('speech_recognition') == True:
@@ -17,4 +17,3 @@ class TmpDir(object):
 
     def path(self):
         return str(self.tmpFilePath) + '/'
-    

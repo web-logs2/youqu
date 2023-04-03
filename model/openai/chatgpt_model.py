@@ -1,13 +1,17 @@
 # encoding:utf-8
-import logging
 
-from model.model import Model
-from config import model_conf
+import time
+
+import openai
+from expiring_dict import ExpiringDict
+
 from common import const
 from common import log
-import openai
-import time
-from expiring_dict import ExpiringDict
+from config import model_conf
+from model.menu_functions.document_list import DocumentList
+from model.menu_functions.pre_train_documnt import PreTrainDcoumnet
+from model.menu_functions.query_document import QueryDcoumnet
+from model.model import Model
 
 if model_conf(const.OPEN_AI).get('expires_in_seconds'):
     user_session = ExpiringDict(model_conf(const.OPEN_AI).get('expires_in_seconds'))
@@ -34,7 +38,7 @@ class ChatGPTModel(Model):
                 return '记忆已清除'
 
             new_query = Session.build_session_query(query, from_user_id)
-            log.debug("userid:{} [CHATGPT] session query={}".format(from_user_id,new_query))
+            log.debug("userid:{} [CHATGPT] session query={}".format(from_user_id, new_query))
 
             # if context.get('stream'):
             #     # reply in stream
@@ -169,6 +173,9 @@ class ChatGPTModel(Model):
         except Exception as e:
             log.exception(e)
             return None
+
+    def menuList(self, arg):
+        return [PreTrainDcoumnet(), QueryDcoumnet(), DocumentList()]
 
 
 class Session(object):
