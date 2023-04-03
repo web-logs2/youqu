@@ -1,12 +1,3 @@
-from playhouse.pool import PooledMySQLDatabase
-
-from common import const
-from config import config
-
-host = config.get(const.MYSQL).get('host')
-userName = config.get(const.MYSQL).get('userName')
-password = config.get(const.MYSQL).get('password')
-db = config.get(const.MYSQL).get('db')
 
 from peewee import (
     Model,
@@ -17,17 +8,7 @@ from peewee import (
     AutoField
 )
 
-db = PooledMySQLDatabase(
-    db,
-    max_connections=20,  # 连接池允许的最大连接数量
-    stale_timeout=10,  # 一个连接未使用多长时间后被视为“过时”并丢弃
-    host=host,
-    port=3306,
-    user=userName,
-    password=password,
-    charset='utf8mb4'
-)
-
+from common.db.dbconfig import db
 
 class DocumentRecord(Model):
     id = AutoField()
@@ -49,3 +30,4 @@ class DocumentRecord(Model):
 # 如果数据库中不存在表，则创建表
 db.connect()
 db.create_tables([DocumentRecord], safe=True)
+db.close()

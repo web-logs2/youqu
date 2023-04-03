@@ -30,22 +30,21 @@ class QueryDcoumnet(MenuFunction):
         if (len(arg) <= 2):
             return "请输入需要阅读的书籍和问题"
         try:
-            with dbutils.atomic():
-              records = DocumentRecord.select().where(DocumentRecord.title == arg[1])
-              if (records.count() <= 0):
-                  return '书籍不存在'
-              if (records[0].trained == False):
-                  return '书籍未训练完成'
-              index = GPTSimpleVectorIndex.load_from_disk(records[0].trained_file_path)
+            records = DocumentRecord.select().where(DocumentRecord.title == arg[1])
+            if (records.count() <= 0):
+                return '书籍不存在'
+            if (records[0].trained == False):
+                return '书籍未训练完成'
+            index = GPTSimpleVectorIndex.load_from_disk(records[0].trained_file_path)
 
-              start_time = time.time()
-              res = index.query(arg[2],
-                                optimizer=SentenceEmbeddingOptimizer(threshold_cutoff=0.7))
-              end_time = time.time()
-              logging.info("Total time elapsed: {}".format(end_time - start_time))
-              logging.info("Answer: {}".format(res.response))
+            start_time = time.time()
+            res = index.query(arg[2],
+                              optimizer=SentenceEmbeddingOptimizer(threshold_cutoff=0.7))
+            end_time = time.time()
+            logging.info("Total time elapsed: {}".format(end_time - start_time))
+            logging.info("Answer: {}".format(res.response))
 
-              return res.response
+            return res.response
         except Exception as e:
             log.exception(e)
             return '读取失败，请重试'

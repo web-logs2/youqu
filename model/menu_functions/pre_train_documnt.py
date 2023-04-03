@@ -1,5 +1,4 @@
 import os
-import dbutils
 
 from llama_index import GPTSimpleVectorIndex, SimpleDirectoryReader
 
@@ -27,23 +26,22 @@ class PreTrainDcoumnet(MenuFunction):
         if (len(arg) <= 1):
             return "请输入需要训练的文件名"
         try:
-            with dbutils.atomic():
-              records = DocumentRecord.select().where(DocumentRecord.title == arg[1])
-              if (records.count() <= 0):
-                  return '文件不存在'
-              if (records[0].trained == True):
-                  return '文件已经训练完成'
-              documents = SimpleDirectoryReader(records[0].path).load_data()
-              index = GPTSimpleVectorIndex.from_documents(documents)
-              # save to disk
-              # records[0].trained_data = index.save_to_string()
-              records[0].trained_file_path = records[0].path + 'index_' + os.path.splitext(os.path.basename(records[0].path + records[0].title))[0] + ".json"
-              # if not os.path.exists(path):
-              #   os.mkdir(path)
-              index.save_to_disk(records[0].trained_file_path)
-              records[0].trained = True
-              records[0].save()
-              return '训练完成'
+            records = DocumentRecord.select().where(DocumentRecord.title == arg[1])
+            if (records.count() <= 0):
+                return '文件不存在'
+            if (records[0].trained == True):
+                return '文件已经训练完成'
+            documents = SimpleDirectoryReader(records[0].path).load_data()
+            index = GPTSimpleVectorIndex.from_documents(documents)
+            # save to disk
+            # records[0].trained_data = index.save_to_string()
+            records[0].trained_file_path = records[0].path + 'index_' + os.path.splitext(os.path.basename(records[0].path + records[0].title))[0] + ".json"
+            # if not os.path.exists(path):
+            #   os.mkdir(path)
+            index.save_to_disk(records[0].trained_file_path)
+            records[0].trained = True
+            records[0].save()
+            return '训练完成'
         except Exception as e:
             log.exception(e)
             return '训练失败，请重试'

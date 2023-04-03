@@ -2,7 +2,6 @@ import datetime
 import asyncio
 import logging
 import os
-import dbutils
 
 from flask import jsonify
 from llama_index import SimpleDirectoryReader, GPTSimpleVectorIndex
@@ -42,8 +41,7 @@ def upload_file_service(file):
             trained=False,
             trained_file_path = upload_dir + 'index_' + Path(filename).stem + ".json"
         )
-        with dbutils.atomic():
-          new_document.save()
+        new_document.save()
     except Exception as e:
         logging.ERROR(e)
         return jsonify({'result': 'Error!'})
@@ -63,6 +61,5 @@ def training_service(record: DocumentRecord):
     record.trained = True
     record.trained_file_path = path
     record.updated_time = datetime.datetime.now()
-    with dbutils.atomic():
-      record.save()
-      logging.info("Training successfully:" + path)
+    record.save()
+    logging.info("Training successfully:" + path)
