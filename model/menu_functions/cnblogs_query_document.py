@@ -13,7 +13,7 @@ from llama_index.optimization import SentenceEmbeddingOptimizer
 
 from common import const
 from common import log
-from common.db.cnblogs import CnblogsAuthor
+from common.db.document_record import DocumentRecord
 from config import model_conf
 from model.menu_function import MenuFunction
 
@@ -75,16 +75,18 @@ class CnblogsQueryDcoumnet(MenuFunction):
         # 标记有没有新增博客
         changed = False
         url = "https://www.cnblogs.com/" + arg + "/"
-        author = CnblogsAuthor.select().where(CnblogsAuthor.name == arg)
+        author = DocumentRecord.select().where(DocumentRecord.title == arg)
         if (author.count() <= 0):
-            new_author = CnblogsAuthor(
-                name=arg,
-                home_path=url,
+            new_author = DocumentRecord(
+                user_id=0,
+                title=arg,
+                path=url,
                 created_time=datetime.datetime.now(),
-                updated_time=datetime.datetime.now()
+                updated_time=datetime.datetime.now(),
+                trained=True,
+                type='cnblogs'
             )
             new_author.save()
-            author_id = new_author.get_id()
 
         # 创建文件夹，存放博客内容
         tmpFilePath = './tmp/cnblogs/' + arg + '/'
