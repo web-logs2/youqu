@@ -35,6 +35,8 @@ class DocumentRecord(Model):
             return "书籍"
         elif "cnblogs" == type:
             return "博客园"
+        elif "wx" == type:
+            return "微信公众号"
         else:
             return "书籍"
 

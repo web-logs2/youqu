@@ -15,37 +15,30 @@ from model.menu_function import MenuFunction
 os.environ["OPENAI_API_KEY"] = model_conf(const.OPEN_AI).get('api_key')
 
 
-class CnblogsQueryDcoumnet(MenuFunction):
+class WxQueryDocument(MenuFunction):
 
     def getName(self) -> str:
-        return "博客园"
+        return "微信公众号"
 
     def getDescription(self) -> str:
-        return "#博客园  <url>  <query>"
+        return "#微信公众号  <name>  <query>"
 
     def getCmd(self) -> str:
-        return "#博客园"
+        return "#微信公众号"
 
     def execute(self, arg) -> any:
         if (len(arg) <= 2):
-            return "请输入博客园地址和问题"
+            return "请输入微信公众号和问题"
         try:
-            url = arg[1]
+            authorName = arg[1]
 
-            # #博客园 https://www.cnblogs.com/wuxinqiu/ 讲了一些什么内容
-            # #博客园 wuxinqiu 讲了一些什么内容
+            # #微信公众号 字节跳动技术团队 讲了一些什么内容
 
-            if url.startswith("http"):
-                urlparse = urllib.parse.urlparse(url)
-                authorName = urlparse.path.replace("/", "")
-            else:
-                authorName = url
-
-            author = DocumentRecord.select().where((DocumentRecord.title == authorName) & (DocumentRecord.type == "cnblogs"))
+            author = DocumentRecord.select().where((DocumentRecord.title == authorName) & (DocumentRecord.type == "wx"))
             if (author.count() <= 0):
-                return '博客园不存在'
+                return '微信公众号不存在'
             if (author[0].trained == False):
-                return '博客园未训练完成'
+                return '微信公众号未训练完成'
 
             index_path = author[0].trained_file_path
 
@@ -63,4 +56,4 @@ class CnblogsQueryDcoumnet(MenuFunction):
             return '读取失败，请重试'
 
     def getOrder(self) -> int:
-        return 4
+        return 6
