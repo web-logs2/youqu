@@ -52,7 +52,9 @@ class ChatGPTModel(Model):
             return self.create_img(query, 0)
 
     def reply_text(self, query, user_id, retry_count=0):
+
         try:
+            start_time = time.time()  # 记录开始时间
             response = openai.ChatCompletion.create(
                 model=model_conf(const.OPEN_AI).get("model") or "gpt-3.5-turbo",  # 对话模型的名称
                 messages=query,
@@ -62,7 +64,11 @@ class ChatGPTModel(Model):
                 presence_penalty=0.0,  # [-2,2]之间，该值越大则更倾向于产生不同的内容
             )
             reply_content = response.choices[0]['message']['content']
+            end_time = time.time()  # 记录结束时间
+            execution_time = end_time - start_time  # 计算执行时间
+            log.info("[Execution Time] {:.4f} seconds", execution_time)  # 打印执行时间
             used_token = response['usage']['total_tokens']
+            log.info("total tokens usage:{}".format(used_token))
             log.debug(response)
             log.info("[CHATGPT] reply={}", reply_content)
             if reply_content:
