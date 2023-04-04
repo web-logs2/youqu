@@ -124,6 +124,10 @@ class WxPreTrainDocument(MenuFunction):
                 type='wx'
             )
             author.save()
+            author_id = author.get_id()
+        else:
+            author_id = author[0].id
+
         # 创建文件夹，存放内容
         tmpFilePath = './tmp/wx/' + fakeid + '/'
         pathExists = os.path.exists(tmpFilePath)
@@ -165,8 +169,7 @@ class WxPreTrainDocument(MenuFunction):
             success = False
         # 标记失败
         if not success:
-            author.trained = False
-            author.save()
+            DocumentRecord.update(trained=False).where(DocumentRecord.id == author_id).execute()
         return success
 
     def get_wx_body(self, arg) -> any:
