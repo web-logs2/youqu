@@ -17,7 +17,7 @@ from common import const
 from common.generator import generate_uuid
 from config import channel_conf
 from model.azure.azure_model import AZURE
-from feishu.common_service import conf
+from channel.feishu.common_service import conf
 from service.file_training_service import upload_file_service
 from common.db.dbconfig import db
 
