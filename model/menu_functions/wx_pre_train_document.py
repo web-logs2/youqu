@@ -133,32 +133,36 @@ class WxPreTrainDocument(MenuFunction):
         success = True
         # 从第一页开始抓，到第N页，如果没有数据就停止
         page = 1
-        while True:
-            data["begin"] = (page - 1) * 5
-            # 随机等待几秒，避免被微信识别到
-            time.sleep(np.random.randint(3, 10))
-            content_json = requests.get(url, headers=headers, params=data, proxies=proxies, verify=False).json()
-            # 抓取失败，退出
-            if content_json['base_resp']['ret'] == 200013:
-                print("触发微信机制，抓取失败，当前抓取第{0}页，每页{1}篇".format((page + 1), 5))
-                success = False
-                break
-            # 抓取完成，结束
-            if len(content_json['app_msg_list']) == 0:
-                print("已抓取完所有文章，共抓取{0}篇".format((page + 1) * 5))
-                break
-            # 返回了一个json，里面是每一页的数据
-            for it in content_json["app_msg_list"]:  # 提取信息
-                aid = it["aid"]
-                link = it["link"]
-                # aid当做文件名字
-                file_path = tmpFilePath + aid + ".txt"
+        try:
+            while True:
+                data["begin"] = (page - 1) * 5
                 # 随机等待几秒，避免被微信识别到
-                time.sleep(np.random.randint(4, 15))
-                text = self.get_wx_body(link)
-                with open(file_path, 'w', encoding='utf-8') as file_object:
-                    file_object.write(text)
-            page = page + 1
+                time.sleep(np.random.randint(3, 10))
+                content_json = requests.get(url, headers=headers, params=data, proxies=proxies, verify=False).json()
+                # 抓取失败，退出
+                if content_json['base_resp']['ret'] == 200013:
+                    print("触发微信机制，抓取失败，当前抓取第{0}页，每页{1}篇".format((page + 1), 5))
+                    success = False
+                    break
+                # 抓取完成，结束
+                if len(content_json['app_msg_list']) == 0:
+                    print("已抓取完所有文章，共抓取{0}篇".format((page + 1) * 5))
+                    break
+                # 返回了一个json，里面是每一页的数据
+                for it in content_json["app_msg_list"]:  # 提取信息
+                    aid = it["aid"]
+                    link = it["link"]
+                    # aid当做文件名字
+                    file_path = tmpFilePath + aid + ".txt"
+                    # 随机等待几秒，避免被微信识别到
+                    time.sleep(np.random.randint(4, 15))
+                    text = self.get_wx_body(link)
+                    with open(file_path, 'w', encoding='utf-8') as file_object:
+                        file_object.write(text)
+                page = page + 1
+        except Exception as e:
+            log.exception(e)
+            success = False
         # 标记失败
         if not success:
             author.trained = False
