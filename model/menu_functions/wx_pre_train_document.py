@@ -22,7 +22,7 @@ class WxPreTrainDocument(MenuFunction):
         return "训练微信公众号"
 
     def getDescription(self) -> str:
-        return "#训练微信公众号  <name>"
+        return "#训练微信公众号  <name> <option>"
 
     def getCmd(self) -> str:
         return "#训练微信公众号"
@@ -33,12 +33,18 @@ class WxPreTrainDocument(MenuFunction):
         try:
             authorName = arg[1]
 
+            # 只抓取部分文章
+            count = 0
+            if len(arg) == 3:
+                count = int(arg[2])
+
             # 每个公众号都有一个唯一ID，字节调动技术团队（MzI1MzYzMjE0MQ==）
             # #训练微信公众号 字节跳动技术团队
+            # #训练微信公众号 字节跳动技术团队 50
 
             fakeid = self.get_fakeid(authorName)
             index_path = './tmp/wx/' + fakeid + '/index.json'
-            success = self.init_appmsg(authorName, fakeid, index_path)
+            success = self.init_appmsg(authorName, fakeid, index_path, count)
             if success:
                 documents = SimpleDirectoryReader('./tmp/wx/' + fakeid + '/').load_data()
                 index = GPTSimpleVectorIndex.from_documents(documents)
@@ -93,7 +99,7 @@ class WxPreTrainDocument(MenuFunction):
         }
         return headers
 
-    def init_appmsg(self, authorName, fakeid, index_path) -> any:
+    def init_appmsg(self, authorName, fakeid, index_path, count) -> any:
         url = "https://mp.weixin.qq.com/cgi-bin/appmsg"
         # 使用Cookie，跳过登陆操作
         # headers 根据自己电脑修改
@@ -119,7 +125,7 @@ class WxPreTrainDocument(MenuFunction):
                 path=fakeid,
                 created_time=datetime.datetime.now(),
                 updated_time=datetime.datetime.now(),
-                trained=True,
+                trained=False,
                 trained_file_path=index_path,
                 type='wx'
             )
@@ -137,6 +143,7 @@ class WxPreTrainDocument(MenuFunction):
         success = True
         # 从第一页开始抓，到第N页，如果没有数据就停止
         page = 1
+        total = 0
         try:
             while True:
                 data["begin"] = (page - 1) * 5
@@ -158,24 +165,36 @@ class WxPreTrainDocument(MenuFunction):
                     link = it["link"]
                     # aid当做文件名字
                     file_path = tmpFilePath + aid + ".txt"
+
+                    # 文件已存在
+                    filePathExists = os.path.exists(file_path)
+                    if filePathExists:
+                        total = total + 1
+                        continue
+
                     # 随机等待几秒，避免被微信识别到
                     time.sleep(np.random.randint(4, 15))
                     text = self.get_wx_body(link)
                     with open(file_path, 'w', encoding='utf-8') as file_object:
                         file_object.write(text)
+                    total = total + 1
                 page = page + 1
+                if (count > 0) & (total > count):
+                    break
         except Exception as e:
             log.exception(e)
             success = False
         # 标记失败
         if not success:
             DocumentRecord.update(trained=False).where(DocumentRecord.id == author_id).execute()
+        else:
+            DocumentRecord.update(trained=True).where(DocumentRecord.id == author_id).execute()
         return success
 
     def get_wx_body(self, arg) -> any:
         headers = self.get_headers()
         # 直接用这个连接暂时获取不到内容
         html = requests.get(arg, headers=headers)
-        soup = BeautifulSoup(html, "html.parser")
+        soup = BeautifulSoup(html.text, "lxml")
         wx_post_body = soup.find("div", id="js_content")
         return wx_post_body.get_text()
