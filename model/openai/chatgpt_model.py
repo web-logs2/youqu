@@ -70,7 +70,7 @@ class ChatGPTModel(Model):
             used_token = response['usage']['total_tokens']
             log.info("total tokens usage:{}".format(used_token))
             log.debug(response)
-            log.info("[CHATGPT] reply={}", reply_content)
+            #log.info("[CHATGPT] reply={}", reply_content)
             if reply_content:
                 # save conversation
                 Session.save_session(query, reply_content, user_id, used_token)
@@ -101,13 +101,12 @@ class ChatGPTModel(Model):
     def reply_text_stream(self, query, new_query, user_id, retry_count=0):
         try:
             res = openai.Completion.create(
-                model="text-davinci-003",  # 对话模型的名称
-                prompt=new_query,
+                model=model_conf(const.OPEN_AI).get("model") or "gpt-3.5-turbo",  # 对话模型的名称
                 temperature=0.9,  # 值在[0,1]之间，越大表示回复越具有不确定性
-                # max_tokens=4096,  # 回复最大的字符数
                 top_p=1,
                 frequency_penalty=0.0,  # [-2,2]之间，该值越大则更倾向于产生不同的内容
                 presence_penalty=0.0,  # [-2,2]之间，该值越大则更倾向于产生不同的内容
+                prompt=new_query,
                 stop=["\n\n\n"],
                 stream=True
             )

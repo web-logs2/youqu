@@ -20,3 +20,7 @@ transformers
 docx2txt
 sentencepiece
 larksuite-oapi
+flask-cors
+flask-socketio
+python-dotenv
+eventlet
