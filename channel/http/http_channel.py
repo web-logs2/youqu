@@ -164,9 +164,13 @@ class HttpChannel(Channel):
         ssl_certificate_path = channel_conf(const.HTTP).get('ssl_certificate_path')
         http_app.debug = True
         port = channel_conf(const.HTTP).get('port')
-        socketio_server = socketio.init_app(
-            http_app, cors_allowed_origins="*"
-        )
+        # socketio_server = socketio.init_app(
+        #     http_app, cors_allowed_origins="*"
+        # )
+
+        socketio.init_app(http_app, cors_allowed_origins="*")
+
+
         if not ssl_certificate_path:
             ssl_certificate_path = script_directory = os.path.dirname(os.path.abspath(__file__)) + "/resources"
         if is_path_empty_or_nonexistent(ssl_certificate_path):
@@ -176,11 +180,15 @@ class HttpChannel(Channel):
         else:
             cert_path = ssl_certificate_path + '/cert.pem'
             key_path = ssl_certificate_path + '/privkey.pem'
+            # eventlet.wsgi.server(
+            #     eventlet.wrap_ssl(eventlet.listen(('', port)), certfile=cert_path, keyfile=key_path, server_side=True),
+            #     socketio_server)
+
             eventlet.wsgi.server(
                 eventlet.wrap_ssl(eventlet.listen(('', port)), certfile=cert_path, keyfile=key_path, server_side=True),
-                socketio_server)
-            # http_app.run(host='0.0.0.0', port=channel_conf(const.HTTP).get('port'),
-            #              ssl_context=(ssl_certificate_path + '/fullchain.pem', ssl_certificate_path + '/privkey.pem'))
+                http_app)
+
+            #http_app.run(host='0.0.0.0', port=channel_conf(const.HTTP).get('port'), ssl_context=(ssl_certificate_path + '/fullchain.pem', ssl_certificate_path + '/privkey.pem'))
 
     def handle_text(self, data):
         context = dict()
