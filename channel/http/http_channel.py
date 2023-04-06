@@ -13,6 +13,8 @@ from larksuiteoapi import OapiHeader
 from larksuiteoapi.card import handle_card
 from larksuiteoapi.event import handle_event
 from larksuiteoapi.model import OapiRequest
+import socketio
+from yaml import emit
 
 from channel.channel import Channel
 from channel.http import auth
@@ -161,6 +163,26 @@ def is_path_empty_or_nonexistent(path):
     else:
         return len(os.listdir(path)) == 0
 
+class Handler():
+  @socketio.on('my event')
+  def test_message(message):
+      emit('broadcast', {'data': message['data']})
+
+  @socketio.on('broadcast')
+  def test_message(message):
+      print("broadcast")
+    
+  @socketio.on('connect')
+  def test_connect(arg):
+      logging.info('Client connected')
+      
+
+  @socketio.on('disconnect')
+  def test_disconnect():
+      logging.info('Client dis connected')
+  # @sio.on('my_event')
+  # def my_event(data):
+  #     print('Received data: ', data)    
 
 class HttpChannel(Channel):
     def startup(self):
@@ -170,14 +192,15 @@ class HttpChannel(Channel):
         # socketio_server = socketio.init_app(
         #     http_app, cors_allowed_origins="*"
         # )
-
-        socketio.init_app(http_app, cors_allowed_origins="*")
+        # http_app.handlers = [Handler()]
+        #print('aaaaaaaaaa')
+        #socket_io.init_app(http_app, cors_allowed_origins="*")
 
         if not ssl_certificate_path:
             ssl_certificate_path = script_directory = os.path.dirname(os.path.abspath(__file__)) + "/resources"
         if is_path_empty_or_nonexistent(ssl_certificate_path):
-
-            eventlet.wsgi.server(eventlet.listen(('', port)), http_app)
+            socketio.run(http_app, port=channel_conf(const.HTTP).get('port'), debug = True)
+            # eventlet.wsgi.server(eventlet.listen(('', port)), http_app)
             # http_app.run(host='0.0.0.0', port=channel_conf(const.HTTP).get('port'))
         else:
             cert_path = ssl_certificate_path + '/cert.pem'
@@ -229,16 +252,18 @@ def webhook_event():
     return resp
 
 
-@socketio.on('message')
-def handle_promote(data):
-    logging.info("message:" + data)
-    if not auth.identify(request):
-        logging.INFO("Cookie error")
-        return
-    for completion in HttpChannel().handle_text(data=data):
-        socketio.emit('response', {'result': completion})
+# @socketio.on('message', namespace='/chat')
+# def handle_promote(data):
+#     logging.info("message:" + data)
+#     if not auth.identify(request):
+#         logging.INFO("Cookie error")
+#         return
+#     for completion in HttpChannel().handle_text(data=data):
+#         socketio.emit('response', {'result': completion})
 
 
-@socketio.on('connect')
-def handle_connect():
-    logging.info('Client connected')
+# @socketio.on('connect', namespace='/chat')
+# def handle_connect():
+#     logging.info('Client connected')
+
+
