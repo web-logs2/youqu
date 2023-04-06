@@ -42,7 +42,7 @@ class Channel(object):
         """
         raise NotImplementedError
 
-    def build_text_reply_content(self, query, context=None):
+    def build_text_reply_content(self, query, context=None, stream=False):
         if (query == '#菜单'):
             return self.menuString
         if (query.startswith("#")):
@@ -50,7 +50,7 @@ class Channel(object):
             cmd = self.menuDict.get(cmds[0])
             if cmd != None:
                 return cmd.execute(cmds)
-        return Bridge().fetch_text_reply_content(query, context)
+        return Bridge().fetch_text_reply_content(query, context, stream)
 
     def build_picture_reply_content(self, query, context=None):
         return Bridge().fetch_picture_reply_content(query)

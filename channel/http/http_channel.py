@@ -94,6 +94,9 @@ def picture():
 
 @http_app.route('/upload', methods=['POST'])
 def upload_file():
+    if not auth.identify(request):
+        logging.INFO("Cookie error")
+        return
     # 检查文件是否存在
     if len(request.files) <= 0:
         return jsonify({'result': 'No file selected'})
@@ -162,7 +165,7 @@ def is_path_empty_or_nonexistent(path):
 class HttpChannel(Channel):
     def startup(self):
         ssl_certificate_path = channel_conf(const.HTTP).get('ssl_certificate_path')
-        http_app.debug = True
+        http_app.debug = False
         port = channel_conf(const.HTTP).get('port')
         # socketio_server = socketio.init_app(
         #     http_app, cors_allowed_origins="*"
@@ -170,13 +173,12 @@ class HttpChannel(Channel):
 
         socketio.init_app(http_app, cors_allowed_origins="*")
 
-
         if not ssl_certificate_path:
             ssl_certificate_path = script_directory = os.path.dirname(os.path.abspath(__file__)) + "/resources"
         if is_path_empty_or_nonexistent(ssl_certificate_path):
 
             eventlet.wsgi.server(eventlet.listen(('', port)), http_app)
-            #http_app.run(host='0.0.0.0', port=channel_conf(const.HTTP).get('port'))
+            # http_app.run(host='0.0.0.0', port=channel_conf(const.HTTP).get('port'))
         else:
             cert_path = ssl_certificate_path + '/cert.pem'
             key_path = ssl_certificate_path + '/privkey.pem'
@@ -188,13 +190,13 @@ class HttpChannel(Channel):
                 eventlet.wrap_ssl(eventlet.listen(('', port)), certfile=cert_path, keyfile=key_path, server_side=True),
                 http_app)
 
-            #http_app.run(host='0.0.0.0', port=channel_conf(const.HTTP).get('port'), ssl_context=(ssl_certificate_path + '/fullchain.pem', ssl_certificate_path + '/privkey.pem'))
+            # http_app.run(host='0.0.0.0', port=channel_conf(const.HTTP).get('port'), ssl_context=(ssl_certificate_path + '/fullchain.pem', ssl_certificate_path + '/privkey.pem'))
 
-    def handle_text(self, data):
+    def handle_text(self, data, stream=False):
         context = dict()
         id = data["id"]
         context['from_user_id'] = str(id)
-        return super().build_text_reply_content(data["msg"], context)
+        return super().build_text_reply_content(data["msg"], context, stream)
 
     def handle_picture(self, data):
         context = dict()
@@ -205,7 +207,7 @@ class HttpChannel(Channel):
 
 @http_app.route('/webhook/card', methods=['POST'])
 def webhook_card():
-    logging.info("/webhook/card:"+request.data.decode())
+    logging.info("/webhook/card:" + request.data.decode())
     oapi_request = OapiRequest(uri=request.path, body=request.data, header=OapiHeader(request.headers))
     resp = make_response()
     oapi_resp = handle_card(conf, oapi_request)
@@ -213,7 +215,6 @@ def webhook_card():
     resp.data = oapi_resp.body
     resp.status_code = oapi_resp.status_code
     return resp
-
 
 
 @http_app.route('/webhook/event', methods=['GET', 'POST'])
@@ -226,3 +227,18 @@ def webhook_event():
     resp.data = oapi_resp.body
     resp.status_code = oapi_resp.status_code
     return resp
+
+
+@socketio.on('message')
+def handle_promote(data):
+    logging.info("message:" + data)
+    if not auth.identify(request):
+        logging.INFO("Cookie error")
+        return
+    for completion in HttpChannel().handle_text(data=data):
+        socketio.emit('response', {'result': completion})
+
+
+@socketio.on('connect')
+def handle_connect():
+    logging.info('Client connected')
