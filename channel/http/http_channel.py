@@ -4,7 +4,7 @@ import json
 import logging
 import os
 from datetime import timedelta
-from flask_socketio import SocketIO, send
+from flask_socketio import SocketIO, send, emit
 import eventlet
 from flask import Flask, request, render_template, make_response
 from flask import jsonify
@@ -13,9 +13,6 @@ from larksuiteoapi import OapiHeader
 from larksuiteoapi.card import handle_card
 from larksuiteoapi.event import handle_event
 from larksuiteoapi.model import OapiRequest
-import socketio
-from yaml import emit
-
 from channel.channel import Channel
 from channel.http import auth
 from common import const
@@ -163,26 +160,33 @@ def is_path_empty_or_nonexistent(path):
     else:
         return len(os.listdir(path)) == 0
 
-class Handler():
-  @socketio.on('my event')
-  def test_message(message):
-      emit('broadcast', {'data': message['data']})
 
-  @socketio.on('broadcast')
-  def test_message(message):
-      print("broadcast")
-    
-  @socketio.on('connect')
-  def test_connect(arg):
-      logging.info('Client connected')
-      
+class Socket_IO_Handler():
+    @socketio.on('message')
+    def test_message(message):
+        data = json.loads(message)
+        if not auth.identify(request):
+            logging.INFO("Cookie error")
+            return
+        for completion in HttpChannel().handle_text(data=data, stream=True):
+            logging.info('result:'.format(completion))
+            socketio.emit('response', {'result': completion})
 
-  @socketio.on('disconnect')
-  def test_disconnect():
-      logging.info('Client dis connected')
-  # @sio.on('my_event')
-  # def my_event(data):
-  #     print('Received data: ', data)    
+    @socketio.on('broadcast')
+    def test_message(message):
+        print("broadcast")
+
+    @socketio.on('connect')
+    def test_connect(arg):
+        logging.info('Client connected')
+
+    @socketio.on('disconnect')
+    def test_disconnect():
+        logging.info('Client dis connected')
+    # @sio.on('my_event')
+    # def my_event(data):
+    #     print('Received data: ', data)
+
 
 class HttpChannel(Channel):
     def startup(self):
@@ -193,13 +197,13 @@ class HttpChannel(Channel):
         #     http_app, cors_allowed_origins="*"
         # )
         # http_app.handlers = [Handler()]
-        #print('aaaaaaaaaa')
-        #socket_io.init_app(http_app, cors_allowed_origins="*")
+        # print('aaaaaaaaaa')
+        # socket_io.init_app(http_app, cors_allowed_origins="*")
 
         if not ssl_certificate_path:
             ssl_certificate_path = script_directory = os.path.dirname(os.path.abspath(__file__)) + "/resources"
         if is_path_empty_or_nonexistent(ssl_certificate_path):
-            socketio.run(http_app, port=channel_conf(const.HTTP).get('port'), debug = True)
+            socketio.run(http_app, port=channel_conf(const.HTTP).get('port'), debug=True)
             # eventlet.wsgi.server(eventlet.listen(('', port)), http_app)
             # http_app.run(host='0.0.0.0', port=channel_conf(const.HTTP).get('port'))
         else:
@@ -219,7 +223,8 @@ class HttpChannel(Channel):
         context = dict()
         id = data["id"]
         context['from_user_id'] = str(id)
-        return super().build_text_reply_content(data["msg"], context, stream)
+        context['stream'] = stream
+        return super().build_text_reply_content(data["msg"], context)
 
     def handle_picture(self, data):
         context = dict()
@@ -251,7 +256,6 @@ def webhook_event():
     resp.status_code = oapi_resp.status_code
     return resp
 
-
 # @socketio.on('message', namespace='/chat')
 # def handle_promote(data):
 #     logging.info("message:" + data)
@@ -265,5 +269,3 @@ def webhook_event():
 # @socketio.on('connect', namespace='/chat')
 # def handle_connect():
 #     logging.info('Client connected')
-
-

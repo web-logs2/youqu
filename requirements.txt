@@ -20,6 +20,7 @@ transformers
 docx2txt
 sentencepiece
 larksuite-oapi
-flask-socketio
+Flask-SocketIO
 python-dotenv
 eventlet
+DBUtils
