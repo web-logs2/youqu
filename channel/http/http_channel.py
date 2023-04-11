@@ -15,13 +15,14 @@ from larksuiteoapi.event import handle_event
 from larksuiteoapi.model import OapiRequest
 from channel.channel import Channel
 from channel.http import auth
-from common import const
+from common import const, functions
 from common.generator import generate_uuid
-from config import channel_conf
+from config import channel_conf, channel_conf_val
 from model.azure.azure_model import AZURE
 from channel.feishu.common_service import conf
 from service.file_training_service import upload_file_service
 from common.db.dbconfig import db
+import asyncio
 
 http_app = Flask(__name__, template_folder='templates', static_folder='static', )
 # 自动重载模板文件
@@ -48,7 +49,7 @@ def text():
             return
         reply_text = HttpChannel().handle_text(data=data)
         # reply_text="Test reply"
-        return {'result': reply_text}
+        return {'content': reply_text}
 
 
 @http_app.route("/voice", methods=['POST'])
@@ -98,12 +99,12 @@ def upload_file():
         return
     # 检查文件是否存在
     if len(request.files) <= 0:
-        return jsonify({'result': 'No file selected'})
+        return jsonify({'content': 'No file selected'})
 
     file = request.files['files']
     # 检查文件名是否为空
     if file.filename == '':
-        return jsonify({'result': 'No file selected'})
+        return jsonify({'content': 'No file selected'})
     return upload_file_service(file)
 
 
@@ -161,31 +162,89 @@ def is_path_empty_or_nonexistent(path):
         return len(os.listdir(path)) == 0
 
 
-class Socket_IO_Handler():
-    @socketio.on('message')
-    def test_message(message):
-        data = json.loads(message)
-        if not auth.identify(request):
-            logging.INFO("Cookie error")
-            return
-        for completion in HttpChannel().handle_text(data=data, stream=True):
-            logging.info('result:'.format(completion))
-            socketio.emit('response', {'result': completion})
+async def return_stream(data):
+    try:
+        async for final, response in HttpChannel().handle_stream(data=data):
 
-    @socketio.on('broadcast')
-    def test_message(message):
-        print("broadcast")
+            if final:
+                logging.info("Final:" + response)
+                socketio.server.emit(
+                    'final', {'content': response, 'messageID': data['messageID'], 'final': final}, request.sid,
+                    namespace="/chat")
+            else:
+                logging.info("reply:" + response)
+                socketio.server.emit(
+                    'reply', {'content': response, 'messageID': data['messageID'], 'final': final}, request.sid,
+                    namespace="/chat")
+            #disconnect()
 
-    @socketio.on('connect')
-    def test_connect(arg):
-        logging.info('Client connected')
+    except Exception as e:
+        socketio.server.emit(
+            'disconnect', {'content': 'API error', 'messageID': data['messageID'], 'final': final}, request.sid,
+            namespace="/chat")
+        disconnect()
+        logging.warning("[http]emit:{}", e)
 
-    @socketio.on('disconnect')
-    def test_disconnect():
-        logging.info('Client dis connected')
-    # @sio.on('my_event')
-    # def my_event(data):
-    #     print('Received data: ', data)
+
+@socketio.on('message', namespace='/chat')
+def stream(data):
+    # if (auth.identify(request) == False):
+    #     client_sid = request.sid
+    #     socketio.server.disconnect(client_sid)
+    #     return
+    #data = json.loads(data)
+    logging.info("message:" + data['msg'])
+    if data:
+        # img_match_prefix = functions.check_prefix(
+        #     data["msg"], channel_conf_val(const.HTTP, 'image_create_prefix'))
+        # if img_match_prefix:
+        #     reply_text = HttpChannel().handle(data=data)
+        #     socketio.emit('disconnect', {'content': reply_text}, namespace='/chat')
+        #     disconnect()
+        #     return
+        asyncio.run(return_stream(data))
+
+
+@socketio.on('connect', namespace='/chat')
+def connect():
+    logging.info('connected')
+    socketio.emit('connected', {'info': "connected"}, namespace='/chat')
+
+
+@socketio.on('disconnect', namespace='/chat')
+def disconnect():
+    logging.info('disconnect')
+    socketio.server.disconnect(request.sid, namespace="/chat")
+
+
+# class SocketIOHandler:
+#
+#     @socketio.on('message')
+#     def test_message(message):
+#         data = json.loads(message)
+#         logging.INFO("data"+data)
+#         if not auth.identify(request):
+#             logging.INFO("Cookie error")
+#             return
+#         for completion in HttpChannel().handle_text(data=data, stream=True):
+#             logging.info('result:'.format(completion))
+#             socketio.emit('response', {'content': completion})
+#
+#     @socketio.on('broadcast')
+#     def test_message(message):
+#         print("broadcast")
+#
+#     @socketio.on('connect')
+#     def test_connect(arg):
+#         logging.info('Client connected')
+#
+#     @socketio.on('disconnect')
+#     def test_disconnect():
+#         logging.info('Client dis connected')
+#
+#     # @sio.on('my_event')
+#     # def my_event(data):
+#     #     print('Received data: ', data)
 
 
 class HttpChannel(Channel):
@@ -226,6 +285,14 @@ class HttpChannel(Channel):
         context['stream'] = stream
         return super().build_text_reply_content(data["msg"], context)
 
+    async def handle_stream(self, data):
+        context = dict()
+        id = data["uid"]
+        context['from_user_id'] = str(id)
+        logging.info("Handle stream:" + data["msg"])
+        async for final, reply in super().build_reply_stream(data["msg"], context):
+            yield final, reply
+
     def handle_picture(self, data):
         context = dict()
         id = data["id"]
@@ -263,7 +330,7 @@ def webhook_event():
 #         logging.INFO("Cookie error")
 #         return
 #     for completion in HttpChannel().handle_text(data=data):
-#         socketio.emit('response', {'result': completion})
+#         socketio.emit('response', {'content': completion})
 
 
 # @socketio.on('connect', namespace='/chat')

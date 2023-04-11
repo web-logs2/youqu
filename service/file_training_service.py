@@ -20,7 +20,7 @@ def upload_file_service(file):
     filename = file.filename.replace(" ", "")
     records = DocumentRecord.select().where(DocumentRecord.title == filename)
     if records.count() > 0:
-        return jsonify({'result': '上传失败，同名文件已经存在。'})
+        return jsonify({'content': '上传失败，同名文件已经存在。'})
     upload_dir = project_conf("upload_pre_training_folder") + Path(filename).stem + "/"  # 上传文件保存的目录
 
     # 创建根目录（若不存在）
@@ -44,10 +44,10 @@ def upload_file_service(file):
         new_document.save()
     except Exception as e:
         logging.ERROR(e)
-        return jsonify({'result': 'Error!'})
+        return jsonify({'content': 'Error!'})
 
     training_service(new_document)
-    return jsonify({'result': '文件训练成功，请使用"{}"命令查看训练状态。'.format(DocumentList.getCmd())})
+    return jsonify({'content': '文件训练成功，请使用"{}"命令查看训练状态。'.format(DocumentList.getCmd())})
 
 
 def training_service(record: DocumentRecord):

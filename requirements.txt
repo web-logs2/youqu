@@ -6,7 +6,6 @@ PyJWT
 flask
 slack_bolt
 llama-index
-pyTelegramBotAPI
 azure-cognitiveservices-vision-computervision
 azure-cognitiveservices-speech
 boto
@@ -14,11 +13,9 @@ flask-cors
 PyPDF2
 peewee
 pymysql
-python-pptx
 torch
 transformers
 docx2txt
-sentencepiece
 larksuite-oapi
 Flask-SocketIO
 python-dotenv
