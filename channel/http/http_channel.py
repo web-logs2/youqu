@@ -170,13 +170,13 @@ async def return_stream(data):
             if final:
                 logging.info("Final:" + response)
                 socketio.server.emit(
-                    'final', {'content': response, 'messageID': data['messageID'], 'final': final},
+                    'final', {'content': response, 'messageID': data['messageID'], 'final': final}, request.sid,
                     namespace="/chat")
             else:
                 logging.info("reply:" + response)
                 socketio.sleep(0.01)
                 socketio.server.emit(
-                    'reply', {'content': response, 'messageID': data['messageID'], 'final': final},
+                    'message', {'content': response, 'messageID': data['messageID'], 'final': final}, request.sid,
                     namespace="/chat")
             # disconnect()
 
@@ -185,7 +185,7 @@ async def return_stream(data):
         logging.warning("[http]emit:{}", e)
 
 
-def run_stream_handler(data):
+def run_async_test(data):
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     loop.run_until_complete(return_stream(data))
@@ -197,7 +197,7 @@ def stream(data):
     data = json.loads(data)
     logging.info("message:" + data['msg'])
     if data:
-        socketio.server.start_background_task(run_stream_handler, data)
+        socketio.server.start_background_task(run_async_test, data)
 
 
 @socketio.on('connect', namespace='/chat')
