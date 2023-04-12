@@ -4,6 +4,7 @@ import json
 import logging
 import os
 from datetime import timedelta
+import time
 from flask_socketio import SocketIO, send, emit
 import eventlet
 from flask import Flask, request, render_template, make_response
@@ -30,7 +31,7 @@ http_app.jinja_env.auto_reload = True
 http_app.config['TEMPLATES_AUTO_RELOAD'] = True
 
 CORS(http_app)
-socketio = SocketIO(http_app, cors_allowed_origins="*")
+socketio = SocketIO(http_app, cors_allowed_origins="*", async_mode = 'gevent')
 
 # 设置静态文件缓存过期时间
 http_app.config['SEND_FILE_MAX_AGE_DEFAULT'] = timedelta(seconds=1)
@@ -173,6 +174,7 @@ async def return_stream(data):
                     namespace="/chat")
             else:
                 logging.info("reply:" + response)
+                socketio.sleep(0.01)
                 socketio.server.emit(
                     'reply', {'content': response, 'messageID': data['messageID'], 'final': final},
                     namespace="/chat")
@@ -255,8 +257,8 @@ class HttpChannel(Channel):
         if not ssl_certificate_path:
             ssl_certificate_path = script_directory = os.path.dirname(os.path.abspath(__file__)) + "/resources"
         if is_path_empty_or_nonexistent(ssl_certificate_path):
-            # socketio.run(http_app, port=channel_conf(const.HTTP).get('port'), debug=True)
-            eventlet.wsgi.server(eventlet.listen(('', port)), http_app)
+            socketio.run(http_app, port=port)
+            # eventlet.wsgi.server(eventlet.listen(('', port)), http_app)
             # http_app.run(host='0.0.0.0', port=channel_conf(const.HTTP).get('port'))
         else:
             cert_path = ssl_certificate_path + '/cert.pem'
@@ -264,10 +266,10 @@ class HttpChannel(Channel):
             # eventlet.wsgi.server(
             #     eventlet.wrap_ssl(eventlet.listen(('', port)), certfile=cert_path, keyfile=key_path, server_side=True),
             #     socketio_server)
-
-            eventlet.wsgi.server(
-                eventlet.wrap_ssl(eventlet.listen(('', port)), certfile=cert_path, keyfile=key_path, server_side=True),
-                http_app)
+            socketio.run(http_app, port=port, certfile=cert_path, keyfile=key_path)
+            # eventlet.wsgi.server(
+            #     eventlet.wrap_ssl(eventlet.listen(('', port)), certfile=cert_path, keyfile=key_path, server_side=True),
+            #     http_app)
 
             # http_app.run(host='0.0.0.0', port=channel_conf(const.HTTP).get('port'), ssl_context=(ssl_certificate_path + '/fullchain.pem', ssl_certificate_path + '/privkey.pem'))
 

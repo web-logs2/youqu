@@ -21,3 +21,5 @@ Flask-SocketIO
 python-dotenv
 eventlet
 DBUtils
+gevent
+gevent-websocket
