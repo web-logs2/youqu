@@ -169,12 +169,12 @@ async def return_stream(data):
             if final:
                 logging.info("Final:" + response)
                 socketio.server.emit(
-                    'final', {'content': response, 'messageID': data['messageID'], 'final': final},
+                    'final', {'content': response, 'messageID': data['messageID'], 'final': final}, request.sid,
                     namespace="/chat")
             else:
                 logging.info("reply:" + response)
                 socketio.server.emit(
-                    'message', {'content': response, 'messageID': data['messageID'], 'final': final},
+                    'message', {'content': response, 'messageID': data['messageID'], 'final': final}, request.sid,
                     namespace="/chat")
             # disconnect()
 
