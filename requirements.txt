@@ -13,9 +13,11 @@ flask-cors
 PyPDF2
 peewee
 pymysql
+python-pptx
 torch
 transformers
 docx2txt
+sentencepiece
 larksuite-oapi
 Flask-SocketIO
 python-dotenv
