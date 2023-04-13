@@ -31,7 +31,7 @@ http_app.jinja_env.auto_reload = True
 http_app.config['TEMPLATES_AUTO_RELOAD'] = True
 
 CORS(http_app)
-socketio = SocketIO(http_app, cors_allowed_origins="*", async_mode='gevent', logger=True, engineio_logger=True)
+socketio = SocketIO(http_app, cors_allowed_origins="*", async_mode='gevent')
 
 # 设置静态文件缓存过期时间
 http_app.config['SEND_FILE_MAX_AGE_DEFAULT'] = timedelta(seconds=1)
