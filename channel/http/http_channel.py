@@ -267,7 +267,7 @@ class HttpChannel(Channel):
             # eventlet.wsgi.server(eventlet.listen(('', port)), http_app)
             # http_app.run(host='0.0.0.0', port=channel_conf(const.HTTP).get('port'))
         else:
-            cert_path = ssl_certificate_path + '/cert.pem'
+            cert_path = ssl_certificate_path + '/fullchain.pem'
             key_path = ssl_certificate_path + '/privkey.pem'
             # eventlet.wsgi.server(
             #     eventlet.wrap_ssl(eventlet.listen(('', port)), certfile=cert_path, keyfile=key_path, server_side=True),
