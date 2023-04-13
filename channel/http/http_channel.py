@@ -31,7 +31,7 @@ http_app.jinja_env.auto_reload = True
 http_app.config['TEMPLATES_AUTO_RELOAD'] = True
 
 CORS(http_app)
-socketio = SocketIO(http_app, cors_allowed_origins="*", async_mode = 'gevent')
+socketio = SocketIO(http_app, cors_allowed_origins="*", async_mode='gevent', logger=True, engineio_logger=True)
 
 # 设置静态文件缓存过期时间
 http_app.config['SEND_FILE_MAX_AGE_DEFAULT'] = timedelta(seconds=1)
@@ -173,7 +173,7 @@ async def return_stream(data):
                     namespace="/chat")
                 disconnect()
             else:
-                #logging.info("reply:" + response)
+                # logging.info("reply:" + response)
                 socketio.sleep(0.01)
                 socketio.server.emit(
                     'reply', {'content': response, 'messageID': data['messageID'], 'final': final}, request.sid,
@@ -197,7 +197,7 @@ def stream(data):
     if not auth.identify(request):
         disconnect()
         return
-    #data = json.loads(data)
+    # data = json.loads(data)
     logging.info("message:" + data['msg'])
     if data:
         asyncio.run(return_stream(data))
