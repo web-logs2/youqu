@@ -166,14 +166,13 @@ def is_path_empty_or_nonexistent(path):
 async def return_stream(data):
     try:
         async for final, response in HttpChannel().handle_stream(data=data):
-
             if final:
                 logging.info("Final:" + response)
                 socketio.server.emit(
                     'final', {'content': response, 'messageID': data['messageID'], 'final': final}, request.sid,
                     namespace="/chat")
             else:
-                logging.info("reply:" + response)
+                #logging.info("reply:" + response)
                 socketio.sleep(0.01)
                 socketio.server.emit(
                     'reply', {'content': response, 'messageID': data['messageID'], 'final': final}, request.sid,
