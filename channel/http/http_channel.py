@@ -251,7 +251,7 @@ def disconnect():
 class HttpChannel(Channel):
     def startup(self):
         ssl_certificate_path = channel_conf(const.HTTP).get('ssl_certificate_path')
-        http_app.debug = False
+        http_app.debug = True
         port = channel_conf(const.HTTP).get('port')
         # socketio_server = socketio.init_app(
         #     http_app, cors_allowed_origins="*"
