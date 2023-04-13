@@ -16,7 +16,7 @@ from larksuiteoapi.event import handle_event
 from larksuiteoapi.model import OapiRequest
 from channel.channel import Channel
 from channel.http import auth
-from common import const, functions
+from common import const, functions, log
 from common.generator import generate_uuid
 from config import channel_conf, channel_conf_val
 from model.azure.azure_model import AZURE
@@ -40,7 +40,7 @@ http_app.config['SEND_FILE_MAX_AGE_DEFAULT'] = timedelta(seconds=1)
 @http_app.route("/text", methods=['POST'])
 def text():
     if not auth.identify(request):
-        logging.INFO("Cookie error")
+        log.INFO("Cookie error")
         return
     data = json.loads(request.data)
     if data:
@@ -56,7 +56,7 @@ def text():
 @http_app.route("/voice", methods=['POST'])
 def voice():
     if not auth.identify(request):
-        logging.INFO("Cookie error")
+        log.info("Cookie error")
         return
     data = json.loads(request.data)
     if data:
@@ -78,7 +78,7 @@ def voice():
 @http_app.route("/picture", methods=['POST'])
 def picture():
     if not auth.identify(request):
-        logging.INFO("Cookie error")
+        log.info("Cookie error")
         return
     data = json.loads(request.data)
     if data:
@@ -96,7 +96,7 @@ def picture():
 @http_app.route('/upload', methods=['POST'])
 def upload_file():
     if not auth.identify(request):
-        logging.INFO("Cookie error")
+        log.info("Cookie error")
         return
     # 检查文件是否存在
     if len(request.files) <= 0:
@@ -272,6 +272,7 @@ class HttpChannel(Channel):
             # eventlet.wsgi.server(
             #     eventlet.wrap_ssl(eventlet.listen(('', port)), certfile=cert_path, keyfile=key_path, server_side=True),
             #     socketio_server)
+            log.info("Start ssl server")
             socketio.run(http_app, port=port, certfile=cert_path, keyfile=key_path)
             # eventlet.wsgi.server(
             #     eventlet.wrap_ssl(eventlet.listen(('', port)), certfile=cert_path, keyfile=key_path, server_side=True),
@@ -290,7 +291,7 @@ class HttpChannel(Channel):
         context = dict()
         id = data["uid"]
         context['from_user_id'] = str(id)
-        logging.info("Handle stream:" + data["msg"])
+        log.info("Handle stream:" + data["msg"])
         async for final, reply in super().build_reply_stream(data["msg"], context):
             yield final, reply
 
@@ -303,7 +304,7 @@ class HttpChannel(Channel):
 
 @http_app.route('/webhook/card', methods=['POST'])
 def webhook_card():
-    logging.info("/webhook/card:" + request.data.decode())
+    log.info("/webhook/card:" + request.data.decode())
     oapi_request = OapiRequest(uri=request.path, body=request.data, header=OapiHeader(request.headers))
     resp = make_response()
     oapi_resp = handle_card(conf, oapi_request)
@@ -315,7 +316,7 @@ def webhook_card():
 
 @http_app.route('/webhook/event', methods=['GET', 'POST'])
 def webhook_event():
-    logging.info("/webhook/event:" + request.data.decode())
+    log.info("/webhook/event:" + request.data.decode())
     oapi_request = OapiRequest(uri=request.path, body=request.data, header=OapiHeader(request.headers))
     resp = make_response()
     oapi_resp = handle_event(conf, oapi_request)
