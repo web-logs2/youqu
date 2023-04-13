@@ -171,6 +171,7 @@ async def return_stream(data):
                 socketio.server.emit(
                     'final', {'content': response, 'messageID': data['messageID'], 'final': final}, request.sid,
                     namespace="/chat")
+                disconnect()
             else:
                 #logging.info("reply:" + response)
                 socketio.sleep(0.01)
