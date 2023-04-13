@@ -57,3 +57,7 @@ class Channel(object):
 
     def getMenuList(self) -> list[MenuFunction]:
         return Bridge.fetch_menu_list(self)
+
+    async def build_reply_stream(self, query, context=None):
+        async for final, response in Bridge().fetch_reply_stream(query, context):
+            yield final, response
