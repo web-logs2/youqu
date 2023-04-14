@@ -172,6 +172,7 @@ async def return_stream(data):
                     'final', {'content': response, 'messageID': data['messageID'], 'final': final}, request.sid,
                     namespace="/chat")
                 disconnect()
+                return
             else:
                 # logging.info("reply:" + response)
                 socketio.sleep(0.01)
@@ -183,6 +184,7 @@ async def return_stream(data):
     except Exception as e:
         disconnect()
         logging.warning("[http]emit:{}", e)
+        return
 
 
 def run_async_test(data):
