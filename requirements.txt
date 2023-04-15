@@ -25,3 +25,4 @@ eventlet
 DBUtils
 gevent
 gevent-websocket
+nest_asyncio

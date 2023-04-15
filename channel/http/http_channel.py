@@ -1,12 +1,11 @@
 # encoding:utf-8
 import base64
 import json
-import logging
 import os
 from datetime import timedelta
-import time
-from flask_socketio import SocketIO, send, emit
-import eventlet
+
+import nest_asyncio
+from flask_socketio import SocketIO
 from flask import Flask, request, render_template, make_response
 from flask import jsonify
 from flask_cors import CORS
@@ -16,15 +15,16 @@ from larksuiteoapi.event import handle_event
 from larksuiteoapi.model import OapiRequest
 from channel.channel import Channel
 from channel.http import auth
-from common import const, functions, log
+from common import const, log
 from common.generator import generate_uuid
-from config import channel_conf, channel_conf_val
+from config import channel_conf
 from model.azure.azure_model import AZURE
 from channel.feishu.common_service import conf
 from service.file_training_service import upload_file_service
 from common.db.dbconfig import db
 import asyncio
 
+nest_asyncio.apply()
 http_app = Flask(__name__, template_folder='templates', static_folder='static', )
 # 自动重载模板文件
 http_app.jinja_env.auto_reload = True
@@ -167,13 +167,13 @@ async def return_stream(data):
     try:
         async for final, response in HttpChannel().handle_stream(data=data):
             if final:
-                logging.info("Final:" + response)
+                log.info("Final:" + response)
                 socketio.server.emit(
                     'final', {'content': response, 'messageID': data['messageID'], 'final': final}, request.sid,
                     namespace="/chat")
                 disconnect()
             else:
-                # logging.info("reply:" + response)
+                # log.info("reply:" + response)
                 socketio.sleep(0.01)
                 socketio.server.emit(
                     'reply', {'content': response, 'messageID': data['messageID'], 'final': final}, request.sid,
@@ -182,7 +182,7 @@ async def return_stream(data):
 
     except Exception as e:
         disconnect()
-        logging.warning("[http]emit:{}", e)
+        log.warning("[http]emit:{}", e)
 
 
 def run_async_test(data):
@@ -198,7 +198,7 @@ def stream(data):
         disconnect()
         return
     # data = json.loads(data)
-    logging.info("message:" + data['msg'])
+    log.info("message:" + data['msg'])
     if data:
         asyncio.run(return_stream(data))
 
@@ -208,13 +208,13 @@ def connect():
     if not auth.identify(request):
         disconnect()
         return
-    logging.info('connected')
+    log.info('connected')
     socketio.emit('connected', {'info': "connected"}, namespace='/chat')
 
 
 @socketio.on('disconnect', namespace='/chat')
 def disconnect():
-    logging.info('disconnect')
+    log.info('disconnect')
     socketio.server.disconnect(request.sid, namespace="/chat")
 
 
@@ -223,12 +223,12 @@ def disconnect():
 #     @socketio.on('message')
 #     def test_message(message):
 #         data = json.loads(message)
-#         logging.INFO("data"+data)
+#         log.INFO("data"+data)
 #         if not auth.identify(request):
-#             logging.INFO("Cookie error")
+#             log.INFO("Cookie error")
 #             return
 #         for completion in HttpChannel().handle_text(data=data, stream=True):
-#             logging.info('result:'.format(completion))
+#             log.info('result:'.format(completion))
 #             socketio.emit('response', {'content': completion})
 #
 #     @socketio.on('broadcast')
@@ -237,11 +237,11 @@ def disconnect():
 #
 #     @socketio.on('connect')
 #     def test_connect(arg):
-#         logging.info('Client connected')
+#         log.info('Client connected')
 #
 #     @socketio.on('disconnect')
 #     def test_disconnect():
-#         logging.info('Client dis connected')
+#         log.info('Client dis connected')
 #
 #     # @sio.on('my_event')
 #     # def my_event(data):
@@ -327,9 +327,9 @@ def webhook_event():
 
 # @socketio.on('message', namespace='/chat')
 # def handle_promote(data):
-#     logging.info("message:" + data)
+#     log.info("message:" + data)
 #     if not auth.identify(request):
-#         logging.INFO("Cookie error")
+#         log.INFO("Cookie error")
 #         return
 #     for completion in HttpChannel().handle_text(data=data):
 #         socketio.emit('response', {'content': completion})
@@ -337,4 +337,4 @@ def webhook_event():
 
 # @socketio.on('connect', namespace='/chat')
 # def handle_connect():
-#     logging.info('Client connected')
+#     log.info('Client connected')
