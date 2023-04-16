@@ -3,6 +3,7 @@ import base64
 import json
 import logging
 import os
+import signal
 from datetime import timedelta
 import time
 from flask_socketio import SocketIO, send, emit
@@ -169,38 +170,49 @@ async def return_stream(data):
             if final:
                 logging.info("Final:" + response)
                 socketio.server.emit(
-                    'final', {'content': response, 'messageID': data['messageID'], 'final': final}, request.sid,
+                    'final', {'content': response, 'messageID': data['messageID'], 'final': final}, data['sid'],
                     namespace="/chat")
-                disconnect()
+                socketio.server.disconnect(data['sid'], namespace="/chat")
+                return
             else:
                 # logging.info("reply:" + response)
                 socketio.sleep(0.01)
                 socketio.server.emit(
-                    'reply', {'content': response, 'messageID': data['messageID'], 'final': final}, request.sid,
+                    'reply', {'content': response, 'messageID': data['messageID'], 'final': final}, data['sid'],
                     namespace="/chat")
-            # disconnect()
-
     except Exception as e:
-        disconnect()
+        socketio.server.disconnect(data['sid'], namespace="/chat")
         logging.warning("[http]emit:{}", e)
+        return
 
+async def shutdown(*args):
+    tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
+    for task in tasks:
+        task.cancel()
+    await asyncio.gather(*tasks, return_exceptions=True)
+    socketio.stop()
 
-def run_async_test(data):
+def run_stream_handler(data):
     loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.run_until_complete(return_stream(data))
-    loop.close()
-
+    loop.add_signal_handler(signal.SIGINT, lambda: loop.create_task(shutdown()))
+    loop.add_signal_handler(signal.SIGTERM, lambda: loop.create_task(shutdown()))
+    try:
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(return_stream(data))
+    finally:
+        loop.run_until_complete(shutdown())
+        loop.close()
 
 @socketio.on('message', namespace='/chat')
 def stream(data):
     if not auth.identify(request):
-        disconnect()
+        socketio.server.disconnect(request.sid, namespace="/chat")
         return
-    # data = json.loads(data)
     logging.info("message:" + data['msg'])
+
     if data:
-        asyncio.run(return_stream(data))
+        data['sid'] = request.sid
+        socketio.server.start_background_task(run_stream_handler, data)
 
 
 @socketio.on('connect', namespace='/chat')
@@ -209,7 +221,7 @@ def connect():
         disconnect()
         return
     logging.info('connected')
-    socketio.emit('connected', {'info': "connected"}, namespace='/chat')
+    socketio.server.emit('connected', {'info': "connected"}, namespace='/chat')
 
 
 @socketio.on('disconnect', namespace='/chat')
