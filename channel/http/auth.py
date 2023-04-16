@@ -5,7 +5,7 @@ import time
 
 import jwt
 
-from common import const, log
+from common import const
 from config import channel_conf
 from config import project_conf
 
@@ -90,7 +90,6 @@ def identify(request):
 
     try:
         if (request is None):
-            log.error("Request is null")
             return False
         authorization = request.cookies.get('Authorization')
         if (authorization):
@@ -103,7 +102,6 @@ def identify(request):
                     return False
                 else:
                     return True
-        log.error("Authorization is null")
         return False
 
     except jwt.ExpiredSignatureError:
