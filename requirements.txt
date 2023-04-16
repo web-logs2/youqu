@@ -6,7 +6,6 @@ PyJWT
 flask
 slack_bolt
 llama-index
-pyTelegramBotAPI
 azure-cognitiveservices-vision-computervision
 azure-cognitiveservices-speech
 boto
@@ -19,3 +18,11 @@ torch
 transformers
 docx2txt
 sentencepiece
+larksuite-oapi
+Flask-SocketIO
+python-dotenv
+eventlet
+DBUtils
+gevent
+gevent-websocket
+nest_asyncio
