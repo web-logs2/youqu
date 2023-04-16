@@ -26,3 +26,4 @@ DBUtils
 gevent
 gevent-websocket
 nest_asyncio
+BeautifulSoup4
