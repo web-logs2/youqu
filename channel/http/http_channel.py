@@ -2,7 +2,6 @@
 import base64
 import json
 import os
-from datetime import timedelta
 
 import nest_asyncio
 from flask_socketio import SocketIO
@@ -34,7 +33,7 @@ CORS(http_app)
 socketio = SocketIO(http_app, cors_allowed_origins="*", async_mode='gevent')
 
 # 设置静态文件缓存过期时间
-http_app.config['SEND_FILE_MAX_AGE_DEFAULT'] = timedelta(seconds=1)
+http_app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
 
 @http_app.route("/text", methods=['POST'])
@@ -108,16 +107,6 @@ def upload_file():
         return jsonify({'content': 'No file selected'})
     return upload_file_service(file)
 
-
-# @http_app.route('/synthesize', methods=['POST'])
-# def synthesize():
-#     data = json.loads(request.data)
-#     text = data['text']
-#     azure = AZURE()
-#     audio_data = azure.synthesize_speech(text).audio_data
-#     buffer = io.BytesIO(audio_data)
-#     mimetype = 'audio/mpeg'
-#     return send_file(buffer, mimetype=mimetype, as_attachment=False)
 
 
 @http_app.route("/", methods=['GET'])
@@ -218,34 +207,6 @@ def disconnect():
     socketio.server.disconnect(request.sid, namespace="/chat")
 
 
-# class SocketIOHandler:
-#
-#     @socketio.on('message')
-#     def test_message(message):
-#         data = json.loads(message)
-#         log.INFO("data"+data)
-#         if not auth.identify(request):
-#             log.INFO("Cookie error")
-#             return
-#         for completion in HttpChannel().handle_text(data=data, stream=True):
-#             log.info('result:'.format(completion))
-#             socketio.emit('response', {'content': completion})
-#
-#     @socketio.on('broadcast')
-#     def test_message(message):
-#         print("broadcast")
-#
-#     @socketio.on('connect')
-#     def test_connect(arg):
-#         log.info('Client connected')
-#
-#     @socketio.on('disconnect')
-#     def test_disconnect():
-#         log.info('Client dis connected')
-#
-#     # @sio.on('my_event')
-#     # def my_event(data):
-#     #     print('Received data: ', data)
 
 
 class HttpChannel(Channel):
@@ -325,16 +286,3 @@ def webhook_event():
     resp.status_code = oapi_resp.status_code
     return resp
 
-# @socketio.on('message', namespace='/chat')
-# def handle_promote(data):
-#     log.info("message:" + data)
-#     if not auth.identify(request):
-#         log.INFO("Cookie error")
-#         return
-#     for completion in HttpChannel().handle_text(data=data):
-#         socketio.emit('response', {'content': completion})
-
-
-# @socketio.on('connect', namespace='/chat')
-# def handle_connect():
-#     log.info('Client connected')
