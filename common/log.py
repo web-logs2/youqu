@@ -14,6 +14,7 @@ def _get_logger():
     console_handle.setFormatter(logging.Formatter('[%(levelname)s][%(asctime)s][%(filename)s:%(lineno)d] - %(message)s',
                                                   datefmt='%Y-%m-%d %H:%M:%S'))
     log.addHandler(console_handle)
+    log.propagate=False
     return log
 
 
@@ -90,7 +91,6 @@ def error(arg, *args):
 
 def exception(e):
     logger.exception(e)
-
 
 # 日志句柄
 logger = _get_logger()
