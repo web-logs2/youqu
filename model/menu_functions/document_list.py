@@ -30,7 +30,10 @@ class DocumentList(MenuFunction):
             page_number, 50)
         logging.info("Documents size:{}".format(len(documents)))
         for row in documents:
-            result += "文件名： " + row.title + " 训练 :"
+
+            type_text = DocumentRecord.type_mapping(row.type)
+
+            result += "文件名： " + row.title + "(" + type_text + ") 训练 :"
             result += "已完成" if row.trained else "未完成"
             result += '\n\n'
         return result
