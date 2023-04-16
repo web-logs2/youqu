@@ -101,6 +101,10 @@ class ChatGPTModel(Model):
     async def reply_text_stream(self, query, context, retry_count=0):
         try:
             user_id = context['from_user_id']
+            if query == '#清除记忆':
+                Session.clear_session(user_id)
+                yield True, '记忆已清除'
+                return
             new_query = Session.build_session_query(query, user_id)
             res = openai.ChatCompletion.create(
                 model=model_conf(const.OPEN_AI).get("model") or "gpt-3.5-turbo",  # 对话模型的名称
