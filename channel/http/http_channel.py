@@ -24,13 +24,13 @@ from common.db.dbconfig import db
 import asyncio
 
 nest_asyncio.apply()
-http_app = Flask(__name__, template_folder='templates', static_folder='static', )
+http_app = Flask(__name__, template_folder='templates', static_folder='static')
 # 自动重载模板文件
 http_app.jinja_env.auto_reload = True
 http_app.config['TEMPLATES_AUTO_RELOAD'] = True
 
 CORS(http_app)
-socketio = SocketIO(http_app, cors_allowed_origins="*", async_mode='gevent')
+socketio = SocketIO(http_app, cors_allowed_origins="*")
 
 # 设置静态文件缓存过期时间
 http_app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
@@ -163,7 +163,7 @@ async def return_stream(data):
                 disconnect()
             else:
                 # log.info("reply:" + response)
-                socketio.sleep(0.01)
+                socketio.sleep(0.001)
                 socketio.server.emit(
                     'reply', {'content': response, 'messageID': data['messageID'], 'final': final}, request.sid,
                     namespace="/chat")
@@ -205,6 +205,7 @@ def connect():
 def disconnect():
     log.info('disconnect')
     socketio.server.disconnect(request.sid, namespace="/chat")
+    db.close()
 
 
 
