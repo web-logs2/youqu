@@ -27,3 +27,4 @@ gevent
 gevent-websocket
 nest_asyncio
 BeautifulSoup4
+nltk

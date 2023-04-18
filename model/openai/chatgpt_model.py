@@ -18,6 +18,7 @@ from model.menu_functions.cnblogs_pre_train_document import CnblogsPreTrainDocum
 
 from model.menu_functions.wx_pre_train_document import WxPreTrainDocument
 from model.menu_functions.wx_query_document import WxQueryDocument
+from model.menu_functions.clear_memory import ClearMemory
 
 if model_conf(const.OPEN_AI).get('expires_in_seconds'):
     user_session = ExpiringDict(model_conf(const.OPEN_AI).get('expires_in_seconds'))
@@ -187,7 +188,7 @@ class ChatGPTModel(Model):
     def menuList(self, arg):
         return [PreTrainDcoumnet(), QueryDcoumnet(), DocumentList(),
                 CnblogsQueryDcoumnet(), CnblogsPreTrainDocument(),
-                WxQueryDocument(), WxPreTrainDocument()]
+                WxQueryDocument(), WxPreTrainDocument(), ClearMemory()]
 
 
 class Session(object):

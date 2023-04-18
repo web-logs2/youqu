@@ -1,4 +1,4 @@
-from model.menu_function import MenuFunction
+from model.menu_functions.menu_function import MenuFunction
 
 
 class DemoFunction(MenuFunction):

@@ -1,6 +1,6 @@
 import logging
 from common.db.document_record import DocumentRecord
-from model.menu_function import MenuFunction
+from model.menu_functions.menu_function import MenuFunction
 
 
 class DocumentList(MenuFunction):

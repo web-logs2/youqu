@@ -3,7 +3,7 @@ Message sending channel abstract class
 """
 
 from bridge.bridge import Bridge
-from model.menu_function import MenuFunction
+from model.menu_functions.menu_function import MenuFunction
 
 
 class Channel(object):
@@ -59,5 +59,15 @@ class Channel(object):
         return Bridge.fetch_menu_list(self)
 
     async def build_reply_stream(self, query, context=None):
+        if (query == '#菜单'):
+            yield True,self.menuString
+            return
+        if (query.startswith("#")):
+            cmds = query.split()
+            cmd = self.menuDict.get(cmds[0])
+            if cmd != None:
+                yield True,cmd.execute(cmds)
+                return
+
         async for final, response in Bridge().fetch_reply_stream(query, context):
             yield final, response

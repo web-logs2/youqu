@@ -16,7 +16,7 @@ from concurrent.futures import ThreadPoolExecutor
 executor = ThreadPoolExecutor(2)
 
 
-def upload_file_service(file):
+def upload_file_service(file,uid):
     filename = file.filename.replace(" ", "")
     records = DocumentRecord.select().where(DocumentRecord.title == filename)
     if records.count() > 0:
@@ -25,13 +25,10 @@ def upload_file_service(file):
 
     # 创建根目录（若不存在）
 
-    if not os.path.exists(project_conf("upload_pre_training_folder")):
-        os.mkdir(project_conf("upload_pre_training_folder"))
-    os.mkdir(upload_dir)
-    file.save(os.path.join(upload_dir, filename))
+
     try:
         new_document = DocumentRecord(
-            user_id=1,
+            user_id=uid,
             title=filename,
             path=upload_dir,
             deleted=False,
@@ -39,13 +36,17 @@ def upload_file_service(file):
             created_time=datetime.datetime.now(),
             updated_time=datetime.datetime.now(),
             trained=False,
-            trained_file_path = upload_dir + 'index_' + Path(filename).stem + ".json"
+            trained_file_path = upload_dir + 'index_' + Path(filename).stem + ".json",
+            type="book",
         )
         new_document.save()
+        if not os.path.exists(project_conf("upload_pre_training_folder")):
+            os.mkdir(project_conf("upload_pre_training_folder"))
+        os.mkdir(upload_dir)
+        file.save(os.path.join(upload_dir, filename))
     except Exception as e:
         logging.ERROR(e)
         return jsonify({'content': 'Error!'})
-
     training_service(new_document)
     return jsonify({'content': '文件训练成功，请使用"{}"命令查看训练状态。'.format(DocumentList.getCmd())})
 

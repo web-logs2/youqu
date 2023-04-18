@@ -112,34 +112,3 @@ def identify(request):
         # result = '没有提供认证token'
         return False
 
-
-
-def identify_wss(authorization):
-    """
-    用户鉴权
-    :return: list
-    """
-
-    if project_conf("env") == "development":
-        return True
-
-    try:
-        if (authorization):
-            payload = Auth.decode_auth_token(authorization)
-            if not isinstance(payload, str):
-                authPassword = channel_conf(
-                    const.HTTP).get('http_auth_password')
-                password = payload['data']['id']
-                if password != authPassword:
-                    return False
-                else:
-                    return True
-        return False
-
-    except jwt.ExpiredSignatureError:
-        # result = 'Token已更改，请重新登录获取'
-        return False
-
-    except jwt.InvalidTokenError:
-        # result = '没有提供认证token'
-        return False

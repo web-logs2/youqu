@@ -11,7 +11,7 @@ from common import const
 from common import log
 from common.db.document_record import DocumentRecord
 from config import model_conf
-from model.menu_function import MenuFunction
+from model.menu_functions.menu_function import MenuFunction
 
 os.environ["OPENAI_API_KEY"] = model_conf(const.OPEN_AI).get('api_key')
 
@@ -43,7 +43,7 @@ class WxPreTrainDocument(MenuFunction):
             # #训练微信公众号 字节跳动技术团队 50
 
             fakeid = self.get_fakeid(authorName)
-            index_path = './tmp/wx/' + fakeid + '/index.json'
+            index_path = './tmp/wx/' + authorName + '/index.json'
             success = self.init_appmsg(authorName, fakeid, index_path, count)
             if success:
                 documents = SimpleDirectoryReader('./tmp/wx/' + fakeid + '/').load_data()

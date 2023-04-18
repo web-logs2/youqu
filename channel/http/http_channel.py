@@ -102,10 +102,11 @@ def upload_file():
         return jsonify({'content': 'No file selected'})
 
     file = request.files['files']
+    uid = request.form.get('uid')
     # 检查文件名是否为空
     if file.filename == '':
         return jsonify({'content': 'No file selected'})
-    return upload_file_service(file)
+    return upload_file_service(file,uid)
 
 
 
@@ -208,19 +209,11 @@ def disconnect():
     db.close()
 
 
-
-
 class HttpChannel(Channel):
     def startup(self):
         ssl_certificate_path = channel_conf(const.HTTP).get('ssl_certificate_path')
         http_app.debug = True
         port = channel_conf(const.HTTP).get('port')
-        # socketio_server = socketio.init_app(
-        #     http_app, cors_allowed_origins="*"
-        # )
-        # http_app.handlers = [Handler()]
-        # print('aaaaaaaaaa')
-        # socket_io.init_app(http_app, cors_allowed_origins="*")
 
         if not ssl_certificate_path:
             ssl_certificate_path = script_directory = os.path.dirname(os.path.abspath(__file__)) + "/resources"
@@ -231,20 +224,13 @@ class HttpChannel(Channel):
         else:
             cert_path = ssl_certificate_path + '/fullchain.pem'
             key_path = ssl_certificate_path + '/privkey.pem'
-            # eventlet.wsgi.server(
-            #     eventlet.wrap_ssl(eventlet.listen(('', port)), certfile=cert_path, keyfile=key_path, server_side=True),
-            #     socketio_server)
+
             log.info("Start ssl server")
             socketio.run(http_app, host='0.0.0.0', port=port, certfile=cert_path, keyfile=key_path)
-            # eventlet.wsgi.server(
-            #     eventlet.wrap_ssl(eventlet.listen(('', port)), certfile=cert_path, keyfile=key_path, server_side=True),
-            #     http_app)
-
-            # http_app.run(host='0.0.0.0', port=channel_conf(const.HTTP).get('port'), ssl_context=(ssl_certificate_path + '/fullchain.pem', ssl_certificate_path + '/privkey.pem'))
 
     def handle_text(self, data, stream=False):
         context = dict()
-        id = data["id"]
+        id = data["uid"]
         context['from_user_id'] = str(id)
         context['stream'] = stream
         return super().build_text_reply_content(data["msg"], context)
@@ -259,7 +245,7 @@ class HttpChannel(Channel):
 
     def handle_picture(self, data):
         context = dict()
-        id = data["id"]
+        id = data["uid"]
         context['from_user_id'] = str(id)
         return super().build_picture_reply_content(data["msg"])
 
@@ -286,4 +272,3 @@ def webhook_event():
     resp.data = oapi_resp.body
     resp.status_code = oapi_resp.status_code
     return resp
-
