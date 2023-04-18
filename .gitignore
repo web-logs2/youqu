@@ -15,3 +15,5 @@ session.token
 /channel/http/resources/privkey.pem
 /channel/http/resources/server.csr
 /channel/http/resources/server.key.org
+channel/http/static/
+channel/http/templates/
