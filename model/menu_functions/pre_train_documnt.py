@@ -17,7 +17,7 @@ class PreTrainDcoumnet(MenuFunction):
         return "训练书籍"
 
     def getDescription(self) -> str:
-        return "#训练书籍  <书籍>"
+        return "#训练书籍"
 
     def getCmd(self) -> str:
         return "#训练书籍"
