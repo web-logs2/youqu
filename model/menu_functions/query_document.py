@@ -20,7 +20,7 @@ class QueryDcoumnet(MenuFunction):
         return "阅读书籍"
 
     def getDescription(self) -> str:
-        return "#阅读书籍  <书籍>  <query>"
+        return "#阅读书籍  <书籍id>  <query>"
 
     def getCmd(self) -> str:
         return "#阅读书籍"
@@ -29,11 +29,12 @@ class QueryDcoumnet(MenuFunction):
         if (len(arg) <= 2):
             return "请输入需要阅读的书籍和问题"
         try:
-            records = DocumentRecord.select().where(DocumentRecord.title == arg[1])
+            records = DocumentRecord.select().where(DocumentRecord.id == arg[1])
             if (records.count() <= 0):
                 return '书籍不存在'
             if (records[0].trained == False):
                 return '书籍未训练完成'
+            log.info("Trained file path:"+records[0].trained_file_path)
             index = GPTSimpleVectorIndex.load_from_disk(records[0].trained_file_path)
 
             start_time = time.time()
@@ -42,7 +43,6 @@ class QueryDcoumnet(MenuFunction):
             end_time = time.time()
             logging.info("Total time elapsed: {}".format(end_time - start_time))
             logging.info("Answer: {}".format(res.response))
-
             return res.response
         except Exception as e:
             log.exception(e)
