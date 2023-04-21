@@ -60,14 +60,23 @@ class Channel(object):
 
     async def build_reply_stream(self, query, context=None):
         if (query == '#菜单'):
-            yield True,self.menuString
+            yield True, self.menuString
             return
-        if (query.startswith("#")):
-            cmds = query.split()
-            cmd = self.menuDict.get(cmds[0])
-            if cmd != None:
-                yield True,cmd.execute(cmds)
-                return
-
-        async for final, response in Bridge().fetch_reply_stream(query, context):
-            yield final, response
+        # if (query.startswith("#")):
+        #     cmds = query.split()
+        #     cmd = self.menuDict.get(cmds[0])
+        #     if cmd is not None:
+        #         res = cmd.execute(cmds)
+        #         if type(res) == str:
+        #             yield True, res
+        #             return
+        #         else:
+        #             response = ""
+        #             for token in res:
+        #                 response += token
+        #                 yield False, response
+        #             #yield True, response
+        #             #return
+        else:
+            async for final, response in Bridge().fetch_reply_stream(query, context):
+                yield final, response
