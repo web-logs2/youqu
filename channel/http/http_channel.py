@@ -175,13 +175,6 @@ async def return_stream(data):
         log.warning("[http]emit:{}", e)
 
 
-def run_async_test(data):
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.run_until_complete(return_stream(data))
-    loop.close()
-
-
 @socketio.on('message', namespace='/chat')
 def stream(data):
     if not auth.identify(request):

@@ -23,8 +23,6 @@ def upload_file_service(file,uid):
         return jsonify({'content': '上传失败，同名文件已经存在。'})
     upload_dir = project_conf("upload_pre_training_folder") + Path(filename).stem + "/"  # 上传文件保存的目录
 
-    # 创建根目录（若不存在）
-
 
     try:
         new_document = DocumentRecord(
@@ -40,6 +38,7 @@ def upload_file_service(file,uid):
             type="book",
         )
         new_document.save()
+        # 创建根目录（若不存在）
         if not os.path.exists(project_conf("upload_pre_training_folder")):
             os.mkdir(project_conf("upload_pre_training_folder"))
         os.mkdir(upload_dir)

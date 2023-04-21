@@ -39,11 +39,15 @@ class QueryDcoumnet(MenuFunction):
 
             start_time = time.time()
             res = index.query(arg[2],
+                              streaming=True,
                               optimizer=SentenceEmbeddingOptimizer(threshold_cutoff=0.7))
+            # for token in res.response_gen:
+            #     log.info("token:"+token)
+            #     yield token
+
             end_time = time.time()
             logging.info("Total time elapsed: {}".format(end_time - start_time))
-            logging.info("Answer: {}".format(res.response))
-            return res.response
+            return res.response_gen
         except Exception as e:
             log.exception(e)
             return '读取失败，请重试'
