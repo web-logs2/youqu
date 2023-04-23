@@ -108,11 +108,13 @@ class ChatGPTModel(Model):
     async def reply_text_stream(self, query, context, retry_count=0):
         try:
             user_id = context['from_user_id']
+            conversation_id = context['conversation_id']
+            user_session_id=user_id.join(conversation_id)
             if query == '#清除记忆':
-                Session.clear_session(user_id)
+                Session.clear_session(user_session_id)
                 yield True, '记忆已清除'
                 return
-            new_query = Session.build_session_query(query, user_id)
+            new_query = Session.build_session_query(query, user_session_id)
             res = openai.ChatCompletion.create(
                 model=model_conf(const.OPEN_AI).get("model") or "gpt-3.5-turbo",  # 对话模型的名称
                 messages=new_query,
@@ -135,7 +137,7 @@ class ChatGPTModel(Model):
                 if (chunk_message):
                     full_response += chunk_message
                 yield False, full_response
-            Session.save_session(query, full_response, user_id)
+            Session.save_session(query, full_response, user_session_id)
             log.info("[chatgpt]: reply={}", full_response)
             yield True, full_response
 
@@ -145,7 +147,7 @@ class ChatGPTModel(Model):
             if retry_count < 1:
                 time.sleep(5)
                 log.warn("[CHATGPT] RateLimit exceed, 第{}次重试".format(retry_count + 1))
-                yield True, self.reply_text_stream(query, user_id, retry_count + 1)
+                yield True, self.reply_text_stream(query, user_session_id, retry_count + 1)
             else:
                 yield True, "提问太快啦，请休息一下再问我吧"
         except openai.error.APIConnectionError as e:
@@ -159,7 +161,7 @@ class ChatGPTModel(Model):
         except Exception as e:
             # unknown exception
             log.exception(e)
-            Session.clear_session(user_id)
+            Session.clear_session(user_session_id)
             yield True, "请再问我一次吧"
 
     def create_img(self, query, retry_count=0):

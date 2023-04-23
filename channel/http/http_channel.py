@@ -159,14 +159,14 @@ async def return_stream(data):
             if final:
                 log.info("Final:" + response)
                 socketio.server.emit(
-                    'final', {'content': response, 'messageID': data['messageID'], 'final': final}, request.sid,
+                    'final', {'content': response, 'messageID': data['messageID'],'conversation_id': data['conversation_id'], 'final': final}, request.sid,
                     namespace="/chat")
                 disconnect()
             else:
                 # log.info("reply:" + response)
                 socketio.sleep(0.001)
                 socketio.server.emit(
-                    'reply', {'content': response, 'messageID': data['messageID'], 'final': final}, request.sid,
+                    'reply', {'content': response, 'messageID': data['messageID'],'conversation_id': data['conversation_id'], 'final': final}, request.sid,
                     namespace="/chat")
             # disconnect()
 
@@ -223,15 +223,14 @@ class HttpChannel(Channel):
 
     def handle_text(self, data, stream=False):
         context = dict()
-        id = data["uid"]
-        context['from_user_id'] = str(id)
-        context['stream'] = stream
+        context['from_user_id'] = str(data["uid"])
+        context['conversation_id'] = str(data["conversation_id"])
         return super().build_text_reply_content(data["msg"], context)
 
     async def handle_stream(self, data):
         context = dict()
-        id = data["uid"]
-        context['from_user_id'] = str(id)
+        context['from_user_id'] = str(data["uid"])
+        context['conversation_id'] = str(data["conversation_id"])
         log.info("Handle stream:" + data["msg"])
         async for final, reply in super().build_reply_stream(data["msg"], context):
             yield final, reply
