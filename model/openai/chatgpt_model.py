@@ -1,5 +1,5 @@
 # encoding:utf-8
-
+import datetime
 import time
 
 import openai
@@ -7,6 +7,7 @@ from expiring_dict import ExpiringDict
 
 from common import const
 from common import log
+from common.db.query_record import QueryRecord
 from config import model_conf
 from model.menu_functions.document_list import DocumentList
 from model.menu_functions.pre_train_documnt import PreTrainDcoumnet
@@ -140,6 +141,15 @@ class ChatGPTModel(Model):
                 yield False, full_response
             Session.save_session(query, full_response, user_session_id)
             log.info("[chatgpt]: reply={}", full_response)
+            query_record = QueryRecord(
+                user_id=user_id,
+                conversation_id=conversation_id,
+                query=query,
+                reply=full_response,
+                created_time=datetime.datetime.now(),
+                updated_time=datetime.datetime.now(),
+            )
+            query_record.save()
             yield True, full_response
 
         except openai.error.RateLimitError as e:
