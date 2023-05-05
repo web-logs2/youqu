@@ -44,8 +44,8 @@ class ChatGPTModel(Model):
             if query == '#清除记忆':
                 Session.clear_session(from_user_id)
                 return '记忆已清除'
-
-            new_query = Session.build_session_query(query, from_user_id)
+            system_prompt = context['system_prompt']
+            new_query = Session.build_session_query(query, from_user_id, system_prompt)
             log.debug("userid:{} [CHATGPT] session query={}".format(from_user_id, new_query))
 
             # if context.get('stream'):
@@ -110,12 +110,13 @@ class ChatGPTModel(Model):
         try:
             user_id = context['from_user_id']
             conversation_id = context['conversation_id']
+            system_prompt = context['system_prompt']
             user_session_id = user_id.join(conversation_id)
             if query == '#清除记忆':
                 Session.clear_session(user_session_id)
                 yield True, '记忆已清除'
                 return
-            new_query = Session.build_session_query(query, user_session_id)
+            new_query = Session.build_session_query(query, user_session_id, system_prompt)
             res = openai.ChatCompletion.create(
                 model=model_conf(const.OPEN_AI).get("model") or "gpt-3.5-turbo",  # 对话模型的名称
                 messages=new_query,
@@ -205,7 +206,7 @@ class ChatGPTModel(Model):
 
 class Session(object):
     @staticmethod
-    def build_session_query(query, user_id):
+    def build_session_query(query, user_id, system_prompt):
         '''
         build query with conversation history
         e.g.  [
@@ -220,7 +221,7 @@ class Session(object):
         '''
         session = user_session.get(user_id, [])
         if len(session) == 0:
-            system_prompt = model_conf(const.OPEN_AI).get("character_desc", "")
+            # system_prompt = model_conf(const.OPEN_AI).get("character_desc", "")
             system_item = {'role': 'system', 'content': system_prompt}
             session.append(system_item)
             user_session[user_id] = session
