@@ -16,7 +16,7 @@ from channel.channel import Channel
 from channel.http import auth
 from common import const, log
 from common.generator import generate_uuid
-from config import channel_conf
+from config import channel_conf, model_conf
 from model.azure.azure_model import AZURE
 from channel.feishu.common_service import conf
 from service.file_training_service import upload_file_service
@@ -231,6 +231,7 @@ class HttpChannel(Channel):
         context = dict()
         context['from_user_id'] = str(data["uid"])
         context['conversation_id'] = str(data["conversation_id"])
+        context['system_prompt'] = str(data.get("system_prompt", model_conf(const.OPEN_AI).get("character_desc", "")))
         log.info("Handle stream:" + data["msg"])
         async for final, reply in super().build_reply_stream(data["msg"], context):
             yield final, reply
