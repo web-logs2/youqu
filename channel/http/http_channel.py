@@ -106,8 +106,7 @@ def upload_file():
     # 检查文件名是否为空
     if file.filename == '':
         return jsonify({'content': 'No file selected'})
-    return upload_file_service(file,uid)
-
+    return upload_file_service(file, uid)
 
 
 @http_app.route("/", methods=['GET'])
@@ -159,14 +158,18 @@ async def return_stream(data):
             if final:
                 log.info("Final:" + response)
                 socketio.server.emit(
-                    'final', {'content': response, 'messageID': data['messageID'],'conversation_id': data['conversation_id'], 'final': final}, request.sid,
+                    'final',
+                    {'content': response, 'messageID': data['messageID'], 'conversation_id': data['conversation_id'],
+                     'final': final}, request.sid,
                     namespace="/chat")
                 disconnect()
             else:
                 # log.info("reply:" + response)
                 socketio.sleep(0.001)
                 socketio.server.emit(
-                    'reply', {'content': response, 'messageID': data['messageID'],'conversation_id': data['conversation_id'], 'final': final}, request.sid,
+                    'reply',
+                    {'content': response, 'messageID': data['messageID'], 'conversation_id': data['conversation_id'],
+                     'final': final}, request.sid,
                     namespace="/chat")
             # disconnect()
 
@@ -232,6 +235,8 @@ class HttpChannel(Channel):
         context['from_user_id'] = str(data["uid"])
         context['conversation_id'] = str(data["conversation_id"])
         context['system_prompt'] = str(data.get("system_prompt", model_conf(const.OPEN_AI).get("character_desc", "")))
+        if context['system_prompt'] == "":
+            context['system_prompt'] = model_conf(const.OPEN_AI).get("character_desc", "")
         log.info("Handle stream:" + data["msg"])
         async for final, reply in super().build_reply_stream(data["msg"], context):
             yield final, reply

@@ -4,9 +4,11 @@ import time
 
 import openai
 from expiring_dict import ExpiringDict
+from peewee import DateTimeField
 
 from common import const
 from common import log
+from common.db.conversation import Conversation
 from common.db.query_record import QueryRecord
 from config import model_conf
 from model.menu_functions.document_list import DocumentList
@@ -150,6 +152,19 @@ class ChatGPTModel(Model):
                 updated_time=datetime.datetime.now(),
             )
             query_record.save()
+            conversation = Conversation.select().where(Conversation.conversation_id == conversation_id).first()
+            if conversation is None:
+                conversation = Conversation(
+                    conversation_id=conversation_id,
+                    user_id=user_id,
+                    promote=system_prompt,
+                    total_query=1,
+                    created_time=datetime.datetime.now(),
+                    updated_time=datetime.datetime.now()
+                )
+            else:
+                conversation.total_query = conversation.total_query + 1;
+            conversation.save()
             yield True, full_response
 
         except openai.error.RateLimitError as e:
