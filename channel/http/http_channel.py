@@ -1,27 +1,40 @@
 # encoding:utf-8
+import asyncio
 import base64
+import datetime
 import json
 import os
+import time
 
+import geoip2
 import nest_asyncio
-from flask_socketio import SocketIO
-from flask import Flask, request, render_template, make_response
+from flask import Flask, request, render_template, make_response,session
 from flask import jsonify
 from flask_cors import CORS
+from flask_socketio import SocketIO
+from geoip2 import database
 from larksuiteoapi import OapiHeader
 from larksuiteoapi.card import handle_card
 from larksuiteoapi.event import handle_event
 from larksuiteoapi.model import OapiRequest
+
+import config
 from channel.channel import Channel
+from channel.feishu.common_service import conf
 from channel.http import auth
+from channel.http.auth import sha256_encrypt, Auth
 from common import const, log
+from common.db import user
+from common.db.dbconfig import db
+from common.db.query_record import QueryRecord
+from common.db.user import User
+from common.functions import is_valid_password, is_valid_email, is_valid_username, is_valid_phone, \
+    is_path_empty_or_nonexistent
 from common.generator import generate_uuid
 from config import channel_conf, model_conf
+from model import model_factory
 from model.azure.azure_model import AZURE
-from channel.feishu.common_service import conf
 from service.file_training_service import upload_file_service
-from common.db.dbconfig import db
-import asyncio
 
 nest_asyncio.apply()
 http_app = Flask(__name__, template_folder='templates', static_folder='static')
@@ -35,15 +48,19 @@ socketio = SocketIO(http_app, cors_allowed_origins="*")
 # 设置静态文件缓存过期时间
 http_app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
+ip_reader = geoip2.database.Reader('./resources/GeoLite2-City.mmdb');
+
 
 @http_app.route("/text", methods=['POST'])
 def text():
-    if not auth.identify(request):
+    user_id = auth.identify(request)
+    if user_id is None:
         log.INFO("Cookie error")
         return
     data = json.loads(request.data)
     if data:
         msg = data['msg']
+        data['uid'] = user_id
         request_type = data.get('request_type', "text")
         if not msg:
             return
@@ -54,12 +71,14 @@ def text():
 
 @http_app.route("/voice", methods=['POST'])
 def voice():
-    if not auth.identify(request):
-        log.info("Cookie error")
+    user_id = auth.identify(request)
+    if user_id is None:
+        log.INFO("Cookie error")
         return
     data = json.loads(request.data)
     if data:
         msg = data['msg']
+        data['uid'] = user_id
         request_type = data.get('request_type', "text")
         if not msg:
             return
@@ -76,12 +95,14 @@ def voice():
 
 @http_app.route("/picture", methods=['POST'])
 def picture():
-    if not auth.identify(request):
-        log.info("Cookie error")
+    user_id = auth.identify(request)
+    if user_id is None:
+        log.INFO("Cookie error")
         return
     data = json.loads(request.data)
     if data:
         msg = data['msg']
+        data['uid'] = user_id
         request_type = data.get('request_type', "text")
         if not msg:
             return
@@ -94,62 +115,96 @@ def picture():
 
 @http_app.route('/upload', methods=['POST'])
 def upload_file():
-    if not auth.identify(request):
-        log.info("Cookie error")
+    user_id = auth.identify(request)
+    if user_id is None:
+        log.INFO("Cookie error")
         return
-    # 检查文件是否存在
     if len(request.files) <= 0:
         return jsonify({'content': 'No file selected'})
 
     file = request.files['files']
-    uid = request.form.get('uid')
     # 检查文件名是否为空
     if file.filename == '':
         return jsonify({'content': 'No file selected'})
-    return upload_file_service(file, uid)
+    return upload_file_service(file, user_id)
 
 
 @http_app.route("/", methods=['GET'])
 def index():
-    if (auth.identify(request) == False):
+    if auth.identify(request) is None:
         return login()
     return render_template('index.html')
 
 
-@http_app.route("/login", methods=['POST', 'GET'])
-def login():
-    response = make_response("<html></html>", 301)
-    response.headers.add_header('content-type', 'text/plain')
-    response.headers.add_header('location', './')
-    if (auth.identify(request) == True):
-        return response
-    else:
-        if request.method == "POST":
-            token = auth.authenticate(request.form['password'])
-            if (token != False):
-                response.set_cookie(key='Authorization', value=token)
-                response.set_cookie(key='id', value=generate_uuid())
-                return response
-        else:
-            return render_template('login.html')
-    response.headers.set('location', './login?err=登录失败')
+@http_app.route('/register', methods=['POST'])
+def register():
+    if auth.identify(request) is not None:
+        return render_template('index.html')
+    data = json.loads(request.data)
+    email = data.get('email', '')
+    password = data.get('password', '')
+    username = data.get('username', '')
+    phone = data.get('phone', '')
+
+    if not (is_valid_email(email) and is_valid_password(password) and is_valid_username(username) and is_valid_phone(
+            phone)):
+        return jsonify({"error": "Invalid input format"}), 400
+
+    if User.select().where(User.email == email).first() is not None:
+        return jsonify({"error": "Email already exists"}), 400
+
+    new_user = User(user_id=generate_uuid(), user_name=username, email=email, phone=phone,
+                    password=sha256_encrypt(password), last_login=datetime.datetime.now(),
+                    created_time=datetime.datetime.now(),
+                    updated_time=datetime.datetime.now())
+    new_user.save()
+    #session['user'] = new_user
+    token = Auth.encode_auth_token(new_user.user_id, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+    response = make_response(
+        jsonify({"email": new_user.email, "username": new_user.user_name, "phone": new_user.phone}),
+        200)
+    response.headers.add_header('content-type', 'application/json')
+    response.set_cookie(key='Authorization', value=token)
+    log.info("Registration success: " + new_user.email)
     return response
+
+##sign out
+@http_app.route("/signout", methods=['POST'])
+def signout():
+    user_id = auth.identify(request)
+    model_factory.create_bot(config.conf().get("model").get("type")).clear_session_by_user_id(user_id)
+    response = make_response(
+        jsonify({"content": "success"}),
+        200)
+    response.headers.add_header('content-type', 'application/json')
+    response.set_cookie(key='Authorization', value="")
+    log.info("Login out: ")
+    return response
+
+@http_app.route("/login", methods=['POST'])
+def login():
+    data = json.loads(request.data)
+    password = data.get('password', '')
+    email = data.get('email', '')
+    current_user = auth.authenticate(email, password)
+    if current_user is None:
+        return jsonify({"error": "Invalid email or password"}), 200
+    else:
+        #add current user to session
+#        session['user'] = current_user
+        token = Auth.encode_auth_token(current_user.user_id, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+        response = make_response(
+            jsonify({"email": current_user.email, "username": current_user.user_name, "phone": current_user.phone}),
+            200)
+        response.headers.add_header('content-type', 'application/json')
+        response.set_cookie(key='Authorization', value=token)
+        log.info("Login success: " + current_user.email)
+        return response
 
 
 @http_app.teardown_request
 def teardown_request(exception):
     db.close()
-
-
-def is_path_empty_or_nonexistent(path):
-    if not path:
-        return True
-    elif not os.path.exists(path):
-        return True
-    elif os.path.isfile(path):
-        return False
-    else:
-        return len(os.listdir(path)) == 0
 
 
 async def return_stream(data):
@@ -172,18 +227,19 @@ async def return_stream(data):
                      'final': final}, request.sid,
                     namespace="/chat")
             # disconnect()
-
     except Exception as e:
         disconnect()
-        log.warning("[http]emit:{}", e)
+        log.error("[http]emit:{}", e)
 
 
 @socketio.on('message', namespace='/chat')
 def stream(data):
-    if not auth.identify(request):
-        disconnect()
+    user_id = auth.identify(request)
+    if user_id is None:
+        log.INFO("Cookie error")
         return
     # data = json.loads(data)
+    data['uid'] = user_id
     log.info("message:" + data['msg'])
     if data:
         asyncio.run(return_stream(data))
@@ -238,7 +294,29 @@ class HttpChannel(Channel):
         if context['system_prompt'] == "":
             context['system_prompt'] = model_conf(const.OPEN_AI).get("character_desc", "")
         log.info("Handle stream:" + data["msg"])
+        ip = request.remote_addr
+        ip_location = ""
+        try:
+            ip_location = ip_reader.city(ip)
+        except Exception as e:
+            log.error("[http]ip:{}", e)
+
+        query_record = QueryRecord(
+            user_id=context['from_user_id'],
+            conversation_id=context['conversation_id'],
+            query=data["msg"],
+            reply="",
+            ip=ip,
+            ip_location=ip_location,
+            created_time=datetime.datetime.now(),
+            updated_time=datetime.datetime.now(),
+        )
+        query_record.save()
+
         async for final, reply in super().build_reply_stream(data["msg"], context):
+            if final:
+                query_record.reply = reply
+                query_record.save()
             yield final, reply
 
     def handle_picture(self, data):

@@ -89,8 +89,20 @@ def error(arg, *args):
         logger.error(arg.format(*args))
 
 
-def exception(e):
-    logger.exception(e)
+def exception(arg, *args):
+    # 获取调用者的栈帧信息
+    caller_frame = inspect.stack()[1]
+    # 获取调用者的文件名和行号
+    caller_file = caller_frame.filename
+    caller_line = caller_frame.lineno
+
+    # 将调用者的信息添加到日志消息中
+    arg = f"[{caller_file}:{caller_line}] {arg}"
+
+    if len(args) == 0:
+        logger.exception(arg)
+    else:
+        logger.exception(arg.format(*args))
 
 # 日志句柄
 logger = _get_logger()

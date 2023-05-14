@@ -1,10 +1,13 @@
 # encoding:utf-8
 import datetime
+import json
+import re
 import time
 
 import openai
 from expiring_dict import ExpiringDict
 from peewee import DateTimeField
+from typing import List
 
 from common import const
 from common import log
@@ -44,7 +47,7 @@ class ChatGPTModel(Model):
             log.info("[CHATGPT] query={}".format(query))
             from_user_id = context['from_user_id']
             if query == '#清除记忆':
-                Session.clear_session(from_user_id)
+                Session.clear_session_by_user(from_user_id)
                 return '记忆已清除'
             system_prompt = context['system_prompt']
             new_query = Session.build_session_query(query, from_user_id, system_prompt)
@@ -113,16 +116,17 @@ class ChatGPTModel(Model):
             user_id = context['from_user_id']
             conversation_id = context['conversation_id']
             system_prompt = context['system_prompt']
-            user_session_id = user_id.join(conversation_id)
+            user_session_id = user_id+conversation_id
             if query == '#清除记忆':
-                Session.clear_session(user_session_id)
+                #Session.clear_session(user_session_id)
+                Session.clear_session_by_user(user_id)
                 yield True, '记忆已清除'
                 return
             new_query = Session.build_session_query(query, user_session_id, system_prompt)
             res = openai.ChatCompletion.create(
                 model=model_conf(const.OPEN_AI).get("model") or "gpt-3.5-turbo",  # 对话模型的名称
                 messages=new_query,
-                temperature=model_conf(const.OPEN_AI).get("temperature", 0.75),
+                temperature=model_conf(const.OPEN_AI).get("temperature", 0.8),
                 # 熵值，在[0,1]之间，越大表示选取的候选词越随机，回复越具有不确定性，建议和top_p参数二选一使用，创意性任务越大越好，精确性任务越小越好
                 # max_tokens=4096,  # 回复最大的字符数，为输入和输出的总数
                 # top_p=model_conf(const.OPEN_AI).get("top_p", 0.7),,  #候选词列表。0.7 意味着只考虑前70%候选词的标记，建议和temperature参数二选一使用
@@ -143,15 +147,6 @@ class ChatGPTModel(Model):
                 yield False, full_response
             Session.save_session(query, full_response, user_session_id)
             log.info("[chatgpt]: reply={}", full_response)
-            query_record = QueryRecord(
-                user_id=user_id,
-                conversation_id=conversation_id,
-                query=query,
-                reply=full_response,
-                created_time=datetime.datetime.now(),
-                updated_time=datetime.datetime.now(),
-            )
-            query_record.save()
             conversation = Conversation.select().where(Conversation.conversation_id == conversation_id).first()
             if conversation is None:
                 conversation = Conversation(
@@ -220,6 +215,7 @@ class ChatGPTModel(Model):
 
 
 class Session(object):
+
     @staticmethod
     def build_session_query(query, user_id, system_prompt):
         '''
@@ -255,12 +251,31 @@ class Session(object):
             # append conversation
             gpt_item = {'role': 'assistant', 'content': answer}
             session.append(gpt_item)
+            if used_tokens == 0:
+                used_tokens = Session.count_words(session)
+                log.info("Session:{} Used tokens:{}".format(session,used_tokens))
 
-        if used_tokens > max_tokens and len(session) >= 3:
+        if used_tokens > max_tokens or len(session) >= 20:
             # pop first conversation (TODO: more accurate calculation)
             session.pop(1)
             session.pop(1)
 
     @staticmethod
-    def clear_session(user_id):
-        user_session[user_id] = []
+    # Session is a list, count words
+    def count_words(session: List) -> int:
+        # 使用正则表达式匹配单词、汉字和符号
+        pattern = r'\w+|[\u4e00-\u9fa5]|[^a-zA-Z0-9\u4e00-\u9fa5\s]'
+        return len(re.findall(pattern, str(json.dumps(session))))
+
+    @staticmethod
+    def clear_session(session_id):
+        user_session[session_id] = []
+    @staticmethod
+    def clear_session_by_user(user_id):
+        #list all key
+        for key in user_session.keys():
+            #if key start with user_id
+            if key.startswith(user_id):
+                user_session[key]= []
+                log.info("clear session:{}".format(key))
+
