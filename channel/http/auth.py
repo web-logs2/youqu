@@ -1,13 +1,13 @@
 # encoding:utf-8
 
 import datetime
-import time
+import hashlib
 
 import jwt
 
 from common import const
+from common.db.user import User
 from config import channel_conf
-from config import project_conf
 
 
 class Auth:
@@ -28,7 +28,7 @@ class Auth:
         try:
             payload = {
                 'iss': 'ken',  # 签名
-                'exp': datetime.datetime.utcnow() + datetime.timedelta(days=0, hours=10),  # 过期时间
+                'exp': datetime.datetime.utcnow() + datetime.timedelta(days=0, hours=24),  # 过期时间
                 'iat': datetime.datetime.utcnow(),  # 开始时间
                 'data': {
                     'id': user_id,
@@ -64,19 +64,8 @@ class Auth:
             return '无效Token'
 
 
-def authenticate(password):
-    """
-    用户登录，登录成功返回token
-    :param password:
-    :return: json
-    """
-    authPassword = channel_conf(const.HTTP).get('http_auth_password')
-    if authPassword != password:
-        return False
-    else:
-        login_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-        token = Auth.encode_auth_token(password, login_time)
-        return token
+def sha256_encrypt(password):
+    return hashlib.sha256(password.encode()).hexdigest()
 
 
 def identify(request):
@@ -84,31 +73,47 @@ def identify(request):
     用户鉴权
     :return: list
     """
-
-    if project_conf("env") == "development":
-        return True
+    # if project_conf("env") == "development":
+    #     return True
 
     try:
-        if (request is None):
-            return False
+        if request is None:
+            return None
         authorization = request.cookies.get('Authorization')
-        if (authorization):
+        if authorization:
             payload = Auth.decode_auth_token(authorization)
             if not isinstance(payload, str):
-                authPassword = channel_conf(
-                    const.HTTP).get('http_auth_password')
-                password = payload['data']['id']
-                if password != authPassword:
-                    return False
-                else:
-                    return True
-        return False
+                return payload['data']['id']
+        return None
 
     except jwt.ExpiredSignatureError:
         # result = 'Token已更改，请重新登录获取'
-        return False
+        return None
 
     except jwt.InvalidTokenError:
         # result = '没有提供认证token'
-        return False
+        return None
 
+
+# def authenticate(password):
+#     """
+#     用户登录，登录成功返回token
+#     :param password:
+#     :return: json
+#     """
+#     authPassword = channel_conf(const.HTTP).get('http_auth_password')
+#     if authPassword != password:
+#         return False
+#     else:
+#         login_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+#         token = Auth.encode_auth_token(password, login_time)
+#         return token
+
+def authenticate(email, password)-> User:
+    if password == '' or email == '':
+        return
+    current_user = User.select().where(User.email==email and User.password==sha256_encrypt(password)).first()
+    if current_user is None:
+        return
+    else:
+        return current_user

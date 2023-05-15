@@ -16,6 +16,8 @@ class QueryRecord(Model):
     conversation_id = CharField(unique=False, max_length=64)
     query = CharField(unique=False, max_length=30000)
     reply = CharField(unique=False, max_length=30000)
+    ip = CharField(unique=False, max_length=128)
+    ip_location=CharField(unique=False, max_length=1024)
     created_time = DateTimeField()
     updated_time = DateTimeField()
 
