@@ -8,7 +8,7 @@ import time
 
 import geoip2
 import nest_asyncio
-from flask import Flask, request, render_template, make_response,session
+from flask import Flask, request, render_template, make_response, session
 from flask import jsonify
 from flask_cors import CORS
 from flask_socketio import SocketIO
@@ -158,7 +158,7 @@ def register():
                     created_time=datetime.datetime.now(),
                     updated_time=datetime.datetime.now())
     new_user.save()
-    #session['user'] = new_user
+    # session['user'] = new_user
     token = Auth.encode_auth_token(new_user.user_id, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
     response = make_response(
         jsonify({"email": new_user.email, "username": new_user.user_name, "phone": new_user.phone}),
@@ -167,6 +167,7 @@ def register():
     response.set_cookie(key='Authorization', value=token)
     log.info("Registration success: " + new_user.email)
     return response
+
 
 ##sign out
 @http_app.route("/signout", methods=['POST'])
@@ -181,6 +182,7 @@ def signout():
     log.info("Login out: ")
     return response
 
+
 @http_app.route("/login", methods=['POST'])
 def login():
     data = json.loads(request.data)
@@ -190,8 +192,8 @@ def login():
     if current_user is None:
         return jsonify({"error": "Invalid email or password"}), 200
     else:
-        #add current user to session
-#        session['user'] = current_user
+        # add current user to session
+        #        session['user'] = current_user
         token = Auth.encode_auth_token(current_user.user_id, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
         response = make_response(
             jsonify({"email": current_user.email, "username": current_user.user_name, "phone": current_user.phone}),
@@ -208,6 +210,7 @@ def teardown_request(exception):
 
 
 async def return_stream(data):
+    last_emit_time = time.time()
     try:
         async for final, response in HttpChannel().handle_stream(data=data):
             if final:
@@ -219,13 +222,16 @@ async def return_stream(data):
                     namespace="/chat")
                 disconnect()
             else:
-                # log.info("reply:" + response)
-                socketio.sleep(0.001)
-                socketio.server.emit(
-                    'reply',
-                    {'content': response, 'messageID': data['messageID'], 'conversation_id': data['conversation_id'],
-                     'final': final}, request.sid,
-                    namespace="/chat")
+                current_time = time.time()
+                if current_time - last_emit_time >= 2:
+                    socketio.sleep(0.001)
+                    socketio.server.emit(
+                        'reply',
+                        {'content': response, 'messageID': data['messageID'],
+                         'conversation_id': data['conversation_id'],
+                         'final': final}, request.sid,
+                        namespace="/chat")
+                    last_emit_time = current_time
             # disconnect()
     except Exception as e:
         disconnect()
@@ -296,10 +302,10 @@ class HttpChannel(Channel):
         log.info("Handle stream:" + data["msg"])
         ip = request.remote_addr
         ip_location = ""
-        try:
-            ip_location = ip_reader.city(ip)
-        except Exception as e:
-            log.error("[http]ip:{}", e)
+        # try:
+        #     ip_location = ip_reader.city(ip)
+        # except Exception as e:
+        #     log.error("[http]ip:{}", e)
 
         query_record = QueryRecord(
             user_id=context['from_user_id'],
