@@ -254,7 +254,6 @@ class Session(object):
             if used_tokens == 0:
                 used_tokens = Session.count_words(session)
                 log.info("Session:{} Used tokens:{}".format(session,used_tokens))
-        log.info("Save answer:{}, used token:{}".format(answer,used_tokens))
         if used_tokens > max_tokens:
             # pop first conversation (TODO: more accurate calculation)
             session.pop(1)
