@@ -131,6 +131,8 @@ def upload_file():
 
 @http_app.route("/", methods=['GET'])
 def index():
+    if auth.identify(request) is None:
+        return login()
     return render_template('index.html')
 
 
