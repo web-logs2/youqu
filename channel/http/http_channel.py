@@ -253,7 +253,8 @@ def stream(data):
 
 @socketio.on('connect', namespace='/chat')
 def connect():
-    if not auth.identify(request):
+    user_id = auth.identify(request)
+    if user_id is None:
         disconnect()
         return
     log.info('connected')
