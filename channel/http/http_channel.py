@@ -131,8 +131,6 @@ def upload_file():
 
 @http_app.route("/", methods=['GET'])
 def index():
-    if auth.identify(request) is None:
-        return login()
     return render_template('index.html')
 
 
@@ -303,10 +301,10 @@ class HttpChannel(Channel):
         log.info("Handle stream:" + data["msg"])
         ip = request.remote_addr
         ip_location = ""
-        # try:
-        #     ip_location = ip_reader.city(ip)
-        # except Exception as e:
-        #     log.error("[http]ip:{}", e)
+        try:
+            ip_location = ip_reader.city(ip)
+        except Exception as e:
+            log.error("[http]ip:{}", e)
 
         query_record = QueryRecord(
             user_id=context['from_user_id'],
