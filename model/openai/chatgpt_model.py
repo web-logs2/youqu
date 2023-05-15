@@ -241,12 +241,12 @@ class Session(object):
         return session
 
     @staticmethod
-    def save_session(query, answer, user_id, used_tokens=0):
+    def save_session(query, answer, sid, used_tokens=0):
         max_tokens = model_conf(const.OPEN_AI).get('conversation_max_tokens')
         if not max_tokens or max_tokens > 8000:
             # default value
             max_tokens = 8000
-        session = user_session.get(user_id)
+        session = user_session.get(sid)
         if session:
             # append conversation
             gpt_item = {'role': 'assistant', 'content': answer}
@@ -254,8 +254,8 @@ class Session(object):
             if used_tokens == 0:
                 used_tokens = Session.count_words(session)
                 log.info("Session:{} Used tokens:{}".format(session,used_tokens))
-
-        if used_tokens > max_tokens or len(session) >= 20:
+        log.info("Save answer:{}, used token:{}".format(answer,used_tokens))
+        if used_tokens > max_tokens:
             # pop first conversation (TODO: more accurate calculation)
             session.pop(1)
             session.pop(1)
