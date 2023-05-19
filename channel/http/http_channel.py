@@ -24,13 +24,14 @@ from channel.feishu.common_service import conf
 from channel.http import auth
 from channel.http.auth import sha256_encrypt, Auth
 from common import const, log
-from common.db import user
 from common.db.dbconfig import db
 from common.db.query_record import QueryRecord
 from common.db.user import User
 from common.functions import is_valid_password, is_valid_email, is_valid_username, is_valid_phone, \
     is_path_empty_or_nonexistent
 from common.generator import generate_uuid
+from common.email import send_reset_password
+import common.email
 from config import channel_conf, model_conf
 from model import model_factory
 from model.azure.azure_model import AZURE
@@ -157,7 +158,8 @@ def register():
                     updated_time=datetime.datetime.now())
     new_user.save()
     # session['user'] = new_user
-    token = Auth.encode_auth_token(new_user.user_id, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+    token = Auth.encode_auth_token(new_user.user_id, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),max_age=24 * 60 * 60
+                                   )
     response = make_response(
         jsonify({"email": new_user.email, "username": new_user.user_name, "phone": new_user.phone}),
         200)
@@ -192,7 +194,7 @@ def login():
     else:
         # add current user to session
         #        session['user'] = current_user
-        token = Auth.encode_auth_token(current_user.user_id, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+        token = Auth.encode_auth_token(current_user.user_id, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),max_age=24 * 60 * 60)
         response = make_response(
             jsonify({"email": current_user.email, "username": current_user.user_name, "phone": current_user.phone}),
             200)
@@ -200,6 +202,19 @@ def login():
         response.set_cookie(key='Authorization', value=token)
         log.info("Login success: " + current_user.email)
         return response
+
+
+@http_app.route("/sendcode", methods=['POST'])
+def send_code():
+    data = json.loads(request.data)
+    email = data.get('email', '')
+    current_user = User.select().where(User.email==email).first()
+    if current_user is None:
+        return jsonify({"content": "Email sent"}), 200
+    reset_token = Auth.encode_auth_token(current_user.user_id, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),1)
+    #reset_url = f'{channel_conf(const.HTTP).get("domain_name")}={reset_token}'
+    common.email.send_reset_password(reset_token, email)
+    return jsonify({"message": "Reset password email sent"}), 200
 
 
 @http_app.teardown_request

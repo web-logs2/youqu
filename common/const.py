@@ -19,3 +19,7 @@ BING = "bing"
 
 # db
 MYSQL = "mysql"
+
+EMAIL_SENDER = "no-reply@youqu.app"
+EMAIL_SENDER_NAME = "YouQu"
+EMAIL_TEMPLATE_RESET_PASSWORD="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"
