@@ -1,6 +1,8 @@
 import os
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail, Email, To
+
+from common import log
 from config import project_conf,channel_conf
 import common.const as const
 import ssl
@@ -17,13 +19,20 @@ def send_email_with_template(to_email, subject, template_id, dynamic_template_da
         message.dynamic_template_data = dynamic_template_data
 
     try:
-        sendgrid_client = SendGridAPIClient(project_conf("sendgrid_api_key"))
+        api_key=project_conf("sendgrid_api_key")
+        sendgrid_client = SendGridAPIClient(api_key)
         response = sendgrid_client.send(message)
-        print("Email sent successfully!")
+
+        log.info("Request headers:", sendgrid_client.client.default_headers)
+        log.info("Request body:", message.get())
+        # 也可以使用下面的方式打印请求体
+        # print("Request body:", json.dumps(message.get(), indent=4))
+
+        log.info("Email sent successfully!")
         return response.status_code
 
     except Exception as e:
-        print("Error occurred while sending email: ", e)
+        log.info("Error occurred while sending email: ", e)
 
 
 
