@@ -1,28 +1,30 @@
 import datetime
-import asyncio
 import logging
 import os
+import time
 
 from flask import jsonify
-from llama_index import SimpleDirectoryReader, GPTSimpleVectorIndex
+from llama_index import SimpleDirectoryReader
 
 from common.db.document_record import DocumentRecord
+from common.log import logger
 from model.menu_functions.document_list import DocumentList
 
 from config import project_conf
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 
-executor = ThreadPoolExecutor(2)
+from model.menu_functions.public_train_methods import public_train_documents
+
+executor = ThreadPoolExecutor(8)
 
 
-def upload_file_service(file,uid):
+def upload_file_service(file, uid):
     filename = file.filename.replace(" ", "")
     records = DocumentRecord.select().where(DocumentRecord.title == filename)
     if records.count() > 0:
         return jsonify({'content': '上传失败，同名文件已经存在。'})
     upload_dir = project_conf("upload_pre_training_folder") + Path(filename).stem + "/"  # 上传文件保存的目录
-
 
     try:
         new_document = DocumentRecord(
@@ -34,7 +36,7 @@ def upload_file_service(file,uid):
             created_time=datetime.datetime.now(),
             updated_time=datetime.datetime.now(),
             trained=False,
-            trained_file_path = upload_dir + 'index_' + Path(filename).stem + ".json",
+            trained_file_path=upload_dir + 'index_' + Path(filename).stem + ".json",
             type="book",
         )
         new_document.save()
@@ -44,22 +46,44 @@ def upload_file_service(file,uid):
         os.mkdir(upload_dir)
         file.save(os.path.join(upload_dir, filename))
     except Exception as e:
-        logging.ERROR(e)
+        logger.exception(e)
         return jsonify({'content': 'Error!'})
     training_service(new_document)
-    return jsonify({'content': '文件训练成功，请使用"{}"命令查看训练状态。'.format(DocumentList.getCmd())})
+    return jsonify({'content': '文件训练中，请使用"{}"命令查看训练状态。'.format(DocumentList.getCmd())})
 
 
 def training_service(record: DocumentRecord):
+    executor.submit(train_work, record)
+    logging.info(record.path + "Training work start:")
+    # train_work(record)
+
+
+def train_work(record: DocumentRecord):
     logging.info("Start training:" + record.title)
     documents = SimpleDirectoryReader(record.path).load_data()
-    index = GPTSimpleVectorIndex.from_documents(documents)
-    # save to disk
-    # records[0].trained_data = index.save_to_string()
-    path = record.path + 'index_' + Path(record.title).stem + ".json"
-    index.save_to_disk(path)
-    record.trained = True
-    record.trained_file_path = path
-    record.updated_time = datetime.datetime.now()
-    record.save()
-    logging.info("Training successfully:" + path)
+
+    try:
+        start_time = time.time()
+        index = public_train_documents(documents)
+        record.trained = True
+        end_time = time.time()
+        logging.info("Total time elapsed: {}".format(end_time - start_time))
+
+        # index = GPTTreeIndex.from_documents(documents)
+        # record.trained = True
+
+        # save to disk
+        # records[0].trained_data = index.save_to_string()
+        path = record.path + 'index_' + Path(record.title).stem + ".json"
+
+        # index.save_to_disk(path)
+        index.storage_context.persist(persist_dir=path)
+
+        record.trained_file_path = path
+        record.updated_time = datetime.datetime.now()
+        record.save()
+        logging.info("Training successfully:" + path)
+
+    except Exception as e:
+        record.trained = False
+        logging.error(e)

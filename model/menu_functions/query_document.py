@@ -2,14 +2,12 @@ import logging
 import os
 import time
 
-from llama_index import GPTSimpleVectorIndex
-from llama_index.optimization import SentenceEmbeddingOptimizer
-
 from common import const
 from common import log
 from common.db.document_record import DocumentRecord
 from config import model_conf
 from model.menu_functions.menu_function import MenuFunction
+from model.menu_functions.public_train_methods import public_query_documents
 
 os.environ["OPENAI_API_KEY"] = model_conf(const.OPEN_AI).get('api_key')
 
@@ -35,12 +33,18 @@ class QueryDcoumnet(MenuFunction):
             if (records[0].trained == False):
                 return '书籍未训练完成'
             log.info("Trained file path:"+records[0].trained_file_path)
-            index = GPTSimpleVectorIndex.load_from_disk(records[0].trained_file_path)
+            # index = GPTSimpleVectorIndex.load_from_disk(records[0].trained_file_path)
 
             start_time = time.time()
-            res = index.query(arg[2],
-                              streaming=True,
-                              optimizer=SentenceEmbeddingOptimizer(threshold_cutoff=0.7))
+
+            # res = index.query(arg[2],
+            #                   streaming=True,
+            #                   # mode="embedding",
+            #                   # response_mode="tree_summary",  # possible: default, compact, tree_summary
+            #                   optimizer=SentenceEmbeddingOptimizer(threshold_cutoff=0.7))
+
+            res = public_query_documents(records[0].trained_file_path, arg[2])
+
             # for token in res.response_gen:
             #     log.info("token:"+token)
             #     yield token

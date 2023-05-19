@@ -4,13 +4,14 @@ import urllib
 
 import requests
 from bs4 import BeautifulSoup
-from llama_index import GPTSimpleVectorIndex, SimpleDirectoryReader
+from llama_index import SimpleDirectoryReader
 
 from common import const
 from common import log
 from common.db.document_record import DocumentRecord
 from config import model_conf
 from model.menu_functions.menu_function import MenuFunction
+from model.menu_functions.public_train_methods import public_train_documents
 
 os.environ["OPENAI_API_KEY"] = model_conf(const.OPEN_AI).get('api_key')
 
@@ -47,8 +48,10 @@ class CnblogsPreTrainDocument(MenuFunction):
 
             if changed:
                 documents = SimpleDirectoryReader('./tmp/cnblogs/' + authorName + '/').load_data()
-                index = GPTSimpleVectorIndex.from_documents(documents)
-                index.save_to_disk(index_path)
+                # index = GPTSimpleVectorIndex.from_documents(documents)
+                index = public_train_documents(documents)
+                # index.save_to_disk(index_path)
+                index.storage_context.persist(persist_dir=index_path)
 
             return '训练完成'
         except Exception as e:
