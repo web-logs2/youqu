@@ -6,7 +6,7 @@ import json
 
 import jwt
 
-from common import const
+from common import const, log
 from common.db.user import User
 from config import channel_conf
 
@@ -79,6 +79,7 @@ def identify(request,is_stream=False):
 
     try:
         if request is None:
+            log.info("Request is none")
             return None
         if is_stream:
             token = request.args.get('token')
@@ -88,6 +89,8 @@ def identify(request,is_stream=False):
             payload = Auth.decode_auth_token(token)
             if not isinstance(payload, str):
                 return payload['data']['id']
+            else:
+                log.info("Token error: {}", payload)
         return None
 
     except jwt.ExpiredSignatureError:

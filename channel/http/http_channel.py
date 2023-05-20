@@ -261,9 +261,8 @@ async def return_stream(data):
 def stream(data):
     user_id = auth.identify(request, True)
     if user_id is None:
-        log.INFO("Cookie error")
+        log.info("Cookie error")
         socketio.emit('logout', {'error': "invalid cookie"}, namespace='/chat')
-        disconnect()
     # data = json.loads(data)
     data['uid'] = user_id
     log.info("message:" + data['msg'])
@@ -275,8 +274,8 @@ def stream(data):
 def connect():
     user_id = auth.identify(request, True)
     if user_id is None:
+        log.info("Cookie error")
         socketio.emit('logout', {'error': "invalid cookie"}, namespace='/chat')
-        #disconnect()
         return
     log.info('connected')
     socketio.emit('connected', {'info': "connected"}, namespace='/chat')
