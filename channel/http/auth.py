@@ -2,6 +2,7 @@
 
 import datetime
 import hashlib
+import json
 
 import jwt
 
@@ -18,7 +19,7 @@ class Auth:
         super(Auth, self).__init__()
 
     @staticmethod
-    def encode_auth_token(user_id, login_time, expire_time=30):
+    def encode_auth_token(user_id, login_time):
         """
         生成认证Token
         :param user_id: int
@@ -28,7 +29,7 @@ class Auth:
         try:
             payload = {
                 'iss': 'ken',  # 签名
-                'exp': datetime.datetime.utcnow() + datetime.timedelta(days=0, hours=expire_time),  # 过期时间
+                'exp': datetime.datetime.utcnow() + datetime.timedelta(days=0, hours=24),  # 过期时间
                 'iat': datetime.datetime.utcnow(),  # 开始时间
                 'data': {
                     'id': user_id,
@@ -68,7 +69,7 @@ def sha256_encrypt(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
 
-def identify(request):
+def identify(request,is_stream=False):
     """
     用户鉴权
     :return: list
@@ -79,9 +80,12 @@ def identify(request):
     try:
         if request is None:
             return None
-        authorization = request.cookies.get('Authorization')
-        if authorization:
-            payload = Auth.decode_auth_token(authorization)
+        if is_stream:
+            token = request.args.get('token')
+        else:
+            token = json.loads(request.data).get('token','')
+        if token:
+            payload = Auth.decode_auth_token(token)
             if not isinstance(payload, str):
                 return payload['data']['id']
         return None

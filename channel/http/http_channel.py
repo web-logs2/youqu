@@ -137,8 +137,6 @@ def index():
 
 @http_app.route('/register', methods=['POST'])
 def register():
-    if auth.identify(request) is not None:
-        return render_template('index.html')
     data = json.loads(request.data)
     email = data.get('email', '')
     password = data.get('password', '')
@@ -157,29 +155,18 @@ def register():
                     created_time=datetime.datetime.now(),
                     updated_time=datetime.datetime.now())
     new_user.save()
-    # session['user'] = new_user
     token = Auth.encode_auth_token(new_user.user_id, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
-    response = make_response(
-        jsonify({"email": new_user.email, "username": new_user.user_name, "phone": new_user.phone}),
-        200)
-    response.headers.add_header('content-type', 'application/json')
-    response.set_cookie(key='Authorization', value=token)
     log.info("Registration success: " + new_user.email)
-    return response
+    return jsonify({"content": "success", "username": new_user.user_name, "token": token}), 200
 
 
 ##sign out
-@http_app.route("/signout", methods=['POST'])
-def signout():
+@http_app.route("/sign-out", methods=['POST'])
+def sign_out():
     user_id = auth.identify(request)
     model_factory.create_bot(config.conf().get("model").get("type")).clear_session_by_user_id(user_id)
-    response = make_response(
-        jsonify({"content": "success"}),
-        200)
-    response.headers.add_header('content-type', 'application/json')
-    response.set_cookie(key='Authorization', value="")
     log.info("Login out: ")
-    return response
+    return jsonify({"content": "success"})
 
 
 @http_app.route("/login", methods=['POST'])
@@ -194,13 +181,8 @@ def login():
         # add current user to session
         #        session['user'] = current_user
         token = Auth.encode_auth_token(current_user.user_id, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
-        response = make_response(
-            jsonify({"email": current_user.email, "username": current_user.user_name, "phone": current_user.phone}),
-            200)
-        response.headers.add_header('content-type', 'application/json')
-        response.set_cookie(key='Authorization', value=token, max_age=24 * 60 * 60)
         log.info("Login success: " + current_user.email)
-        return response
+        return jsonify({"content": "success", "username": current_user.user_name, "token": token}), 200
 
 
 @http_app.route("/sendcode", methods=['POST'])
@@ -218,20 +200,16 @@ def send_code():
 
 @http_app.route("/reset_password", methods=['POST'])
 def reset_password():
+    user_id = auth.identify(request)
+    if user_id is None:
+        return jsonify({"error": "Invalid token"}), 401
     data = json.loads(request.data)
     password = data.get('password', '')
-    token= data.get('token', '')
     if not is_valid_password(password):
-        return jsonify({"error": "Invalid password"}), 400
-    if token is None:
-        return jsonify({"error": "Invalid token"}), 401
-    payload = Auth.decode_auth_token(token)
-    if isinstance(payload, str):
-        return jsonify({"error": "Invalid token"}), 401
-    user_id=payload['data']['id']
+        return jsonify({"error": "Invalid password"}), 400  # bad request
     current_user = User.select().where(User.user_id == user_id).first()
-    current_user.password=sha256_encrypt(password)
-    current_user.updated_time=datetime.datetime.now()
+    current_user.password = sha256_encrypt(password)
+    current_user.updated_time = datetime.datetime.now()
     current_user.save()
     return jsonify({"message": "Reset password success"}), 200
 
@@ -243,7 +221,6 @@ def get_user_info():
     if current_user is None:
         return jsonify({"error": "Invalid user"}), 401
     return jsonify({"email": current_user.email, "username": current_user.user_name, "phone": current_user.phone}), 200
-
 
 
 @http_app.teardown_request
@@ -282,10 +259,11 @@ async def return_stream(data):
 
 @socketio.on('message', namespace='/chat')
 def stream(data):
-    user_id = auth.identify(request)
+    user_id = auth.identify(request, True)
     if user_id is None:
         log.INFO("Cookie error")
-        return
+        socketio.emit('logout', {'error': "invalid cookie"}, namespace='/chat')
+        disconnect()
     # data = json.loads(data)
     data['uid'] = user_id
     log.info("message:" + data['msg'])
@@ -295,9 +273,10 @@ def stream(data):
 
 @socketio.on('connect', namespace='/chat')
 def connect():
-    user_id = auth.identify(request)
+    user_id = auth.identify(request, True)
     if user_id is None:
-        disconnect()
+        socketio.emit('logout', {'error': "invalid cookie"}, namespace='/chat')
+        #disconnect()
         return
     log.info('connected')
     socketio.emit('connected', {'info': "connected"}, namespace='/chat')
