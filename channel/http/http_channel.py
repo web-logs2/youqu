@@ -8,7 +8,7 @@ import time
 
 import geoip2
 import nest_asyncio
-from flask import Flask, request, render_template, make_response, session
+from flask import Flask, request, render_template, make_response
 from flask import jsonify
 from flask_cors import CORS
 from flask_socketio import SocketIO
@@ -18,6 +18,7 @@ from larksuiteoapi.card import handle_card
 from larksuiteoapi.event import handle_event
 from larksuiteoapi.model import OapiRequest
 
+import common.email
 import config
 from channel.channel import Channel
 from channel.feishu.common_service import conf
@@ -27,11 +28,10 @@ from common import const, log
 from common.db.dbconfig import db
 from common.db.query_record import QueryRecord
 from common.db.user import User
+from common.email import send_reset_password
 from common.functions import is_valid_password, is_valid_email, is_valid_username, is_valid_phone, \
     is_path_empty_or_nonexistent
 from common.generator import generate_uuid
-from common.email import send_reset_password
-import common.email
 from config import channel_conf, model_conf
 from model import model_factory
 from model.azure.azure_model import AZURE
@@ -158,8 +158,7 @@ def register():
                     updated_time=datetime.datetime.now())
     new_user.save()
     # session['user'] = new_user
-    token = Auth.encode_auth_token(new_user.user_id, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),max_age=24 * 60 * 60
-                                   )
+    token = Auth.encode_auth_token(new_user.user_id, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
     response = make_response(
         jsonify({"email": new_user.email, "username": new_user.user_name, "phone": new_user.phone}),
         200)
@@ -194,12 +193,12 @@ def login():
     else:
         # add current user to session
         #        session['user'] = current_user
-        token = Auth.encode_auth_token(current_user.user_id, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),max_age=24 * 60 * 60)
+        token = Auth.encode_auth_token(current_user.user_id, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
         response = make_response(
             jsonify({"email": current_user.email, "username": current_user.user_name, "phone": current_user.phone}),
             200)
         response.headers.add_header('content-type', 'application/json')
-        response.set_cookie(key='Authorization', value=token)
+        response.set_cookie(key='Authorization', value=token, max_age=24 * 60 * 60)
         log.info("Login success: " + current_user.email)
         return response
 
@@ -208,13 +207,43 @@ def login():
 def send_code():
     data = json.loads(request.data)
     email = data.get('email', '')
-    current_user = User.select().where(User.email==email).first()
+    current_user = User.select().where(User.email == email).first()
     if current_user is None:
-        return jsonify({"content": "Email sent"}), 200
-    reset_token = Auth.encode_auth_token(current_user.user_id, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),1)
-    #reset_url = f'{channel_conf(const.HTTP).get("domain_name")}={reset_token}'
+        return jsonify({"content": "Reset password email sent"}), 200
+    reset_token = Auth.encode_auth_token(current_user.user_id, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), 1)
+    # reset_url = f'{channel_conf(const.HTTP).get("domain_name")}={reset_token}'
     common.email.send_reset_password(reset_token, email)
     return jsonify({"message": "Reset password email sent"}), 200
+
+
+@http_app.route("/reset_password", methods=['POST'])
+def reset_password():
+    data = json.loads(request.data)
+    password = data.get('password', '')
+    token= data.get('token', '')
+    if not is_valid_password(password):
+        return jsonify({"error": "Invalid password"}), 400
+    if token is None:
+        return jsonify({"error": "Invalid token"}), 401
+    payload = Auth.decode_auth_token(token)
+    if isinstance(payload, str):
+        return jsonify({"error": "Invalid token"}), 401
+    user_id=payload['data']['id']
+    current_user = User.select().where(User.user_id == user_id).first()
+    current_user.password=sha256_encrypt(password)
+    current_user.updated_time=datetime.datetime.now()
+    current_user.save()
+    return jsonify({"message": "Reset password success"}), 200
+
+
+@http_app.route("/get_user_info", methods=['POST'])
+def get_user_info():
+    user_id = auth.identify(request)
+    current_user = User.select().where(User.user_id == user_id).first()
+    if current_user is None:
+        return jsonify({"error": "Invalid user"}), 401
+    return jsonify({"email": current_user.email, "username": current_user.user_name, "phone": current_user.phone}), 200
+
 
 
 @http_app.teardown_request

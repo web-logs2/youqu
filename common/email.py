@@ -23,8 +23,8 @@ def send_email_with_template(to_email, subject, template_id, dynamic_template_da
         sendgrid_client = SendGridAPIClient(api_key)
         response = sendgrid_client.send(message)
 
-        log.info("Request headers:", sendgrid_client.client.default_headers)
-        log.info("Request body:", message.get())
+        log.info("Request headers:{}", sendgrid_client.client.default_headers)
+        log.info("Request body:{}", message.get())
         # 也可以使用下面的方式打印请求体
         # print("Request body:", json.dumps(message.get(), indent=4))
 
@@ -39,7 +39,8 @@ def send_email_with_template(to_email, subject, template_id, dynamic_template_da
 def send_reset_password(token: str, recipient_email: str):
     template_id = const.EMAIL_TEMPLATE_RESET_PASSWORD  # 替换为您的SendGrid模板ID
     domain_name = channel_conf(const.HTTP).get('domain_name')
-    reset_password_url = f"{domain_name}/reset_password?token={token}"
+    reset_password_url = f"{domain_name}#/reset_password?token={token}"
+    log.info("reset_password_url:{} ", reset_password_url)
     dynamic_template_data = {"email": recipient_email,"url":reset_password_url}  # 您要替换的动态模板数据
     subject = "Reset your password"
     send_email_with_template(recipient_email, subject, template_id, dynamic_template_data)
