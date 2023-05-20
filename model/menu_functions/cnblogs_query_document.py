@@ -3,14 +3,12 @@ import os
 import time
 import urllib
 
-from llama_index import GPTSimpleVectorIndex
-from llama_index.optimization import SentenceEmbeddingOptimizer
-
 from common import const
 from common import log
 from common.db.document_record import DocumentRecord
 from config import model_conf
 from model.menu_functions.menu_function import MenuFunction
+from model.menu_functions.public_train_methods import public_query_documents
 
 os.environ["OPENAI_API_KEY"] = model_conf(const.OPEN_AI).get('api_key')
 
@@ -49,10 +47,12 @@ class CnblogsQueryDcoumnet(MenuFunction):
 
             index_path = author[0].trained_file_path
 
-            index = GPTSimpleVectorIndex.load_from_disk(index_path)
+            # index = GPTSimpleVectorIndex.load_from_disk(index_path)
 
             start_time = time.time()
-            res = index.query(arg[2], optimizer=SentenceEmbeddingOptimizer(threshold_cutoff=0.7))
+            # res = index.query(arg[2], optimizer=SentenceEmbeddingOptimizer(threshold_cutoff=0.7))
+            res = public_query_documents(index_path, arg[2])
+
             end_time = time.time()
             logging.info("Total time elapsed: {}".format(end_time - start_time))
             logging.info("Answer: {}".format(res.response))
