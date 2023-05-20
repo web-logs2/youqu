@@ -18,7 +18,7 @@ class Auth:
         super(Auth, self).__init__()
 
     @staticmethod
-    def encode_auth_token(user_id, login_time):
+    def encode_auth_token(user_id, login_time, expire_time=30):
         """
         生成认证Token
         :param user_id: int
@@ -28,7 +28,7 @@ class Auth:
         try:
             payload = {
                 'iss': 'ken',  # 签名
-                'exp': datetime.datetime.utcnow() + datetime.timedelta(days=0, hours=24),  # 过期时间
+                'exp': datetime.datetime.utcnow() + datetime.timedelta(days=0, hours=expire_time),  # 过期时间
                 'iat': datetime.datetime.utcnow(),  # 开始时间
                 'data': {
                     'id': user_id,
