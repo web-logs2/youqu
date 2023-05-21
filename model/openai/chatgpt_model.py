@@ -9,6 +9,8 @@ from expiring_dict import ExpiringDict
 from peewee import DateTimeField
 from typing import List
 
+from requests.exceptions import ChunkedEncodingError
+
 from common import const
 from common import log
 from common.db.conversation import Conversation
@@ -166,6 +168,7 @@ class ChatGPTModel(Model):
             # rate limit exception
             log.warn(e)
             if retry_count < 1:
+                yield False, "[CHATGPT] Connection broken, 第{}次重试，等待{}秒".format(retry_count + 1, 5)
                 time.sleep(5)
                 log.warn("[CHATGPT] RateLimit exceed, 第{}次重试".format(retry_count + 1))
                 yield True, self.reply_text_stream(query, user_session_id, retry_count + 1)
@@ -179,9 +182,19 @@ class ChatGPTModel(Model):
             log.warn(e)
             log.warn("[CHATGPT] Timeout")
             yield True, "我没有收到消息，请稍后重试"
+        except ChunkedEncodingError as e:
+            log.warn(e)
+            if retry_count < 3:
+                wait_time = (retry_count + 1) * 5
+                yield False, "[CHATGPT] Connection broken, 第{}次重试，等待{}秒".format(retry_count + 1, wait_time)
+                log.warn("[CHATGPT] Connection broken, 第{}次重试，等待{}秒".format(retry_count + 1, wait_time))
+                time.sleep(wait_time)
+                yield True, self.reply_text_stream(query, user_session_id, retry_count + 1)
+            else:
+                yield True, "我连接不到网络，请稍后重试"
         except Exception as e:
             # unknown exception
-            log.exception(e)
+            log.error(e)
             Session.clear_session(user_session_id)
             yield True, "请再问我一次吧"
 

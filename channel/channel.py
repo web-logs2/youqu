@@ -43,12 +43,12 @@ class Channel(object):
         raise NotImplementedError
 
     def build_text_reply_content(self, query, context=None):
-        if (query == '#菜单'):
+        if query == '#菜单':
             return self.menuString
-        if (query.startswith("#")):
+        if query.startswith("#"):
             cmds = query.split()
             cmd = self.menuDict.get(cmds[0])
-            if cmd != None:
+            if cmd is not None:
                 return cmd.execute(cmds)
         return Bridge().fetch_text_reply_content(query, context)
 
@@ -59,7 +59,7 @@ class Channel(object):
         return Bridge.fetch_menu_list(self)
 
     async def build_reply_stream(self, query, context=None):
-        if (query == '#菜单'):
+        if query == '#菜单':
             yield True, self.menuString
             return
         # if (query.startswith("#")):

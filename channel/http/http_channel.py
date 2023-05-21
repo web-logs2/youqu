@@ -7,8 +7,9 @@ import os
 import time
 
 import geoip2
+import jsonpickle
 import nest_asyncio
-from flask import Flask, request, render_template, make_response
+from flask import Flask, request, render_template, make_response, session
 from flask import jsonify
 from flask_cors import CORS
 from flask_socketio import SocketIO
@@ -42,6 +43,7 @@ http_app = Flask(__name__, template_folder='templates', static_folder='static')
 # 自动重载模板文件
 http_app.jinja_env.auto_reload = True
 http_app.config['TEMPLATES_AUTO_RELOAD'] = True
+http_app.secret_key = channel_conf(const.HTTP).get('http_app_key')  # 设置session需要的secret_key
 
 CORS(http_app)
 socketio = SocketIO(http_app, cors_allowed_origins="*")
@@ -149,15 +151,20 @@ def register():
 
     if User.select().where(User.email == email).first() is not None:
         return jsonify({"error": "Email already exists"}), 400
+    if User.select().where(User.phone == phone).first() is not None:
+        return jsonify({"error": "Phone already exists"}), 400
 
-    new_user = User(user_id=generate_uuid(), user_name=username, email=email, phone=phone,
+    current_user = User(user_id=generate_uuid(), user_name=username, email=email, phone=phone,
                     password=sha256_encrypt(password), last_login=datetime.datetime.now(),
                     created_time=datetime.datetime.now(),
                     updated_time=datetime.datetime.now())
-    new_user.save()
-    token = Auth.encode_auth_token(new_user.user_id, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
-    log.info("Registration success: " + new_user.email)
-    return jsonify({"content": "success", "username": new_user.user_name, "token": token}), 200
+    current_user.save()
+    session["user"] = jsonpickle.encode(current_user)
+    token = Auth.encode_auth_token(current_user.user_id, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+    log.info("Registration success: " + current_user.email)
+    return jsonify(
+        {"content": "success", "username": current_user.user_name, "token": token, "email": current_user.email, "phone": current_user.phone,
+         "available_models": current_user.get_available_models()}), 200
 
 
 ##sign out
@@ -182,7 +189,9 @@ def login():
         #        session['user'] = current_user
         token = Auth.encode_auth_token(current_user.user_id, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
         log.info("Login success: " + current_user.email)
-        return jsonify({"content": "success", "username": current_user.user_name, "token": token}), 200
+        return jsonify(
+            {"content": "success", "username": current_user.user_name, "token": token, "email": current_user.email, "phone": current_user.phone,
+             "available_models": current_user.get_available_models()}), 200
 
 
 @http_app.route("/sendcode", methods=['POST'])

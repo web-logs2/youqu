@@ -4,7 +4,9 @@ import datetime
 import hashlib
 import json
 
+import jsonpickle
 import jwt
+from flask import session
 
 from common import const, log
 from common.db.user import User
@@ -69,7 +71,7 @@ def sha256_encrypt(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
 
-def identify(request,is_stream=False):
+def identify(request, is_stream=False):
     """
     用户鉴权
     :return: list
@@ -84,11 +86,18 @@ def identify(request,is_stream=False):
         if is_stream:
             token = request.args.get('token')
         else:
-            token = json.loads(request.data).get('token','')
+            token = json.loads(request.data).get('token', '')
         if token:
             payload = Auth.decode_auth_token(token)
             if not isinstance(payload, str):
-                return payload['data']['id']
+                current_user = User.select().where(User.id == payload['data']['id'] and User.deleted != 1).first()
+                if current_user is None:
+                    return None
+                else:
+                    current_user.last_login = datetime.datetime.now()
+                    current_user.save()
+                    session["user"] = jsonpickle.encode(current_user)
+                    return payload['data']['id']
             else:
                 log.info("Token error: {}", payload)
         return None
@@ -116,10 +125,10 @@ def identify(request,is_stream=False):
 #         token = Auth.encode_auth_token(password, login_time)
 #         return token
 
-def authenticate(email, password)-> User:
+def authenticate(email, password) -> User:
     if password == '' or email == '':
         return
-    current_user = User.select().where(User.email==email and User.password==sha256_encrypt(password)).first()
+    current_user = User.select().where(User.email == email and User.password == sha256_encrypt(password)).first()
     if current_user is None:
         return
     else:
