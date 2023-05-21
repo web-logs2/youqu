@@ -35,11 +35,77 @@ class User(Model):
         return None
 
     def save_in_session(self):
-        session["user"] = jsonpickle.encode(self)
+        if self is not None:
+            session["user"] = jsonpickle.encode(self)
+
+    def delete_from_session(self):
+        if "user" in session:
+            del session["user"]
+
+    def __str__(self):
+        return json.dumps(self.dict())
+
+    def __repr__(self):
+        return json.dumps(self.dict())
+
+    def __eq__(self, other):
+        return self.id == other.id
+
+    def __hash__(self):
+        return hash(self.id)
+
+    def __ne__(self, other):
+        return self.id != other.id
+
+    def __lt__(self, other):
+        return self.id < other.id
+
+    def __le__(self, other):
+        return self.id <= other.id
+
+    def __gt__(self, other):
+        return self.id > other.id
+
+    def __ge__(self, other):
+        return self.id >= other.id
+
+    def __cmp__(self, other):
+        return self.id - other.id
+
+    @staticmethod
+    def from_dict(user_json) -> User:
+        user = User()
+        user.id = user_json["id"]
+        user.user_id = user_json["user_id"]
+        user.user_name = user_json["user_name"]
+        user.email = user_json["email"]
+        user.phone = user_json["phone"]
+        user.available_models = user_json["available_models"]
+        user.deleted = user_json["deleted"]
+        user.last_login = user_json["last_login"]
+        user.created_time = user_json["created_time"]
+        user.updated_time = user_json["updated_time"]
+        return user
+
+    def dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "user_name": self.user_name,
+            "email": self.email,
+            "phone": self.phone,
+            "available_models": self.get_available_models(),
+            "deleted": self.deleted,
+            "last_login": self.last_login,
+            "created_time": self.created_time,
+            "updated_time": self.updated_time
+        }
 
     @staticmethod
     # return user object from session
     def get_from_session() -> User:
+        if "user" not in session:
+            return None  # user not logged in
         return jsonpickle.decode(session["user"])
 
     class Meta:

@@ -4,6 +4,7 @@ import base64
 import datetime
 import json
 import os
+import re
 import time
 
 import geoip2
@@ -56,14 +57,14 @@ ip_reader = geoip2.database.Reader('./resources/GeoLite2-City.mmdb');
 
 @http_app.route("/text", methods=['POST'])
 def text():
-    user_id = auth.identify(request)
-    if user_id is None:
+    user = auth.identify(request)
+    if user is None:
         log.INFO("Cookie error")
         return
     data = json.loads(request.data)
     if data:
         msg = data['msg']
-        data['uid'] = user_id
+        data['uid'] = user.user_id
         request_type = data.get('request_type', "text")
         if not msg:
             return
@@ -74,14 +75,14 @@ def text():
 
 @http_app.route("/voice", methods=['POST'])
 def voice():
-    user_id = auth.identify(request)
-    if user_id is None:
+    user = auth.identify(request)
+    if user is None:
         log.INFO("Cookie error")
         return
     data = json.loads(request.data)
     if data:
         msg = data['msg']
-        data['uid'] = user_id
+        data['uid'] = user.user_id
         request_type = data.get('request_type', "text")
         if not msg:
             return
@@ -98,18 +99,18 @@ def voice():
 
 @http_app.route("/picture", methods=['POST'])
 def picture():
-    user_id = auth.identify(request)
-    if user_id is None:
+    user = auth.identify(request)
+    if user is None:
         log.INFO("Cookie error")
         return
     data = json.loads(request.data)
     if data:
         msg = data['msg']
-        data['uid'] = user_id
+        data['uid'] = user.user_id
         request_type = data.get('request_type', "text")
         if not msg:
             return
-        reply_picture = HttpChannel().handle_picture(data=data)
+        reply_picture = HttpChannel().handle_picture(data=data, user=user)
         response = {
             "picture_data": reply_picture
         }
@@ -118,9 +119,9 @@ def picture():
 
 @http_app.route('/upload', methods=['POST'])
 def upload_file():
-    user_id = auth.identify(request)
-    if user_id is None:
-        log.INFO("Cookie error")
+    user = auth.identify(request)
+    if user is None:
+        log.info("Cookie error")
         return
     if len(request.files) <= 0:
         return jsonify({'content': 'No file selected'})
@@ -129,7 +130,7 @@ def upload_file():
     # 检查文件名是否为空
     if file.filename == '':
         return jsonify({'content': 'No file selected'})
-    return upload_file_service(file, user_id)
+    return upload_file_service(file, user.user_id)
 
 
 @http_app.route("/", methods=['GET'])
@@ -155,23 +156,27 @@ def register():
         return jsonify({"error": "Phone already exists"}), 400
 
     current_user = User(user_id=generate_uuid(), user_name=username, email=email, phone=phone,
-                    password=sha256_encrypt(password), last_login=datetime.datetime.now(),
-                    created_time=datetime.datetime.now(),
-                    updated_time=datetime.datetime.now())
+                        password=sha256_encrypt(password), last_login=datetime.datetime.now(),
+                        created_time=datetime.datetime.now(),
+                        updated_time=datetime.datetime.now())
     current_user.save()
     session["user"] = jsonpickle.encode(current_user)
     token = Auth.encode_auth_token(current_user.user_id, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
     log.info("Registration success: " + current_user.email)
     return jsonify(
-        {"content": "success", "username": current_user.user_name, "token": token, "email": current_user.email, "phone": current_user.phone,
+        {"content": "success", "username": current_user.user_name, "token": token, "email": current_user.email,
+         "phone": current_user.phone,
          "available_models": current_user.get_available_models()}), 200
 
 
 ##sign out
 @http_app.route("/sign-out", methods=['POST'])
 def sign_out():
-    user_id = auth.identify(request)
-    model_factory.create_bot(config.conf().get("model").get("type")).clear_session_by_user_id(user_id)
+    user = auth.identify(request)
+    if user is None:
+        log.info("Token error")
+        return
+    model_factory.create_bot(config.conf().get("model").get("type")).clear_session_by_user_id(user.user_id)
     log.info("Login out: ")
     return jsonify({"content": "success"})
 
@@ -190,7 +195,8 @@ def login():
         token = Auth.encode_auth_token(current_user.user_id, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
         log.info("Login success: " + current_user.email)
         return jsonify(
-            {"content": "success", "username": current_user.user_name, "token": token, "email": current_user.email, "phone": current_user.phone,
+            {"content": "success", "username": current_user.user_name, "token": token, "email": current_user.email,
+             "phone": current_user.phone,
              "available_models": current_user.get_available_models()}), 200
 
 
@@ -209,27 +215,29 @@ def send_code():
 
 @http_app.route("/reset_password", methods=['POST'])
 def reset_password():
-    user_id = auth.identify(request)
-    if user_id is None:
+    current_user = auth.identify(request)
+    if current_user is None:
         return jsonify({"error": "Invalid token"}), 401
     data = json.loads(request.data)
     password = data.get('password', '')
     if not is_valid_password(password):
         return jsonify({"error": "Invalid password"}), 400  # bad request
-    current_user = User.select().where(User.user_id == user_id).first()
     current_user.password = sha256_encrypt(password)
     current_user.updated_time = datetime.datetime.now()
+    current_user.last_login = datetime.datetime.now()
     current_user.save()
     return jsonify({"message": "Reset password success"}), 200
 
 
 @http_app.route("/get_user_info", methods=['POST'])
 def get_user_info():
-    user_id = auth.identify(request)
-    current_user = User.select().where(User.user_id == user_id).first()
+    auth.identify(request)
+    current_user = User.get_from_session()
     if current_user is None:
         return jsonify({"error": "Invalid user"}), 401
-    return jsonify({"email": current_user.email, "username": current_user.user_name, "phone": current_user.phone}), 200
+    return jsonify({"content": "success", "username": current_user.user_name, "email": current_user.email,
+                    "phone": current_user.phone,
+                    "available_models": current_user.get_available_models()}), 200
 
 
 @http_app.teardown_request
@@ -237,10 +245,10 @@ def teardown_request(exception):
     db.close()
 
 
-async def return_stream(data):
+async def return_stream(data, user: User):
     last_emit_time = time.time()
     try:
-        async for final, response in HttpChannel().handle_stream(data=data):
+        async for final, response in HttpChannel().handle_stream(data=data, user=user):
             if final:
                 log.info("Final:" + response)
                 socketio.server.emit(
@@ -268,25 +276,24 @@ async def return_stream(data):
 
 @socketio.on('message', namespace='/chat')
 def stream(data):
-    user_id = auth.identify(request, True)
-    if user_id is None:
+    user = auth.identify(request, True)
+    if user is None:
         log.info("Cookie error")
         socketio.emit('logout', {'error': "invalid cookie"}, namespace='/chat')
     # data = json.loads(data)
-    data['uid'] = user_id
     log.info("message:" + data['msg'])
     if data:
-        asyncio.run(return_stream(data))
+        asyncio.run(return_stream(data, user))
 
 
 @socketio.on('connect', namespace='/chat')
 def connect():
-    user_id = auth.identify(request, True)
-    if user_id is None:
-        log.info("Cookie error")
+    user = auth.identify(request, True)
+    if user is None:
+        log.info("Token error")
         socketio.emit('logout', {'error': "invalid cookie"}, namespace='/chat')
         return
-    log.info('connected')
+    log.info('{} connected', user.email)
     socketio.emit('connected', {'info': "connected"}, namespace='/chat')
 
 
@@ -316,19 +323,24 @@ class HttpChannel(Channel):
             log.info("Start ssl server")
             socketio.run(http_app, host='0.0.0.0', port=port, certfile=cert_path, keyfile=key_path)
 
-    def handle_text(self, data, stream=False):
+    def handle_text(self, data, user: User):
         context = dict()
-        context['from_user_id'] = str(data["uid"])
+        context['user'] = user
         context['conversation_id'] = str(data["conversation_id"])
         return super().build_text_reply_content(data["msg"], context)
 
-    async def handle_stream(self, data):
+    async def handle_stream(self, data, user: User):
         context = dict()
-        context['from_user_id'] = str(data["uid"])
         context['conversation_id'] = str(data["conversation_id"])
-        context['system_prompt'] = str(data.get("system_prompt", model_conf(const.OPEN_AI).get("character_desc", "")))
-        if context['system_prompt'] == "":
-            context['system_prompt'] = model_conf(const.OPEN_AI).get("character_desc", "")
+        context['user'] = user
+        model = str(data.get("model", const.MODEL_GPT_35_TURBO))
+        if model not in user.get_available_models():
+            model = const.MODEL_GPT_35_TURBO
+        context['model'] = model
+        system_prompt = str(data.get("system_prompt", model_conf(model).get("character_desc", "")))
+        if re.findall(r'\w+|[\u4e00-\u9fa5]|[^a-zA-Z0-9\u4e00-\u9fa5\s]', system_prompt) > 500:
+            system_prompt = model_conf(const.OPEN_AI).get("character_desc", "")
+        context['system_prompt'] = system_prompt
         log.info("Handle stream:" + data["msg"])
         ip = request.remote_addr
         ip_location = ""
@@ -338,7 +350,7 @@ class HttpChannel(Channel):
             log.error("[http]ip:{}", e)
 
         query_record = QueryRecord(
-            user_id=context['from_user_id'],
+            user_id=context['user'].user_id,
             conversation_id=context['conversation_id'],
             query=data["msg"],
             reply="",
@@ -355,10 +367,9 @@ class HttpChannel(Channel):
                 query_record.save()
             yield final, reply
 
-    def handle_picture(self, data):
+    def handle_picture(self, data, user: User):
         context = dict()
-        id = data["uid"]
-        context['from_user_id'] = str(id)
+        context['user'] = user
         return super().build_picture_reply_content(data["msg"])
 
 

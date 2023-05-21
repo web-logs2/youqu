@@ -71,7 +71,7 @@ def sha256_encrypt(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
 
-def identify(request, is_stream=False):
+def identify(request, is_stream=False) -> User:
     """
     用户鉴权
     :return: list
@@ -92,21 +92,24 @@ def identify(request, is_stream=False):
             if not isinstance(payload, str):
                 current_user = User.select().where(User.id == payload['data']['id'] and User.deleted != 1).first()
                 if current_user is None:
+                    log.info("User not found:{}", payload['data']['id'])
                     return None
                 else:
                     current_user.last_login = datetime.datetime.now()
                     current_user.save()
-                    current_user.save_in_session()
-                    return payload['data']['id']
+                    # current_user.save_in_session()
+                    return current_user
             else:
                 log.info("Token error: {}", payload)
         return None
 
     except jwt.ExpiredSignatureError:
+        log.info("Token expired {}", token)
         # result = 'Token已更改，请重新登录获取'
         return None
 
     except jwt.InvalidTokenError:
+        log.info("Invalid token {}", token)
         # result = '没有提供认证token'
         return None
 

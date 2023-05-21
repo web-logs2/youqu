@@ -15,6 +15,7 @@ from common import const
 from common import log
 from common.db.conversation import Conversation
 from common.db.query_record import QueryRecord
+from common.db.user import User
 from config import model_conf
 from model.menu_functions.document_list import DocumentList
 from model.menu_functions.pre_train_documnt import PreTrainDcoumnet
@@ -115,18 +116,24 @@ class ChatGPTModel(Model):
 
     async def reply_text_stream(self, query, context, retry_count=0):
         try:
-            user_id = context['from_user_id']
+            user: User = context['user']
             conversation_id = context['conversation_id']
             system_prompt = context['system_prompt']
-            user_session_id = user_id+conversation_id
+            model = context['model']
+            if model == const.MODEL_GPT4_8K:
+                max_tokens = 8000
+            else:
+                max_tokens = 4000
+
+            user_session_id = user.user_id + conversation_id
             if query == '#清除记忆':
-                #Session.clear_session(user_session_id)
-                Session.clear_session_by_user(user_id)
+                # Session.clear_session(user_session_id)
+                Session.clear_session_by_user(user.user_id)
                 yield True, '记忆已清除'
                 return
-            new_query = Session.build_session_query(query, user_session_id, system_prompt)
+            new_query = Session.build_session_query(query, user_session_id, system_prompt,max_tokens=max_tokens)
             res = openai.ChatCompletion.create(
-                model=model_conf(const.OPEN_AI).get("model") or "gpt-3.5-turbo",  # 对话模型的名称
+                model=model,  # 对话模型的名称
                 messages=new_query,
                 temperature=model_conf(const.OPEN_AI).get("temperature", 0.8),
                 # 熵值，在[0,1]之间，越大表示选取的候选词越随机，回复越具有不确定性，建议和top_p参数二选一使用，创意性任务越大越好，精确性任务越小越好
@@ -147,19 +154,20 @@ class ChatGPTModel(Model):
                 if (chunk_message):
                     full_response += chunk_message
                 yield False, full_response
-            Session.save_session(query, full_response, user_session_id)
+            Session.save_session(query, full_response, user_session_id, max_tokens=max_tokens)
             log.info("[chatgpt]: reply={}", full_response)
             conversation = Conversation.select().where(Conversation.conversation_id == conversation_id).first()
             if conversation is None:
                 conversation = Conversation(
                     conversation_id=conversation_id,
-                    user_id=user_id,
+                    user_id=user.user_id,
                     promote=system_prompt,
                     total_query=1,
                     created_time=datetime.datetime.now(),
                     updated_time=datetime.datetime.now()
                 )
             else:
+                conversation.updated_time = datetime.datetime.now()
                 conversation.total_query = conversation.total_query + 1;
             conversation.save()
             yield True, full_response
@@ -228,9 +236,8 @@ class ChatGPTModel(Model):
 
 
 class Session(object):
-
     @staticmethod
-    def build_session_query(query, user_id, system_prompt):
+    def build_session_query(query, user_id, system_prompt,max_tokens=4000):
         '''
         build query with conversation history
         e.g.  [
@@ -251,26 +258,26 @@ class Session(object):
             user_session[user_id] = session
         user_item = {'role': 'user', 'content': query}
         session.append(user_item)
+        while Session.count_words(session) > max_tokens:
+            # pop first conversation (TODO: more accurate calculation)
+            session.pop(1)
+            session.pop(1)
         return session
 
     @staticmethod
-    def save_session(query, answer, sid, used_tokens=0):
-        max_tokens = model_conf(const.OPEN_AI).get('conversation_max_tokens')
-        if not max_tokens or max_tokens > 8000:
-            # default value
-            max_tokens = 8000
+    def save_session(query, answer, sid, used_tokens=0, max_tokens=4000):
         session = user_session.get(sid)
         if session:
             # append conversation
             gpt_item = {'role': 'assistant', 'content': answer}
             session.append(gpt_item)
-            if used_tokens == 0:
-                used_tokens = Session.count_words(session)
-                log.info("Session:{} Used tokens:{}".format(session,used_tokens))
-        if used_tokens > max_tokens:
-            # pop first conversation (TODO: more accurate calculation)
-            session.pop(1)
-            session.pop(1)
+            # if used_tokens == 0:
+            #     used_tokens = Session.count_words(session)
+            #     log.info("Session:{} Used tokens:{}".format(session, used_tokens))
+            while Session.count_words(session) > max_tokens:
+                # pop first conversation (TODO: more accurate calculation)
+                session.pop(1)
+                session.pop(1)
 
     @staticmethod
     # Session is a list, count words
@@ -282,12 +289,12 @@ class Session(object):
     @staticmethod
     def clear_session(session_id):
         user_session[session_id] = []
+
     @staticmethod
     def clear_session_by_user(user_id):
-        #list all key
+        # list all key
         for key in user_session.keys():
-            #if key start with user_id
+            # if key start with user_id
             if key.startswith(user_id):
-                user_session[key]= []
+                user_session[key] = []
                 log.info("clear session:{}".format(key))
-
