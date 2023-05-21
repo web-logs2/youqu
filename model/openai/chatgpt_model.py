@@ -137,7 +137,7 @@ class ChatGPTModel(Model):
                 messages=new_query,
                 temperature=model_conf(const.OPEN_AI).get("temperature", 0.8),
                 # 熵值，在[0,1]之间，越大表示选取的候选词越随机，回复越具有不确定性，建议和top_p参数二选一使用，创意性任务越大越好，精确性任务越小越好
-                # max_tokens=4096,  # 回复最大的字符数，为输入和输出的总数
+                max_tokens=max_tokens,  # 回复最大的字符数，为输入和输出的总数
                 # top_p=model_conf(const.OPEN_AI).get("top_p", 0.7),,  #候选词列表。0.7 意味着只考虑前70%候选词的标记，建议和temperature参数二选一使用
                 frequency_penalty=model_conf(const.OPEN_AI).get("frequency_penalty", 0.0),
                 # [-2,2]之间，该值越大则越降低模型一行中的重复用词，更倾向于产生不同的内容
@@ -155,6 +155,7 @@ class ChatGPTModel(Model):
                     full_response += chunk_message
                 yield False, full_response
             Session.save_session(query, full_response, user_session_id, max_tokens=max_tokens)
+            log.info("[chatgpt]: query={}", new_query)
             log.info("[chatgpt]: reply={}", full_response)
             conversation = Conversation.select().where(Conversation.conversation_id == conversation_id).first()
             if conversation is None:
