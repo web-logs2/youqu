@@ -1,5 +1,8 @@
 import json
 
+import jsonpickle
+from flask import session
+from common.db.user import User
 from peewee import (
     Model,
     CharField,
@@ -30,6 +33,14 @@ class User(Model):
         if self.available_models is not None:
             return json.loads(self.available_models)
         return None
+
+    def save_in_session(self):
+        session["user"] = jsonpickle.encode(self)
+
+    @staticmethod
+    # return user object from session
+    def get_from_session() -> User:
+        return jsonpickle.decode(session["user"])
 
     class Meta:
         database = db

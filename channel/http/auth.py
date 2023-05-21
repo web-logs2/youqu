@@ -96,7 +96,7 @@ def identify(request, is_stream=False):
                 else:
                     current_user.last_login = datetime.datetime.now()
                     current_user.save()
-                    session["user"] = jsonpickle.encode(current_user)
+                    current_user.save_in_session()
                     return payload['data']['id']
             else:
                 log.info("Token error: {}", payload)
