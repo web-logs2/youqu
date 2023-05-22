@@ -121,7 +121,7 @@ def picture():
 def upload_file():
     user = auth.identify(request)
     if user is None:
-        log.info("Cookie error")
+        log.info("Token error")
         return
     if len(request.files) <= 0:
         return jsonify({'content': 'No file selected'})
