@@ -2,7 +2,6 @@ import json
 
 import jsonpickle
 from flask import session
-from common.db.user import User
 from peewee import (
     Model,
     CharField,
@@ -73,7 +72,7 @@ class User(Model):
         return self.id - other.id
 
     @staticmethod
-    def from_dict(user_json) -> User:
+    def from_dict(user_json):
         user = User()
         user.id = user_json["id"]
         user.user_id = user_json["user_id"]
@@ -103,7 +102,7 @@ class User(Model):
 
     @staticmethod
     # return user object from session
-    def get_from_session() -> User:
+    def get_from_session():
         if "user" not in session:
             return None  # user not logged in
         return jsonpickle.decode(session["user"])

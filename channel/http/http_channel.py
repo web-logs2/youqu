@@ -231,11 +231,10 @@ def reset_password():
 
 @http_app.route("/get_user_info", methods=['POST'])
 def get_user_info():
-    auth.identify(request)
-    current_user = User.get_from_session()
+    current_user = auth.identify(request)
     if current_user is None:
         return jsonify({"error": "Invalid user"}), 401
-    return jsonify({"content": "success", "username": current_user.user_name, "email": current_user.email,
+    return jsonify({"username": current_user.user_name, "email": current_user.email,
                     "phone": current_user.phone,
                     "available_models": current_user.get_available_models()}), 200
 
@@ -337,8 +336,8 @@ class HttpChannel(Channel):
         if model not in user.get_available_models():
             model = const.MODEL_GPT_35_TURBO
         context['model'] = model
-        system_prompt = str(data.get("system_prompt", model_conf(model).get("character_desc", "")))
-        if re.findall(r'\w+|[\u4e00-\u9fa5]|[^a-zA-Z0-9\u4e00-\u9fa5\s]', system_prompt) > 500:
+        system_prompt = str(data.get("system_prompt", model_conf(const.OPEN_AI).get("character_desc", "")))
+        if len(re.findall(r'\w+|[\u4e00-\u9fa5]|[^a-zA-Z0-9\u4e00-\u9fa5\s]', system_prompt)) > 500:
             system_prompt = model_conf(const.OPEN_AI).get("character_desc", "")
         context['system_prompt'] = system_prompt
         log.info("Handle stream:" + data["msg"])

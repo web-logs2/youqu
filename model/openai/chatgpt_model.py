@@ -155,7 +155,7 @@ class ChatGPTModel(Model):
                     full_response += chunk_message
                 yield False, full_response
             Session.save_session(query, full_response, user_session_id, max_tokens=max_tokens)
-            log.info("[chatgpt]: query={}", new_query)
+            log.info("[chatgpt]: model={} query={}",model, new_query)
             log.info("[chatgpt]: reply={}", full_response)
             conversation = Conversation.select().where(Conversation.conversation_id == conversation_id).first()
             if conversation is None:
@@ -261,8 +261,12 @@ class Session(object):
         session.append(user_item)
         while Session.count_words(session) > max_tokens:
             # pop first conversation (TODO: more accurate calculation)
-            session.pop(1)
-            session.pop(1)
+            try:
+                session.pop(1)
+                session.pop(1)
+            except Exception as e:
+                log.error(e)
+                break
         return session
 
     @staticmethod
