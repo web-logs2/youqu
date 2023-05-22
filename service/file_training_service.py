@@ -49,7 +49,7 @@ def upload_file_service(file, uid):
         logger.exception(e)
         return jsonify({'content': 'Error!'})
     training_service(new_document)
-    return jsonify({'content': '文件训练中，请使用"{}"命令查看训练状态。'.format(DocumentList.getCmd())})
+    return jsonify({'content': '文件训练中，请使用"{}"命令查看训练状态。'.format(DocumentList.getCmd())}), 200
 
 
 def training_service(record: DocumentRecord):

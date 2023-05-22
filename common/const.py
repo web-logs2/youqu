@@ -20,6 +20,9 @@ BING = "bing"
 # db
 MYSQL = "mysql"
 
+MODEL_GPT_35_TURBO = "gpt-3.5-turbo"
+MODEL_GPT4_8K = "gpt4"
+
 EMAIL_SENDER = "no-reply@youqu.app"
 EMAIL_SENDER_NAME = "YouQu"
-EMAIL_TEMPLATE_RESET_PASSWORD="d-a054f2d7236d4ee7be847308bbbfc5f0"
+EMAIL_TEMPLATE_RESET_PASSWORD = "d-a054f2d7236d4ee7be847308bbbfc5f0"
