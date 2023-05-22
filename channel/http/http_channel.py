@@ -119,17 +119,20 @@ def picture():
 
 @http_app.route('/upload', methods=['POST'])
 def upload_file():
-    user = auth.identify(request)
+    if 'token' not in request.form:
+        return jsonify({"error": "Token is missing"}), 400
+    token = request.form['token']
+    user = auth.identify(token)
     if user is None:
         log.info("Token error")
         return
     if len(request.files) <= 0:
-        return jsonify({'content': 'No file selected'})
+        return jsonify({'content': 'No file selected'}), 400
 
     file = request.files['files']
     # 检查文件名是否为空
     if file.filename == '':
-        return jsonify({'content': 'No file selected'})
+        return jsonify({'content': 'No file selected'}), 400
     return upload_file_service(file, user.user_id)
 
 
@@ -172,7 +175,8 @@ def register():
 ##sign out
 @http_app.route("/sign-out", methods=['POST'])
 def sign_out():
-    user = auth.identify(request)
+    token = json.loads(request.data).get('token', '')
+    user = auth.identify(token)
     if user is None:
         log.info("Token error")
         return
@@ -215,7 +219,8 @@ def send_code():
 
 @http_app.route("/reset_password", methods=['POST'])
 def reset_password():
-    current_user = auth.identify(request)
+    token = json.loads(request.data).get('token', '')
+    current_user = auth.identify(token)
     if current_user is None:
         return jsonify({"error": "Invalid token"}), 401
     data = json.loads(request.data)
@@ -231,7 +236,8 @@ def reset_password():
 
 @http_app.route("/get_user_info", methods=['POST'])
 def get_user_info():
-    current_user = auth.identify(request)
+    token = json.loads(request.data).get('token', '')
+    current_user = auth.identify(token)
     if current_user is None:
         return jsonify({"error": "Invalid user"}), 401
     return jsonify({"username": current_user.user_name, "email": current_user.email,
@@ -275,7 +281,8 @@ async def return_stream(data, user: User):
 
 @socketio.on('message', namespace='/chat')
 def stream(data):
-    user = auth.identify(request, True)
+    token = request.args.get('token', '')
+    user = auth.identify(token)
     if user is None:
         log.info("Cookie error")
         socketio.emit('logout', {'error': "invalid cookie"}, namespace='/chat')
@@ -287,7 +294,8 @@ def stream(data):
 
 @socketio.on('connect', namespace='/chat')
 def connect():
-    user = auth.identify(request, True)
+    token = request.args.get('token', '')
+    user = auth.identify(token)
     if user is None:
         log.info("Token error")
         socketio.emit('logout', {'error': "invalid cookie"}, namespace='/chat')
