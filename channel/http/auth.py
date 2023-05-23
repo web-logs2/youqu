@@ -71,22 +71,14 @@ def sha256_encrypt(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
 
-def identify(request, is_stream=False) -> User:
+def identify(token: str) -> User:
     """
     用户鉴权
     :return: list
     """
     # if project_conf("env") == "development":
     #     return True
-
     try:
-        if request is None:
-            log.info("Request is none")
-            return None
-        if is_stream:
-            token = request.args.get('token')
-        else:
-            token = json.loads(request.data).get('token', '')
         if token:
             payload = Auth.decode_auth_token(token)
             if not isinstance(payload, str):
