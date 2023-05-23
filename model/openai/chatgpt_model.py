@@ -121,9 +121,9 @@ class ChatGPTModel(Model):
             system_prompt = context['system_prompt']
             model = context['model']
             if model == const.MODEL_GPT4_8K:
-                max_tokens = 8000
+                max_tokens = 9000
             else:
-                max_tokens = 4000
+                max_tokens = 4500
 
             user_session_id = user.user_id + conversation_id
             if query == '#清除记忆':
