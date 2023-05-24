@@ -21,7 +21,7 @@ class Auth:
         super(Auth, self).__init__()
 
     @staticmethod
-    def encode_auth_token(user_id, login_time, expire = 24):
+    def encode_auth_token(user_id, login_time, expire=24):
         """
         生成认证Token
         :param user_id: int
@@ -123,7 +123,8 @@ def identify(token: str) -> User:
 def authenticate(email, password) -> User:
     if password == '' or email == '':
         return
-    current_user = User.select().where(User.email == email and User.password == sha256_encrypt(password)).first()
+    #login_user= User.select().where(User.email == email and User.password).first()
+    current_user = User.select().where((User.email == email) & (User.password == sha256_encrypt(password))).first()
     if current_user is None:
         return
     else:
