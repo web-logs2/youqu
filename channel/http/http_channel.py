@@ -263,16 +263,7 @@ async def return_stream(data, user: User):
                     namespace="/chat")
                 disconnect()
             else:
-                # current_time = time.time()
-                # if current_time - last_emit_time >= 2:
-                #     socketio.sleep(0.001)
-                #     socketio.server.emit(
-                #         'reply',
-                #         {'content': response, 'messageID': data['messageID'],
-                #          'conversation_id': data['conversation_id'],
-                #          'final': final}, request.sid,
-                #         namespace="/chat")
-                #     last_emit_time = current_time
+                socketio.sleep(0.001)
                 socketio.server.emit(
                     'reply',
                     {'content': response, 'messageID': data['messageID'],
