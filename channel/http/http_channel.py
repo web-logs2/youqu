@@ -263,16 +263,22 @@ async def return_stream(data, user: User):
                     namespace="/chat")
                 disconnect()
             else:
-                current_time = time.time()
-                if current_time - last_emit_time >= 2:
-                    socketio.sleep(0.001)
-                    socketio.server.emit(
-                        'reply',
-                        {'content': response, 'messageID': data['messageID'],
-                         'conversation_id': data['conversation_id'],
-                         'final': final}, request.sid,
-                        namespace="/chat")
-                    last_emit_time = current_time
+                # current_time = time.time()
+                # if current_time - last_emit_time >= 2:
+                #     socketio.sleep(0.001)
+                #     socketio.server.emit(
+                #         'reply',
+                #         {'content': response, 'messageID': data['messageID'],
+                #          'conversation_id': data['conversation_id'],
+                #          'final': final}, request.sid,
+                #         namespace="/chat")
+                #     last_emit_time = current_time
+                socketio.server.emit(
+                    'reply',
+                    {'content': response, 'messageID': data['messageID'],
+                     'conversation_id': data['conversation_id'],
+                     'final': final}, request.sid,
+                    namespace="/chat")
             # disconnect()
     except Exception as e:
         disconnect()
@@ -284,7 +290,7 @@ def stream(data):
     token = request.args.get('token', '')
     user = auth.identify(token)
     if user is None:
-        log.info("Cookie error")
+        log.info("Token error")
         socketio.emit('logout', {'error': "invalid cookie"}, namespace='/chat')
     # data = json.loads(data)
     log.info("message:" + data['msg'])
@@ -348,7 +354,7 @@ class HttpChannel(Channel):
         if len(re.findall(r'\w+|[\u4e00-\u9fa5]|[^a-zA-Z0-9\u4e00-\u9fa5\s]', system_prompt)) > 500:
             system_prompt = model_conf(const.OPEN_AI).get("character_desc", "")
         context['system_prompt'] = system_prompt
-        log.info("Handle stream:" + data["msg"])
+        #log.info("Handle stream:" + data["msg"])
         ip = request.remote_addr
         ip_location = ""
         try:
