@@ -82,7 +82,7 @@ def identify(token: str) -> User:
         if token:
             payload = Auth.decode_auth_token(token)
             if not isinstance(payload, str):
-                current_user = User.select().where(User.id == payload['data']['id'] and User.deleted != 1).first()
+                current_user = User.select().where(User.user_id == payload['data']['id'], User.deleted != 1).first()
                 if current_user is None:
                     log.info("User not found:{}", payload['data']['id'])
                     return None
