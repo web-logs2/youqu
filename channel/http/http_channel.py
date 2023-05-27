@@ -7,7 +7,6 @@ import os
 import re
 import time
 
-import geoip2
 import jsonpickle
 import nest_asyncio
 from flask import Flask, request, render_template, make_response, session
@@ -30,9 +29,8 @@ from common import const, log
 from common.db.dbconfig import db
 from common.db.query_record import QueryRecord
 from common.db.user import User
-from common.email import send_reset_password
 from common.functions import is_valid_password, is_valid_email, is_valid_username, is_valid_phone, \
-    is_path_empty_or_nonexistent
+    is_path_empty_or_nonexistent, ip_reader
 from common.generator import generate_uuid
 from config import channel_conf, model_conf
 from model import model_factory
@@ -47,12 +45,11 @@ http_app.config['TEMPLATES_AUTO_RELOAD'] = True
 http_app.secret_key = channel_conf(const.HTTP).get('http_app_key')  # 设置session需要的secret_key
 
 CORS(http_app)
-socketio = SocketIO(http_app, cors_allowed_origins="*")
+socketio = SocketIO(http_app, ping_timeout=5 * 60, ping_interval=30, cors_allowed_origins="*")
 
 # 设置静态文件缓存过期时间
 http_app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
-ip_reader = geoip2.database.Reader('./resources/GeoLite2-City.mmdb');
 
 
 @http_app.route("/text", methods=['POST'])
@@ -261,7 +258,7 @@ async def return_stream(data, user: User):
                     {'content': response, 'messageID': data['messageID'], 'conversation_id': data['conversation_id'],
                      'final': final}, request.sid,
                     namespace="/chat")
-                disconnect()
+                #disconnect()
             else:
                 socketio.sleep(0.001)
                 socketio.server.emit(
@@ -277,7 +274,7 @@ async def return_stream(data, user: User):
 
 
 @socketio.on('message', namespace='/chat')
-def stream(data):
+def message(data):
     token = request.args.get('token', '')
     user = auth.identify(token)
     if user is None:
@@ -295,15 +292,33 @@ def connect():
     user = auth.identify(token)
     if user is None:
         log.info("Token error")
-        socketio.emit('logout', {'error': "invalid cookie"}, namespace='/chat')
+        disconnect()
         return
     log.info('{} connected', user.email)
     socketio.emit('connected', {'info': "connected"}, namespace='/chat')
 
 
+@socketio.on('heartbeat', namespace='/chat')
+def heart_beat(message):
+    log.info("heart beat:{}", message)
+    token = request.args.get('token', '')
+    user_id = auth.identify_token(token)
+    if user_id is None:
+        log.info("Token error")
+        socketio.emit('logout', {'error': "invalid cookie"}, namespace='/chat')
+        disconnect()
+        return
+    log.info('{} heart beat', user_id)
+    socketio.server.emit(
+        'heartbeat',
+        'pang', request.sid,
+        namespace="/chat")
+
+
 @socketio.on('disconnect', namespace='/chat')
 def disconnect():
     log.info('disconnect')
+    time.sleep(1)
     socketio.server.disconnect(request.sid, namespace="/chat")
     db.close()
 
@@ -345,7 +360,7 @@ class HttpChannel(Channel):
         if len(re.findall(r'\w+|[\u4e00-\u9fa5]|[^a-zA-Z0-9\u4e00-\u9fa5\s]', system_prompt)) > 500:
             system_prompt = model_conf(const.OPEN_AI).get("character_desc", "")
         context['system_prompt'] = system_prompt
-        #log.info("Handle stream:" + data["msg"])
+        # log.info("Handle stream:" + data["msg"])
         ip = request.remote_addr
         ip_location = ""
         try:

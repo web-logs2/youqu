@@ -106,6 +106,25 @@ def identify(token: str) -> User:
         return None
 
 
+def identify_token(token: str):
+    try:
+        if token:
+            payload = Auth.decode_auth_token(token)
+            if not isinstance(payload, str):
+                return payload['data']['id']
+            log.info("Token error: {}", payload)
+            return None
+
+    except jwt.ExpiredSignatureError:
+        log.info("Token expired {}", token)
+        # result = 'Token已更改，请重新登录获取'
+        return None
+
+    except jwt.InvalidTokenError:
+        log.info("Invalid token {}", token)
+        # result = '没有提供认证token'
+        return None
+
 # def authenticate(password):
 #     """
 #     用户登录，登录成功返回token
