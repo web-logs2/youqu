@@ -1,5 +1,6 @@
 import os
 import re
+import geoip2
 
 
 def contain_chinese(str):
@@ -46,3 +47,6 @@ def is_path_empty_or_nonexistent(path):
         return False
     else:
         return len(os.listdir(path)) == 0
+
+
+ip_reader = geoip2.database.Reader('./resources/GeoLite2-City.mmdb');
