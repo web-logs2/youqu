@@ -9,7 +9,7 @@ import time
 
 import jsonpickle
 import nest_asyncio
-from flask import Flask, request, render_template, make_response, session
+from flask import Flask, request, render_template, make_response, session, redirect
 from flask import jsonify
 from flask_cors import CORS
 from flask_socketio import SocketIO
@@ -200,6 +200,10 @@ def login():
              "phone": current_user.phone,
              "available_models": current_user.get_available_models()}), 200
 
+@http_app.route("/login", methods=['get'])
+def login_get():
+    log.info("Login success: ")
+    return redirect('/#/login')
 
 @http_app.route("/sendcode", methods=['POST'])
 def send_code():
