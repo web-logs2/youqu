@@ -365,29 +365,23 @@ class HttpChannel(Channel):
             system_prompt = model_conf(const.OPEN_AI).get("character_desc", "")
         context['system_prompt'] = system_prompt
         # log.info("Handle stream:" + data["msg"])
-        ip = request.remote_addr
-        ip_location = ""
-        try:
-            ip_location = ip_reader.city(ip)
-        except Exception as e:
-            log.error("[http]ip:{}", e)
 
-        query_record = QueryRecord(
-            user_id=context['user'].user_id,
-            conversation_id=context['conversation_id'],
-            query=data["msg"],
-            reply="",
-            ip=ip,
-            ip_location=ip_location,
-            created_time=datetime.datetime.now(),
-            updated_time=datetime.datetime.now(),
-        )
-        query_record.save()
+        # query_record = QueryRecord(
+        #     user_id=context['user'].user_id,
+        #     conversation_id=context['conversation_id'],
+        #     query=data["msg"],
+        #     reply="",
+        #     ip=ip,
+        #     ip_location=ip_location,
+        #     created_time=datetime.datetime.now(),
+        #     updated_time=datetime.datetime.now(),
+        # )
+        # query_record.save()
 
         async for final, reply in super().build_reply_stream(data["msg"], context):
-            if final:
-                query_record.reply = reply
-                query_record.save()
+            # if final:
+            #     query_record.reply = reply
+            #     query_record.save()
             yield final, reply
 
     def handle_picture(self, data, user: User):

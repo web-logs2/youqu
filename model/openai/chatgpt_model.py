@@ -6,6 +6,7 @@ import time
 
 import openai
 from expiring_dict import ExpiringDict
+from flask import request
 from peewee import DateTimeField
 from typing import List
 
@@ -16,6 +17,7 @@ from common import log
 from common.db.conversation import Conversation
 from common.db.query_record import QueryRecord
 from common.db.user import User
+from common.functions import ip_reader
 from config import model_conf
 from model.menu_functions.document_list import DocumentList
 from model.menu_functions.pre_train_documnt import PreTrainDcoumnet
@@ -132,6 +134,32 @@ class ChatGPTModel(Model):
                 yield True, '记忆已清除'
                 return
             new_query = Session.build_session_query(query, user_session_id, system_prompt, max_tokens=max_tokens)
+
+
+
+            if 'CF-Connecting-IP' in request.headers:
+                ip = request.headers['CF-Connecting-IP']
+            else:
+                ip = request.remote_addr
+            ip_location = ""
+            try:
+                ip_location = ip_reader.city(ip)
+            except Exception as e:
+                log.error("[http]ip:{}", e)
+            query_record = QueryRecord(
+                user_id=context['user'].user_id,
+                conversation_id=context['conversation_id'],
+                query=query,
+                reply="",
+                ip=ip,
+                ip_location=ip_location,
+                model_name=model,
+                created_time=datetime.datetime.now(),
+                updated_time=datetime.datetime.now(),
+            )
+            query_record.set_query_trail(new_query)
+
+
             log.info("[chatgpt]: model={} max_tokens={} query={}", model, max_tokens, new_query)
             res = openai.ChatCompletion.create(
                 model=model,  # 对话模型的名称
@@ -171,6 +199,8 @@ class ChatGPTModel(Model):
                 conversation.updated_time = datetime.datetime.now()
                 conversation.total_query = conversation.total_query + 1;
             conversation.save()
+            query_record.reply = full_response
+            query_record.save()
             yield True, full_response
 
         except openai.error.RateLimitError as e:
