@@ -27,11 +27,11 @@ class QueryRecord(Model):
     updated_time = DateTimeField()
 
     def set_query_trail(self, query_trail):
-        self.query_trail = json.dumps(query_trail)
+        self.query_trail = json.dumps(query_trail, ensure_ascii=False)
 
     def get_query_trail(self):
         if self.query_trail is not None:
-            return json.loads(self.query_trail)
+            return json.loads(self.query_trail, encoding='utf-8')
         return None
 
     def update_ip_location(self):
