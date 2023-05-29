@@ -6,6 +6,7 @@ import time
 
 import openai
 from expiring_dict import ExpiringDict
+from flask import request
 from peewee import DateTimeField
 from typing import List
 
@@ -16,6 +17,7 @@ from common import log
 from common.db.conversation import Conversation
 from common.db.query_record import QueryRecord
 from common.db.user import User
+from common.functions import ip_reader
 from config import model_conf
 from model.menu_functions.document_list import DocumentList
 from model.menu_functions.pre_train_documnt import PreTrainDcoumnet
@@ -132,13 +134,42 @@ class ChatGPTModel(Model):
                 yield True, '记忆已清除'
                 return
             new_query = Session.build_session_query(query, user_session_id, system_prompt, max_tokens=max_tokens)
+
+            #
+            # headers = request.headers
+            # # 遍历请求头并打印
+            # for key in headers:
+            #     print(f"{key}: {headers[key]}")
+
+            # for header in request.headers:
+            #     log.info(header)
+            ip = request.headers.get("X-Forwarded-For", request.remote_addr)
+            # ip_location = ""
+            # try:
+            #     ip_location = ip_reader.city(ip).city.names.get('zh-CN', '')
+            # except Exception as e:
+            #     log.error("[http]ip:{}", e)
+
+            query_record = QueryRecord(
+                user_id=context['user'].user_id,
+                conversation_id=context['conversation_id'],
+                query=query,
+                reply="",
+                ip=ip,
+                model_name=model,
+                created_time=datetime.datetime.now(),
+                updated_time=datetime.datetime.now(),
+            )
+            query_record.update_ip_location()
+            query_record.set_query_trail(new_query)
+
             log.info("[chatgpt]: model={} max_tokens={} query={}", model, max_tokens, new_query)
             res = openai.ChatCompletion.create(
                 model=model,  # 对话模型的名称
                 messages=new_query,
                 temperature=model_conf(const.OPEN_AI).get("temperature", 0.8),
                 # 熵值，在[0,1]之间，越大表示选取的候选词越随机，回复越具有不确定性，建议和top_p参数二选一使用，创意性任务越大越好，精确性任务越小越好
-                #max_tokens=8100,  # 回复最大的字符数，为输入和输出的总数
+                # max_tokens=8100,  # 回复最大的字符数，为输入和输出的总数
                 # top_p=model_conf(const.OPEN_AI).get("top_p", 0.7),,  #候选词列表。0.7 意味着只考虑前70%候选词的标记，建议和temperature参数二选一使用
                 frequency_penalty=model_conf(const.OPEN_AI).get("frequency_penalty", 0.0),
                 # [-2,2]之间，该值越大则越降低模型一行中的重复用词，更倾向于产生不同的内容
@@ -171,6 +202,8 @@ class ChatGPTModel(Model):
                 conversation.updated_time = datetime.datetime.now()
                 conversation.total_query = conversation.total_query + 1;
             conversation.save()
+            query_record.reply = full_response
+            query_record.save()
             yield True, full_response
 
         except openai.error.RateLimitError as e:

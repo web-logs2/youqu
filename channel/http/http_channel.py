@@ -18,6 +18,7 @@ from larksuiteoapi import OapiHeader
 from larksuiteoapi.card import handle_card
 from larksuiteoapi.event import handle_event
 from larksuiteoapi.model import OapiRequest
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 import common.email
 import config
@@ -27,7 +28,6 @@ from channel.http import auth
 from channel.http.auth import sha256_encrypt, Auth
 from common import const, log
 from common.db.dbconfig import db
-from common.db.query_record import QueryRecord
 from common.db.user import User
 from common.functions import is_valid_password, is_valid_email, is_valid_username, is_valid_phone, \
     is_path_empty_or_nonexistent, ip_reader
@@ -39,6 +39,8 @@ from service.file_training_service import upload_file_service
 
 nest_asyncio.apply()
 http_app = Flask(__name__, template_folder='templates', static_folder='static')
+# http_app.wsgi_app = ProxyFix(http_app.wsgi_app)
+
 # 自动重载模板文件
 http_app.jinja_env.auto_reload = True
 http_app.config['TEMPLATES_AUTO_RELOAD'] = True
@@ -365,29 +367,23 @@ class HttpChannel(Channel):
             system_prompt = model_conf(const.OPEN_AI).get("character_desc", "")
         context['system_prompt'] = system_prompt
         # log.info("Handle stream:" + data["msg"])
-        ip = request.remote_addr
-        ip_location = ""
-        try:
-            ip_location = ip_reader.city(ip)
-        except Exception as e:
-            log.error("[http]ip:{}", e)
 
-        query_record = QueryRecord(
-            user_id=context['user'].user_id,
-            conversation_id=context['conversation_id'],
-            query=data["msg"],
-            reply="",
-            ip=ip,
-            ip_location=ip_location,
-            created_time=datetime.datetime.now(),
-            updated_time=datetime.datetime.now(),
-        )
-        query_record.save()
+        # query_record = QueryRecord(
+        #     user_id=context['user'].user_id,
+        #     conversation_id=context['conversation_id'],
+        #     query=data["msg"],
+        #     reply="",
+        #     ip=ip,
+        #     ip_location=ip_location,
+        #     created_time=datetime.datetime.now(),
+        #     updated_time=datetime.datetime.now(),
+        # )
+        # query_record.save()
 
         async for final, reply in super().build_reply_stream(data["msg"], context):
-            if final:
-                query_record.reply = reply
-                query_record.save()
+            # if final:
+            #     query_record.reply = reply
+            #     query_record.save()
             yield final, reply
 
     def handle_picture(self, data, user: User):
