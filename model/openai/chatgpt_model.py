@@ -137,6 +137,15 @@ class ChatGPTModel(Model):
 
 
 
+            #
+            # headers = request.headers
+            # # 遍历请求头并打印
+            # for key in headers:
+            #     print(f"{key}: {headers[key]}")
+
+
+            for header in request.headers:
+                log.info(header)
             ip = request.remote_addr
             ip_location = ""
             try:
