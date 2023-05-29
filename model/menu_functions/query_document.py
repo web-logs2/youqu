@@ -51,7 +51,8 @@ class QueryDcoumnet(MenuFunction):
 
             end_time = time.time()
             logging.info("Total time elapsed: {}".format(end_time - start_time))
-            return res.response_gen
+            # return res.response_gen
+            return res.response
         except Exception as e:
             log.exception(e)
             return '读取失败，请重试'
