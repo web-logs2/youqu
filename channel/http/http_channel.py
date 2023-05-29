@@ -18,6 +18,7 @@ from larksuiteoapi import OapiHeader
 from larksuiteoapi.card import handle_card
 from larksuiteoapi.event import handle_event
 from larksuiteoapi.model import OapiRequest
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 import common.email
 import config
@@ -39,6 +40,8 @@ from service.file_training_service import upload_file_service
 
 nest_asyncio.apply()
 http_app = Flask(__name__, template_folder='templates', static_folder='static')
+http_app.wsgi_app = ProxyFix(http_app.wsgi_app)
+
 # 自动重载模板文件
 http_app.jinja_env.auto_reload = True
 http_app.config['TEMPLATES_AUTO_RELOAD'] = True

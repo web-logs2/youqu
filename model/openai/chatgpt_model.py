@@ -137,10 +137,7 @@ class ChatGPTModel(Model):
 
 
 
-            if 'CF-Connecting-IP' in request.headers:
-                ip = request.headers['CF-Connecting-IP']
-            else:
-                ip = request.remote_addr
+            ip = request.remote_addr
             ip_location = ""
             try:
                 ip_location = ip_reader.city(ip)
