@@ -147,22 +147,23 @@ class ChatGPTModel(Model):
             # for header in request.headers:
             #     log.info(header)
             ip = request.headers.get("X-Forwarded-For", request.remote_addr)
-            ip_location = ""
-            try:
-                ip_location = ip_reader.city(ip)
-            except Exception as e:
-                log.error("[http]ip:{}", e)
+            # ip_location = ""
+            # try:
+            #     ip_location = ip_reader.city(ip).city.names.get('zh-CN', '')
+            # except Exception as e:
+            #     log.error("[http]ip:{}", e)
+
             query_record = QueryRecord(
                 user_id=context['user'].user_id,
                 conversation_id=context['conversation_id'],
                 query=query,
                 reply="",
                 ip=ip,
-                ip_location=ip_location,
                 model_name=model,
                 created_time=datetime.datetime.now(),
                 updated_time=datetime.datetime.now(),
             )
+            query_record.update_ip_location()
             query_record.set_query_trail(new_query)
 
 
