@@ -21,7 +21,7 @@ class Auth:
         super(Auth, self).__init__()
 
     @staticmethod
-    def encode_auth_token(user_id, login_time):
+    def encode_auth_token(user_id, login_time, expire=24):
         """
         生成认证Token
         :param user_id: int
@@ -31,7 +31,7 @@ class Auth:
         try:
             payload = {
                 'iss': 'ken',  # 签名
-                'exp': datetime.datetime.utcnow() + datetime.timedelta(days=0, hours=24),  # 过期时间
+                'exp': datetime.datetime.utcnow() + datetime.timedelta(days=0, hours=expire),  # 过期时间
                 'iat': datetime.datetime.utcnow(),  # 开始时间
                 'data': {
                     'id': user_id,
@@ -82,7 +82,7 @@ def identify(token: str) -> User:
         if token:
             payload = Auth.decode_auth_token(token)
             if not isinstance(payload, str):
-                current_user = User.select().where(User.id == payload['data']['id'] and User.deleted != 1).first()
+                current_user = User.select().where(User.user_id == payload['data']['id'], User.deleted != 1).first()
                 if current_user is None:
                     log.info("User not found:{}", payload['data']['id'])
                     return None
@@ -106,6 +106,25 @@ def identify(token: str) -> User:
         return None
 
 
+def identify_token(token: str):
+    try:
+        if token:
+            payload = Auth.decode_auth_token(token)
+            if not isinstance(payload, str):
+                return payload['data']['id']
+            log.info("Token error: {}", payload)
+            return None
+
+    except jwt.ExpiredSignatureError:
+        log.info("Token expired {}", token)
+        # result = 'Token已更改，请重新登录获取'
+        return None
+
+    except jwt.InvalidTokenError:
+        log.info("Invalid token {}", token)
+        # result = '没有提供认证token'
+        return None
+
 # def authenticate(password):
 #     """
 #     用户登录，登录成功返回token
@@ -123,7 +142,8 @@ def identify(token: str) -> User:
 def authenticate(email, password) -> User:
     if password == '' or email == '':
         return
-    current_user = User.select().where(User.email == email and User.password == sha256_encrypt(password)).first()
+    #login_user= User.select().where(User.email == email and User.password).first()
+    current_user = User.select().where((User.email == email) & (User.password == sha256_encrypt(password))).first()
     if current_user is None:
         return
     else:
