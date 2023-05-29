@@ -10,7 +10,6 @@ from peewee import (
 )
 
 from common.db.dbconfig import db
-from common.functions import get_city_name_in_chinese
 
 
 class User(Model):
@@ -34,15 +33,9 @@ class User(Model):
             return json.loads(self.available_models)
         return None
 
-    def update_ip_location(self):
-        self.ip_location = get_city_name_in_chinese(self.ip)
-
-
     def save_in_session(self):
         if self is not None:
             session["user"] = jsonpickle.encode(self)
-
-
 
     def delete_from_session(self):
         if "user" in session:

@@ -135,14 +135,11 @@ class ChatGPTModel(Model):
                 return
             new_query = Session.build_session_query(query, user_session_id, system_prompt, max_tokens=max_tokens)
 
-
-
             #
             # headers = request.headers
             # # 遍历请求头并打印
             # for key in headers:
             #     print(f"{key}: {headers[key]}")
-
 
             # for header in request.headers:
             #     log.info(header)
@@ -166,14 +163,13 @@ class ChatGPTModel(Model):
             query_record.update_ip_location()
             query_record.set_query_trail(new_query)
 
-
             log.info("[chatgpt]: model={} max_tokens={} query={}", model, max_tokens, new_query)
             res = openai.ChatCompletion.create(
                 model=model,  # 对话模型的名称
                 messages=new_query,
                 temperature=model_conf(const.OPEN_AI).get("temperature", 0.8),
                 # 熵值，在[0,1]之间，越大表示选取的候选词越随机，回复越具有不确定性，建议和top_p参数二选一使用，创意性任务越大越好，精确性任务越小越好
-                #max_tokens=8100,  # 回复最大的字符数，为输入和输出的总数
+                # max_tokens=8100,  # 回复最大的字符数，为输入和输出的总数
                 # top_p=model_conf(const.OPEN_AI).get("top_p", 0.7),,  #候选词列表。0.7 意味着只考虑前70%候选词的标记，建议和temperature参数二选一使用
                 frequency_penalty=model_conf(const.OPEN_AI).get("frequency_penalty", 0.0),
                 # [-2,2]之间，该值越大则越降低模型一行中的重复用词，更倾向于产生不同的内容
