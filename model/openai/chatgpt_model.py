@@ -7,7 +7,6 @@ import time
 import openai
 from expiring_dict import ExpiringDict
 from flask import request
-from peewee import DateTimeField
 from typing import List
 
 from requests.exceptions import ChunkedEncodingError
@@ -17,19 +16,18 @@ from common import log
 from common.db.conversation import Conversation
 from common.db.query_record import QueryRecord
 from common.db.user import User
-from common.functions import ip_reader
 from config import model_conf
-from model.menu_functions.document_list import DocumentList
-from model.menu_functions.pre_train_documnt import PreTrainDcoumnet
-from model.menu_functions.query_document import QueryDcoumnet
+from common.menu_functions.document_list import DocumentList
+from common.menu_functions.pre_train_documnt import PreTrainDcoumnet
+from common.menu_functions.query_document import QueryDcoumnet
 from model.model import Model
 
-from model.menu_functions.cnblogs_query_document import CnblogsQueryDcoumnet
-from model.menu_functions.cnblogs_pre_train_document import CnblogsPreTrainDocument
+from common.menu_functions.cnblogs_query_document import CnblogsQueryDcoumnet
+from common.menu_functions.cnblogs_pre_train_document import CnblogsPreTrainDocument
 
-from model.menu_functions.wx_pre_train_document import WxPreTrainDocument
-from model.menu_functions.wx_query_document import WxQueryDocument
-from model.menu_functions.clear_memory import ClearMemory
+from common.menu_functions.wx_pre_train_document import WxPreTrainDocument
+from common.menu_functions.wx_query_document import WxQueryDocument
+from common.menu_functions.clear_memory import ClearMemory
 
 if model_conf(const.OPEN_AI).get('expires_in_seconds'):
     user_session = ExpiringDict(model_conf(const.OPEN_AI).get('expires_in_seconds'))

@@ -3,7 +3,7 @@ Message sending channel abstract class
 """
 
 from bridge.bridge import Bridge
-from model.menu_functions.menu_function import MenuFunction
+from common.menu_functions.menu_function import MenuFunction
 
 
 class Channel(object):

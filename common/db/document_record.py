@@ -25,6 +25,26 @@ class DocumentRecord(Model):
     # 2.博客园     cnblogs
     type = CharField(default='', max_length=20)
 
+    def dict(self):
+        return {
+            "id": self.id,
+            "title": self.title,
+            "trained": self.trained,
+            "type": self.type
+        }
+
+    #query all available documents
+    @staticmethod
+    def query_all_available_documents(user_id):
+        #return all documents to string
+        #,DocumentRecord.user_id==user_id
+        documents: list[DocumentRecord] = DocumentRecord.select().where(DocumentRecord.deleted == 0,DocumentRecord.trained==1)
+        document_list = []
+        for document in documents:
+            document_list.append(document.dict())
+        return str(document_list)
+
+
     class Meta:
         database = db
         table_name = "document_reocrd"

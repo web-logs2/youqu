@@ -28,6 +28,7 @@ from channel.http import auth
 from channel.http.auth import sha256_encrypt, Auth
 from common import const, log
 from common.db.dbconfig import db
+from common.db.document_record import DocumentRecord
 from common.db.user import User
 from common.functions import is_valid_password, is_valid_email, is_valid_username, is_valid_phone, \
     is_path_empty_or_nonexistent, ip_reader
@@ -51,7 +52,6 @@ socketio = SocketIO(http_app, ping_timeout=5 * 60, ping_interval=30, cors_allowe
 
 # 设置静态文件缓存过期时间
 http_app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
-
 
 
 @http_app.route("/text", methods=['POST'])
@@ -202,10 +202,12 @@ def login():
              "phone": current_user.phone,
              "available_models": current_user.get_available_models()}), 200
 
+
 @http_app.route("/login", methods=['get'])
 def login_get():
     log.info("Login success: ")
     return redirect('/#/login')
+
 
 @http_app.route("/sendcode", methods=['POST'])
 def send_code():
@@ -245,7 +247,8 @@ def get_user_info():
         return jsonify({"error": "Invalid user"}), 401
     return jsonify({"username": current_user.user_name, "email": current_user.email,
                     "phone": current_user.phone,
-                    "available_models": current_user.get_available_models()}), 200
+                    "available_models": current_user.get_available_models(),
+                    "available_documents": DocumentRecord.query_all_available_documents(current_user.user_id)}), 200
 
 
 @http_app.teardown_request
@@ -254,7 +257,6 @@ def teardown_request(exception):
 
 
 async def return_stream(data, user: User):
-    last_emit_time = time.time()
     try:
         async for final, response in HttpChannel().handle_stream(data=data, user=user):
             if final:
@@ -264,7 +266,6 @@ async def return_stream(data, user: User):
                     {'content': response, 'messageID': data['messageID'], 'conversation_id': data['conversation_id'],
                      'final': final}, request.sid,
                     namespace="/chat")
-                #disconnect()
             else:
                 socketio.sleep(0.001)
                 socketio.server.emit(
@@ -273,9 +274,7 @@ async def return_stream(data, user: User):
                      'conversation_id': data['conversation_id'],
                      'final': final}, request.sid,
                     namespace="/chat")
-            # disconnect()
     except Exception as e:
-        disconnect()
         log.error("[http]emit:{}", e)
 
 
