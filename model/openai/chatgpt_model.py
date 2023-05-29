@@ -144,9 +144,9 @@ class ChatGPTModel(Model):
             #     print(f"{key}: {headers[key]}")
 
 
-            for header in request.headers:
-                log.info(header)
-            ip = request.remote_addr
+            # for header in request.headers:
+            #     log.info(header)
+            ip = request.headers.get("X-Forwarded-For", request.remote_addr)
             ip_location = ""
             try:
                 ip_location = ip_reader.city(ip)

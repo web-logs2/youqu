@@ -28,7 +28,6 @@ from channel.http import auth
 from channel.http.auth import sha256_encrypt, Auth
 from common import const, log
 from common.db.dbconfig import db
-from common.db.query_record import QueryRecord
 from common.db.user import User
 from common.functions import is_valid_password, is_valid_email, is_valid_username, is_valid_phone, \
     is_path_empty_or_nonexistent, ip_reader
@@ -40,7 +39,7 @@ from service.file_training_service import upload_file_service
 
 nest_asyncio.apply()
 http_app = Flask(__name__, template_folder='templates', static_folder='static')
-http_app.wsgi_app = ProxyFix(http_app.wsgi_app)
+# http_app.wsgi_app = ProxyFix(http_app.wsgi_app)
 
 # 自动重载模板文件
 http_app.jinja_env.auto_reload = True
