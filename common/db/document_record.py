@@ -1,3 +1,4 @@
+import json
 
 from peewee import (
     Model,
@@ -42,7 +43,7 @@ class DocumentRecord(Model):
         document_list = []
         for document in documents:
             document_list.append(document.dict())
-        return str(document_list)
+        return document_list
 
 
     class Meta:

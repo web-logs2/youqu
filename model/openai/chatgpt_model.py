@@ -173,7 +173,8 @@ class ChatGPTModel(Model):
                 # [-2,2]之间，该值越大则越降低模型一行中的重复用词，更倾向于产生不同的内容
                 presence_penalty=model_conf(const.OPEN_AI).get("presence_penalty", 1.0),
                 # [-2,2]之间，该值越大则越不受输入限制，将鼓励模型生成输入中不存在的新词，更倾向于产生不同的内容
-                stream=True
+                stream=True,
+                # stop=["\n", "。", "？", "！"],
             )
             full_response = ""
             for chunk in res:
