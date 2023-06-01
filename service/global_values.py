@@ -11,8 +11,9 @@ def inStopMessages(user_id):
     return str(user_id) in stop_messages_list
 
 def removeStopMessages(user_id):
-    del stop_messages_list[str(user_id)]
-
+    user_key = str(user_id)
+    if user_key in stop_messages_list:
+        del stop_messages_list[user_key]
 def clearStopMessages():
     stop_messages_list.clear()
 

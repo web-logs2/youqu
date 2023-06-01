@@ -37,7 +37,7 @@ from config import channel_conf, model_conf
 from model import model_factory
 from model.azure.azure_model import AZURE
 from service.file_training_service import upload_file_service
-from service.global_values import addStopMessages
+from service.global_values import addStopMessages, removeStopMessages
 
 nest_asyncio.apply()
 http_app = Flask(__name__, template_folder='templates', static_folder='static')
@@ -292,7 +292,7 @@ def message(data):
         asyncio.run(return_stream(data, user))
 
 @socketio.on('stop', namespace='/chat')
-def handle_command(data):
+def stop(data):
     token = request.args.get('token', '')
     user = auth.identify(token)
     if user is None:
@@ -336,7 +336,7 @@ def heart_beat(message):
 def disconnect():
     log.info('disconnect')
     time.sleep(1)
-    socketio.server.disconnect(request.sid,room=request.sid, namespace="/chat")
+    socketio.server.disconnect(request.sid, namespace="/chat")
     db.close()
 
 

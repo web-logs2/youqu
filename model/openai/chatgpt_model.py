@@ -16,7 +16,7 @@ from common import log
 from common.db.conversation import Conversation
 from common.db.query_record import QueryRecord
 from common.db.user import User
-from service.global_values import inStopMessages
+from service.global_values import inStopMessages, removeStopMessages
 from config import model_conf
 from common.menu_functions.document_list import DocumentList
 from common.menu_functions.pre_train_documnt import PreTrainDcoumnet
@@ -207,9 +207,9 @@ class ChatGPTModel(Model):
             conversation.save()
             query_record.reply = full_response
             query_record.save()
+            removeStopMessages(user.user_id)
             yield True, full_response
-            if inStopMessages(user.user_id):
-                time.sleep(6)
+
         except openai.error.RateLimitError as e:
             # rate limit exception
             log.warn(e)
