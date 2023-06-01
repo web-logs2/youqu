@@ -123,13 +123,15 @@ class ChatGPTModel(Model):
             model = context['model']
             if model == const.MODEL_GPT4_8K:
                 max_tokens = 9000
+            elif model == const.MODEL_GPT4_32K:
+                max_tokens = 32000
             else:
                 max_tokens = 4500
 
             user_session_id = user.user_id + conversation_id
             if query == '#清除记忆':
                 # Session.clear_session(user_session_id)
-                Session.clear_session_by_user(user.user_id)
+                Session.clear_session(user_session_id)
                 yield True, '记忆已清除'
                 return
             new_query = Session.build_session_query(query, user_session_id, system_prompt, max_tokens=max_tokens)

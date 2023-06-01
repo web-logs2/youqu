@@ -22,6 +22,7 @@ MYSQL = "mysql"
 
 MODEL_GPT_35_TURBO = "gpt-3.5-turbo"
 MODEL_GPT4_8K = "gpt-4"
+MODEL_GPT4_32K = "gpt-4-32k"
 
 EMAIL_SENDER = "no-reply@youqu.app"
 EMAIL_SENDER_NAME = "YouQu"
