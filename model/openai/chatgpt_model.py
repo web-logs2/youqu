@@ -16,6 +16,7 @@ from common import log
 from common.db.conversation import Conversation
 from common.db.query_record import QueryRecord
 from common.db.user import User
+from service.global_values import inStopMessages
 from config import model_conf
 from common.menu_functions.document_list import DocumentList
 from common.menu_functions.pre_train_documnt import PreTrainDcoumnet
@@ -174,6 +175,7 @@ class ChatGPTModel(Model):
                 presence_penalty=model_conf(const.OPEN_AI).get("presence_penalty", 1.0),
                 # [-2,2]之间，该值越大则越不受输入限制，将鼓励模型生成输入中不存在的新词，更倾向于产生不同的内容
                 stream=True,
+                timeout=5,
                 # stop=["\n", "。", "？", "！"],
             )
             full_response = ""
@@ -184,6 +186,8 @@ class ChatGPTModel(Model):
                 chunk_message = chunk['choices'][0]['delta'].get("content")
                 if (chunk_message):
                     full_response += chunk_message
+                if inStopMessages(user.user_id):
+                    break
                 yield False, full_response
             Session.save_session(query, full_response, user_session_id, max_tokens=max_tokens)
             log.info("[chatgpt]: reply={}", full_response)
@@ -204,7 +208,8 @@ class ChatGPTModel(Model):
             query_record.reply = full_response
             query_record.save()
             yield True, full_response
-
+            if inStopMessages(user.user_id):
+                time.sleep(6)
         except openai.error.RateLimitError as e:
             # rate limit exception
             log.warn(e)

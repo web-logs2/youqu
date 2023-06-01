@@ -37,6 +37,7 @@ from config import channel_conf, model_conf
 from model import model_factory
 from model.azure.azure_model import AZURE
 from service.file_training_service import upload_file_service
+from service.global_values import addStopMessages
 
 nest_asyncio.apply()
 http_app = Flask(__name__, template_folder='templates', static_folder='static')
@@ -284,11 +285,21 @@ def message(data):
     user = auth.identify(token)
     if user is None:
         log.info("Token error")
-        socketio.emit('logout', {'error': "invalid cookie"}, namespace='/chat')
+        socketio.emit('logout', {'error': "invalid cookie"},  room=request.sid,namespace='/chat')
     # data = json.loads(data)
     log.info("message:" + data['msg'])
     if data:
         asyncio.run(return_stream(data, user))
+
+@socketio.on('stop', namespace='/chat')
+def handle_command(data):
+    token = request.args.get('token', '')
+    user = auth.identify(token)
+    if user is None:
+        log.info("Token error")
+        socketio.emit('logout', {'error': "invalid cookie"},  room=request.sid,namespace='/chat')
+    addStopMessages(user.user_id)
+    socketio.server.emit('stop', {'info': "stopped"},  room=request.sid,namespace='/chat')
 
 
 @socketio.on('connect', namespace='/chat')
@@ -300,7 +311,7 @@ def connect():
         disconnect()
         return
     log.info('{} connected', user.email)
-    socketio.emit('connected', {'info': "connected"}, namespace='/chat')
+    socketio.emit('connected', {'info': "connected"}, room=request.sid,namespace='/chat')
 
 
 @socketio.on('heartbeat', namespace='/chat')
@@ -310,7 +321,7 @@ def heart_beat(message):
     user_id = auth.identify_token(token)
     if user_id is None:
         log.info("Token error")
-        socketio.emit('logout', {'error': "invalid cookie"}, namespace='/chat')
+        socketio.emit('logout', {'error': "invalid cookie"},room=request.sid,namespace='/chat')
         disconnect()
         return
     log.info('{} heart beat', user_id)
@@ -320,11 +331,12 @@ def heart_beat(message):
         namespace="/chat")
 
 
+
 @socketio.on('disconnect', namespace='/chat')
 def disconnect():
     log.info('disconnect')
     time.sleep(1)
-    socketio.server.disconnect(request.sid, namespace="/chat")
+    socketio.server.disconnect(request.sid,room=request.sid, namespace="/chat")
     db.close()
 
 
