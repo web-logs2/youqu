@@ -123,6 +123,8 @@ class ChatGPTModel(Model):
             model = context['model']
             if model == const.MODEL_GPT4_8K:
                 max_tokens = 9000
+            elif model == const.MODEL_GPT4_32K:
+                max_tokens = 32000
             else:
                 max_tokens = 4500
 
