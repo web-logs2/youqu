@@ -8,13 +8,13 @@ from llama_index import SimpleDirectoryReader
 
 from common.db.document_record import DocumentRecord
 from common.log import logger
-from model.menu_functions.document_list import DocumentList
+from common.menu_functions.document_list import DocumentList
 
 from config import project_conf
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 
-from model.menu_functions.public_train_methods import public_train_documents
+from common.menu_functions.public_train_methods import public_train_documents
 
 executor = ThreadPoolExecutor(8)
 

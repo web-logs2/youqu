@@ -7,7 +7,6 @@ import time
 import openai
 from expiring_dict import ExpiringDict
 from flask import request
-from peewee import DateTimeField
 from typing import List
 
 from requests.exceptions import ChunkedEncodingError
@@ -17,19 +16,19 @@ from common import log
 from common.db.conversation import Conversation
 from common.db.query_record import QueryRecord
 from common.db.user import User
-from common.functions import ip_reader
+from service.global_values import inStopMessages, removeStopMessages
 from config import model_conf
-from model.menu_functions.document_list import DocumentList
-from model.menu_functions.pre_train_documnt import PreTrainDcoumnet
-from model.menu_functions.query_document import QueryDcoumnet
+from common.menu_functions.document_list import DocumentList
+from common.menu_functions.pre_train_documnt import PreTrainDcoumnet
+from common.menu_functions.query_document import QueryDcoumnet
 from model.model import Model
 
-from model.menu_functions.cnblogs_query_document import CnblogsQueryDcoumnet
-from model.menu_functions.cnblogs_pre_train_document import CnblogsPreTrainDocument
+from common.menu_functions.cnblogs_query_document import CnblogsQueryDcoumnet
+from common.menu_functions.cnblogs_pre_train_document import CnblogsPreTrainDocument
 
-from model.menu_functions.wx_pre_train_document import WxPreTrainDocument
-from model.menu_functions.wx_query_document import WxQueryDocument
-from model.menu_functions.clear_memory import ClearMemory
+from common.menu_functions.wx_pre_train_document import WxPreTrainDocument
+from common.menu_functions.wx_query_document import WxQueryDocument
+from common.menu_functions.clear_memory import ClearMemory
 
 if model_conf(const.OPEN_AI).get('expires_in_seconds'):
     user_session = ExpiringDict(model_conf(const.OPEN_AI).get('expires_in_seconds'))
@@ -113,7 +112,7 @@ class ChatGPTModel(Model):
         except Exception as e:
             # unknown exception
             log.exception(e)
-            Session.clear_session(user_id)
+            Session.clear_session_by_user(user_id)
             return "请再问我一次吧"
 
     async def reply_text_stream(self, query, context, retry_count=0):
@@ -124,13 +123,15 @@ class ChatGPTModel(Model):
             model = context['model']
             if model == const.MODEL_GPT4_8K:
                 max_tokens = 9000
+            elif model == const.MODEL_GPT4_32K:
+                max_tokens = 32000
             else:
                 max_tokens = 4500
 
             user_session_id = user.user_id + conversation_id
             if query == '#清除记忆':
                 # Session.clear_session(user_session_id)
-                Session.clear_session_by_user(user.user_id)
+                Session.clear_session(user_session_id)
                 yield True, '记忆已清除'
                 return
             new_query = Session.build_session_query(query, user_session_id, system_prompt, max_tokens=max_tokens)
@@ -175,7 +176,9 @@ class ChatGPTModel(Model):
                 # [-2,2]之间，该值越大则越降低模型一行中的重复用词，更倾向于产生不同的内容
                 presence_penalty=model_conf(const.OPEN_AI).get("presence_penalty", 1.0),
                 # [-2,2]之间，该值越大则越不受输入限制，将鼓励模型生成输入中不存在的新词，更倾向于产生不同的内容
-                stream=True
+                stream=True,
+                timeout=5,
+                # stop=["\n", "。", "？", "！"],
             )
             full_response = ""
             for chunk in res:
@@ -185,6 +188,8 @@ class ChatGPTModel(Model):
                 chunk_message = chunk['choices'][0]['delta'].get("content")
                 if (chunk_message):
                     full_response += chunk_message
+                if inStopMessages(user.user_id):
+                    break
                 yield False, full_response
             Session.save_session(query, full_response, user_session_id, max_tokens=max_tokens)
             log.info("[chatgpt]: reply={}", full_response)
@@ -204,6 +209,7 @@ class ChatGPTModel(Model):
             conversation.save()
             query_record.reply = full_response
             query_record.save()
+            removeStopMessages(user.user_id)
             yield True, full_response
 
         except openai.error.RateLimitError as e:
@@ -237,7 +243,7 @@ class ChatGPTModel(Model):
         except Exception as e:
             # unknown exception
             log.error(e)
-            Session.clear_session(user_session_id)
+            Session.clear_session_by_user(user_session_id)
             yield True, "请再问我一次吧"
 
     def create_img(self, query, retry_count=0):
@@ -326,7 +332,8 @@ class Session(object):
 
     @staticmethod
     def clear_session(session_id):
-        user_session[session_id] = []
+        if session_id in user_session:
+            user_session[session_id] = []
 
     @staticmethod
     def clear_session_by_user(user_id):
