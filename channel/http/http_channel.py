@@ -259,6 +259,8 @@ def teardown_request(exception):
 
 
 async def return_stream(data, user: User):
+
+    response_type = data["response_type"] if "response_type" in data else "text"
     try:
         async for final, response in HttpChannel().handle_stream(data=data, user=user):
             if final:
@@ -268,7 +270,7 @@ async def return_stream(data, user: User):
                     {'content': response, 'messageID': data['messageID'], 'conversation_id': data['conversation_id'],
                      'final': final}, request.sid,
                     namespace="/chat")
-            else:
+            elif response_type == "text":
                 socketio.sleep(0.001)
                 socketio.server.emit(
                     'reply',
