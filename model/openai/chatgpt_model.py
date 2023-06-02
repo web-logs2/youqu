@@ -112,7 +112,7 @@ class ChatGPTModel(Model):
         except Exception as e:
             # unknown exception
             log.exception(e)
-            Session.clear_session(user_id)
+            Session.clear_session_by_user(user_id)
             return "请再问我一次吧"
 
     async def reply_text_stream(self, query, context, retry_count=0):
@@ -129,7 +129,7 @@ class ChatGPTModel(Model):
             user_session_id = user.user_id + conversation_id
             if query == '#清除记忆':
                 # Session.clear_session(user_session_id)
-                Session.clear_session_by_user(user.user_id)
+                Session.clear_session(user_session_id)
                 yield True, '记忆已清除'
                 return
             new_query = Session.build_session_query(query, user_session_id, system_prompt, max_tokens=max_tokens)
@@ -241,7 +241,7 @@ class ChatGPTModel(Model):
         except Exception as e:
             # unknown exception
             log.error(e)
-            Session.clear_session(user_session_id)
+            Session.clear_session_by_user(user_session_id)
             yield True, "请再问我一次吧"
 
     def create_img(self, query, retry_count=0):
@@ -330,7 +330,8 @@ class Session(object):
 
     @staticmethod
     def clear_session(session_id):
-        user_session[session_id] = []
+        if session_id in user_session:
+            user_session[session_id] = []
 
     @staticmethod
     def clear_session_by_user(user_id):

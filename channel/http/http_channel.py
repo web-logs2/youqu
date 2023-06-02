@@ -36,6 +36,7 @@ from common.generator import generate_uuid
 from config import channel_conf, model_conf
 from model import model_factory
 from model.azure.azure_model import AZURE
+from model.openai.chatgpt_model import Session
 from service.file_training_service import upload_file_service
 from service.global_values import addStopMessages, removeStopMessages
 
@@ -285,11 +286,12 @@ def message(data):
     user = auth.identify(token)
     if user is None:
         log.info("Token error")
-        socketio.emit('logout', {'error': "invalid cookie"},  room=request.sid,namespace='/chat')
+        socketio.emit('logout', {'error': "invalid cookie"}, room=request.sid, namespace='/chat')
     # data = json.loads(data)
     log.info("message:" + data['msg'])
     if data:
         asyncio.run(return_stream(data, user))
+
 
 @socketio.on('stop', namespace='/chat')
 def stop(data):
@@ -297,9 +299,34 @@ def stop(data):
     user = auth.identify(token)
     if user is None:
         log.info("Token error")
-        socketio.emit('logout', {'error': "invalid cookie"},  room=request.sid,namespace='/chat')
+        socketio.emit('logout', {'error': "invalid cookie"}, room=request.sid, namespace='/chat')
     addStopMessages(user.user_id)
-    socketio.server.emit('stop', {'info': "stopped"},  room=request.sid,namespace='/chat')
+    socketio.server.emit('stop', {'info': "stopped"}, room=request.sid, namespace='/chat')
+
+
+@socketio.on('stop', namespace='/chat')
+def stop(data):
+    token = request.args.get('token', '')
+    user = auth.identify(token)
+    if user is None:
+        log.info("Token error")
+        socketio.emit('logout', {'error': "invalid cookie"}, room=request.sid, namespace='/chat')
+    addStopMessages(user.user_id)
+    socketio.server.emit('stop', {'info': "stopped"}, room=request.sid, namespace='/chat')
+
+
+@socketio.on('update_conversation', namespace='/chat')
+def update_conversation(data):
+    token = request.args.get('token', '')
+    user = auth.identify(token)
+    if user is None:
+        log.info("Token error")
+        socketio.emit('logout', {'error': "invalid cookie"}, room=request.sid, namespace='/chat')
+    conversation_id = data['conversation_id']
+    log.info("update_conversation:" + conversation_id)
+    Session.clear_session(user.user_id+conversation_id)
+    socketio.emit('update_conversation', {'info': "conversation updated"}, room=request.sid, namespace='/chat')
+
 
 
 @socketio.on('connect', namespace='/chat')
@@ -311,7 +338,7 @@ def connect():
         disconnect()
         return
     log.info('{} connected', user.email)
-    socketio.emit('connected', {'info': "connected"}, room=request.sid,namespace='/chat')
+    socketio.emit('connected', {'info': "connected"}, room=request.sid, namespace='/chat')
 
 
 @socketio.on('heartbeat', namespace='/chat')
@@ -321,7 +348,7 @@ def heart_beat(message):
     user_id = auth.identify_token(token)
     if user_id is None:
         log.info("Token error")
-        socketio.emit('logout', {'error': "invalid cookie"},room=request.sid,namespace='/chat')
+        socketio.emit('logout', {'error': "invalid cookie"}, room=request.sid, namespace='/chat')
         disconnect()
         return
     log.info('{} heart beat', user_id)
@@ -329,7 +356,6 @@ def heart_beat(message):
         'heartbeat',
         'pang', request.sid,
         namespace="/chat")
-
 
 
 @socketio.on('disconnect', namespace='/chat')
