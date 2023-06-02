@@ -2,6 +2,8 @@ import os
 import re
 import geoip2
 from geoip2.errors import AddressNotFoundError
+import geoip2.database
+
 
 
 def contain_chinese(str):

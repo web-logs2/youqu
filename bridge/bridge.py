@@ -16,7 +16,7 @@ class Bridge(object):
     def fetch_menu_list(self) -> MenuFunction:
         return model_factory.create_bot(config.conf().get("model").get("type")).menuList(self)
 
-    async def fetch_reply_stream(self, query, context):
+    async def fetch_reply_stream(self, context):
         bot = model_factory.create_bot(config.conf().get("model").get("type"))
-        async for final, response in bot.reply_text_stream(query, context):
+        async for final, response in bot.reply_text_stream(context):
             yield final, response

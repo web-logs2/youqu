@@ -115,12 +115,13 @@ class ChatGPTModel(Model):
             Session.clear_session_by_user(user_id)
             return "请再问我一次吧"
 
-    async def reply_text_stream(self, query, context, retry_count=0):
+    async def reply_text_stream(self, context, retry_count=0):
         try:
             user: User = context['user']
             conversation_id = context['conversation_id']
             system_prompt = context['system_prompt']
             model = context['model']
+            query= context['msg']
             if model == const.MODEL_GPT4_8K:
                 max_tokens = 9000
             elif model == const.MODEL_GPT4_32K:
