@@ -2,7 +2,7 @@
 # cache = Cache(10)
 from expiring_dict import ExpiringDict
 
-stop_messages_list = ExpiringDict(max_len=100000, max_age_seconds=10)
+stop_messages_list = ExpiringDict(max_len=100000, max_age_seconds=5)
 
 def addStopMessages(user_id):
     stop_messages_list[str(user_id)] = True
