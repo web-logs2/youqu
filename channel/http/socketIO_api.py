@@ -23,28 +23,28 @@ from service.global_values import addStopMessages
 socketio = SocketIO(http_app, ping_timeout=5 * 60, ping_interval=30, cors_allowed_origins="*")
 
 
-
 async def return_stream(data, user: User):
-
     # try:
-        async for final, response in handle_stream(data=data, user=user):
-            if final:
-                #log.info("Final:" + response)
-                socketio.server.emit(
-                    'final',
-                    {'content': response, 'messageID': data['messageID'], 'conversation_id': data['conversation_id'],
-                     'final': final}, request.sid,
-                    namespace="/chat")
-            else:
-                socketio.sleep(0.001)
-                socketio.server.emit(
-                    'reply',
-                    {'content': response, 'messageID': data['messageID'],
-                     'conversation_id': data['conversation_id'],
-                     'final': final}, request.sid,
-                    namespace="/chat")
-    # except Exception as e:
-    #     log.error("[http]emit:{}", e)
+    async for final, response in handle_stream(data=data, user=user):
+        if final:
+            # log.info("Final:" + response)
+            socketio.server.emit(
+                'final',
+                {'content': response, 'messageID': data['messageID'], 'conversation_id': data['conversation_id'],
+                 'final': final, "response_type": data.get("response_type", "text")}, request.sid,
+                namespace="/chat")
+        else:
+            socketio.sleep(0.001)
+            socketio.server.emit(
+                'reply',
+                {'content': response, 'messageID': data['messageID'],
+                 'conversation_id': data['conversation_id'],
+                 'final': final, "response_type": data.get("response_type", "text")}, request.sid,
+                namespace="/chat")
+
+
+# except Exception as e:
+#     log.error("[http]emit:{}", e)
 
 
 async def handle_stream(data, user: User):
@@ -63,11 +63,13 @@ async def handle_stream(data, user: User):
     if len(re.findall(r'\w+|[\u4e00-\u9fa5]|[^a-zA-Z0-9\u4e00-\u9fa5\s]', context['system_prompt'])) > 500:
         context['system_prompt'] = model_conf(const.OPEN_AI).get("character_desc", "")
     # if context['request_type'] == "voice":
-        # context["msg"] = await get_voice_text(data["voice_message"])
+    # context["msg"] = await get_voice_text(data["voice_message"])
     log.info("message:" + data["msg"])
     # if context['response_type']=='voice':
     #     addStopMessages(context['msg'])
-    async for final, reply in Channel.build_reply_stream( context):
+
+
+    async for final, reply in Channel.build_reply_stream(context):
         if context['response_type'] == 'text':
             final and log.info("reply:" + reply)
             yield final, reply
@@ -77,8 +79,6 @@ async def handle_stream(data, user: User):
             audio_data = azure.synthesize_speech(reply).audio_data
             audio_base64 = base64.b64encode(audio_data).decode("utf-8")
             yield final, audio_base64
-
-
 
 
 # async def get_voice_text(voice_message):
@@ -161,6 +161,3 @@ def disconnect():
     time.sleep(1)
     socketio.server.disconnect(request.sid, namespace="/chat")
     db.close()
-
-
-
