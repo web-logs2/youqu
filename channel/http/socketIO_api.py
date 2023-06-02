@@ -47,6 +47,8 @@ async def return_stream(data, user: User):
 #     log.error("[http]emit:{}", e)
 
 
+
+
 async def handle_stream(data, user: User):
     context = {
         'conversation_id': str(data.get("conversation_id")),
@@ -67,18 +69,19 @@ async def handle_stream(data, user: User):
     log.info("message:" + data["msg"])
     # if context['response_type']=='voice':
     #     addStopMessages(context['msg'])
-
-
-    async for final, reply in Channel.build_reply_stream(context):
-        if context['response_type'] == 'text':
-            final and log.info("reply:" + reply)
-            yield final, reply
-        elif context['response_type'] == 'voice' and final:
-            log.info("reply:" + reply)
-            azure = AZURE()
-            audio_data = azure.synthesize_speech(reply).audio_data
-            audio_base64 = base64.b64encode(audio_data).decode("utf-8")
-            yield final, audio_base64
+    if context['response_type'] == "picture":
+        yield True,Channel.build_picture_reply_content(context)
+    else:
+        async for final, reply in Channel.build_reply_stream(context):
+            if context['response_type'] == 'text':
+                final and log.info("reply:" + reply)
+                yield final, reply
+            elif context['response_type'] == 'voice' and final:
+                log.info("reply:" + reply)
+                azure = AZURE()
+                audio_data = azure.synthesize_speech(reply).audio_data
+                audio_base64 = base64.b64encode(audio_data).decode("utf-8")
+                yield final, audio_base64
 
 
 # async def get_voice_text(voice_message):

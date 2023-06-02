@@ -10,8 +10,8 @@ class Bridge(object):
     def fetch_text_reply_content(self, query, context, stream=False):
         return model_factory.create_bot(config.conf().get("model").get("type")).reply(query, context)
 
-    def fetch_picture_reply_content(self, query):
-        return model_factory.create_bot(config.conf().get("model").get("picture")).create_img(query)
+    def fetch_picture_reply_content(self, context):
+        return model_factory.create_bot(config.conf().get("model").get("picture")).create_img(context)
 
     def fetch_menu_list(self) -> MenuFunction:
         return model_factory.create_bot(config.conf().get("model").get("type")).menuList(self)

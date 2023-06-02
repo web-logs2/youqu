@@ -220,7 +220,7 @@ class ChatGPTModel(Model):
                 yield False, "[CHATGPT] Connection broken, 第{}次重试，等待{}秒".format(retry_count + 1, 5)
                 time.sleep(5)
                 log.warn("[CHATGPT] RateLimit exceed, 第{}次重试".format(retry_count + 1))
-                yield True, self.reply_text_stream(query, user_session_id, retry_count + 1)
+                yield True, self.reply_text_stream(context, retry_count + 1)
             else:
                 yield True, "提问太快啦，请休息一下再问我吧"
         except openai.error.APIConnectionError as e:
@@ -238,7 +238,7 @@ class ChatGPTModel(Model):
                 yield False, "[CHATGPT] Connection broken, 第{}次重试，等待{}秒".format(retry_count + 1, wait_time)
                 log.warn("[CHATGPT] Connection broken, 第{}次重试，等待{}秒".format(retry_count + 1, wait_time))
                 time.sleep(wait_time)
-                yield True, self.reply_text_stream(query, user_session_id, retry_count + 1)
+                yield True, self.reply_text_stream(context, retry_count + 1)
             else:
                 yield True, "我连接不到网络，请稍后重试"
         except Exception as e:

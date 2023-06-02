@@ -52,8 +52,9 @@ class Channel(object):
                 return cmd.execute(cmds)
         return Bridge().fetch_text_reply_content(query, context)
 
-    def build_picture_reply_content(self, query, context=None):
-        return Bridge().fetch_picture_reply_content(query)
+    @staticmethod
+    def build_picture_reply_content(context):
+        return Bridge().fetch_picture_reply_content(context)
 
     def getMenuList(self) -> list[MenuFunction]:
         return Bridge.fetch_menu_list(self)
