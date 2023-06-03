@@ -1,9 +1,9 @@
 import azure.cognitiveservices.speech as speechsdk
-
 import config
 from common import const
 from config import model_conf
-
+import os
+os.environ['AZURE_C_SHARED_LOG_LEVEL'] = 'LOG_INFO'
 
 class AZURE:
 
