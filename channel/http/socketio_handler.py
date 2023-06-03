@@ -22,7 +22,7 @@ from service.global_values import addStopMessages
 class socket_handler():
     def __init__(self, socketio: SocketIO):
         self.socketio = socketio
-        self.azure = AZURE()
+        # self.azure = AZURE()
 
     def register_socketio_events(self):
         self.socketio.on_event('connect', self.connect, namespace='/chat')
@@ -84,7 +84,7 @@ class socket_handler():
                     yield final, reply
                 elif context['response_type'] == 'voice' and final:
                     log.info("reply:" + reply)
-                    audio_data = self.azure.synthesize_speech(reply).audio_data
+                    audio_data = AZURE().synthesize_speech(reply).audio_data
                     audio_base64 = base64.b64encode(audio_data).decode("utf-8")
                     yield final, audio_base64
 
