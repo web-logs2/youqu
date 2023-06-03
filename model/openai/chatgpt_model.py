@@ -232,7 +232,7 @@ class ChatGPTModel(Model):
             yield True, "我没有收到消息，请稍后重试"
         except ChunkedEncodingError as e:
             log.warn(e)
-            if retry_count < 3:
+            if retry_count < 1:
                 wait_time = (retry_count + 1) * 5
                 yield False, "[CHATGPT] Connection broken, 第{}次重试，等待{}秒".format(retry_count + 1, wait_time)
                 log.warn("[CHATGPT] Connection broken, 第{}次重试，等待{}秒".format(retry_count + 1, wait_time))
