@@ -14,6 +14,7 @@ from common import const, log
 
 from common.db.dbconfig import db
 from common.db.user import User
+from common.functions import num_tokens_from_string
 from config import model_conf
 from model.azure.azure_model import AZURE
 from model.openai.chatgpt_model import Session
@@ -47,8 +48,6 @@ async def return_stream(data, user: User):
 #     log.error("[http]emit:{}", e)
 
 
-
-
 async def handle_stream(data, user: User):
     context = {
         'conversation_id': str(data.get("conversation_id")),
@@ -62,7 +61,7 @@ async def handle_stream(data, user: User):
 
     if context['model'] not in user.get_available_models():
         context['model'] = const.MODEL_GPT_35_TURBO
-    if len(re.findall(r'\w+|[\u4e00-\u9fa5]|[^a-zA-Z0-9\u4e00-\u9fa5\s]', context['system_prompt'])) > 500:
+    if num_tokens_from_string(context['system_prompt']) > 2048:
         context['system_prompt'] = model_conf(const.OPEN_AI).get("character_desc", "")
     # if context['request_type'] == "voice":
     # context["msg"] = await get_voice_text(data["voice_message"])
@@ -70,7 +69,7 @@ async def handle_stream(data, user: User):
     # if context['response_type']=='voice':
     #     addStopMessages(context['msg'])
     if context['response_type'] == "picture":
-        yield True,Channel.build_picture_reply_content(context)
+        yield True, Channel.build_picture_reply_content(context)
     else:
         async for final, reply in Channel.build_reply_stream(context):
             if context['response_type'] == 'text':

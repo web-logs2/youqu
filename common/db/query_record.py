@@ -23,6 +23,8 @@ class QueryRecord(Model):
     ip_location = CharField(unique=False, max_length=1024)
     query_trail = CharField(unique=False, max_length=100000)
     model_name = CharField(unique=False, max_length=64)
+    prompt_count = IntegerField(unique=False, default=0)
+    complication_count = IntegerField(unique=False, default=0)
     created_time = DateTimeField()
     updated_time = DateTimeField()
 
