@@ -1,18 +1,12 @@
 # encoding:utf-8
-import asyncio
 import base64
 import datetime
 import json
-import os
-import re
 import time
-from socket import SocketIO
 
 import jsonpickle
-import nest_asyncio
-from flask import Flask, request, render_template, make_response, session, redirect
 from flask import jsonify
-from flask_cors import CORS
+from flask import request, render_template, make_response, session, redirect, Blueprint
 from larksuiteoapi import OapiHeader
 from larksuiteoapi.card import handle_card
 from larksuiteoapi.event import handle_event
@@ -23,34 +17,20 @@ import config
 from channel.feishu.common_service import conf
 from channel.http import auth
 from channel.http.auth import sha256_encrypt, Auth
-from common import const, log
+from common import log
 from common.db.dbconfig import db
 from common.db.document_record import DocumentRecord
 from common.db.user import User
 from common.functions import is_valid_password, is_valid_email, is_valid_username, is_valid_phone
 from common.generator import generate_uuid
-from config import channel_conf
 from model import model_factory
 from model.azure.azure_model import AZURE
 from service.file_training_service import upload_file_service
 
+api = Blueprint('api', __name__)
 
 
-nest_asyncio.apply()
-http_app = Flask(__name__, template_folder='templates', static_folder='static')
-
-# 自动重载模板文件
-http_app.jinja_env.auto_reload = True
-http_app.config['TEMPLATES_AUTO_RELOAD'] = True
-http_app.secret_key = channel_conf(const.HTTP).get('http_app_key')  # 设置session需要的secret_key
-
-CORS(http_app)
-
-
-# 设置静态文件缓存过期时间
-http_app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
-
-@http_app.route("/text", methods=['POST'])
+@api.route("/text", methods=['POST'])
 def text():
     user = auth.identify(request)
     if user is None:
@@ -68,7 +48,7 @@ def text():
         return {'content': reply_text}
 
 
-@http_app.route("/voice", methods=['POST'])
+@api.route("/voice", methods=['POST'])
 def voice():
     user = auth.identify(request)
     if user is None:
@@ -92,7 +72,7 @@ def voice():
         return jsonify(response)
 
 
-@http_app.route("/picture", methods=['POST'])
+@api.route("/picture", methods=['POST'])
 def picture():
     user = auth.identify(request)
     if user is None:
@@ -112,7 +92,7 @@ def picture():
         return jsonify(response)
 
 
-@http_app.route('/upload', methods=['POST'])
+@api.route('/upload', methods=['POST'])
 def upload_file():
     if 'token' not in request.form:
         return jsonify({"error": "Token is missing"}), 400
@@ -131,12 +111,12 @@ def upload_file():
     return upload_file_service(file, user.user_id)
 
 
-@http_app.route("/", methods=['GET'])
+@api.route("/", methods=['GET'])
 def index():
     return render_template('index.html')
 
 
-@http_app.route('/register', methods=['POST'])
+@api.route('/register', methods=['POST'])
 def register():
     data = json.loads(request.data)
     email = data.get('email', '')
@@ -168,7 +148,7 @@ def register():
 
 
 ##sign out
-@http_app.route("/sign-out", methods=['POST'])
+@api.route("/sign-out", methods=['POST'])
 def sign_out():
     token = json.loads(request.data).get('token', '')
     user = auth.identify(token)
@@ -180,7 +160,7 @@ def sign_out():
     return jsonify({"content": "success"})
 
 
-@http_app.route("/login", methods=['POST'])
+@api.route("/login", methods=['POST'])
 def login():
     data = json.loads(request.data)
     password = data.get('password', '')
@@ -199,13 +179,13 @@ def login():
              "available_models": current_user.get_available_models()}), 200
 
 
-@http_app.route("/login", methods=['get'])
+@api.route("/login", methods=['get'])
 def login_get():
     log.info("Login success: ")
     return redirect('/#/login')
 
 
-@http_app.route("/sendcode", methods=['POST'])
+@api.route("/sendcode", methods=['POST'])
 def send_code():
     data = json.loads(request.data)
     email = data.get('email', '')
@@ -218,7 +198,7 @@ def send_code():
     return jsonify({"message": "Reset password email sent"}), 200
 
 
-@http_app.route("/reset_password", methods=['POST'])
+@api.route("/reset_password", methods=['POST'])
 def reset_password():
     token = json.loads(request.data).get('token', '')
     current_user = auth.identify(token)
@@ -235,7 +215,7 @@ def reset_password():
     return jsonify({"message": "Reset password success"}), 200
 
 
-@http_app.route("/get_user_info", methods=['POST'])
+@api.route("/get_user_info", methods=['POST'])
 def get_user_info():
     token = json.loads(request.data).get('token', '')
     current_user = auth.identify(token)
@@ -247,18 +227,12 @@ def get_user_info():
                     "available_documents": DocumentRecord.query_all_available_documents(current_user.user_id)}), 200
 
 
-@http_app.teardown_request
+@api.teardown_request
 def teardown_request(exception):
     db.close()
 
 
-
-
-
-
-
-
-@http_app.route('/webhook/card', methods=['POST'])
+@api.route('/webhook/card', methods=['POST'])
 def webhook_card():
     log.info("/webhook/card:" + request.data.decode())
     oapi_request = OapiRequest(uri=request.path, body=request.data, header=OapiHeader(request.headers))
@@ -270,7 +244,7 @@ def webhook_card():
     return resp
 
 
-@http_app.route('/webhook/event', methods=['GET', 'POST'])
+@api.route('/webhook/event', methods=['GET', 'POST'])
 def webhook_event():
     log.info("/webhook/event:" + request.data.decode())
     oapi_request = OapiRequest(uri=request.path, body=request.data, header=OapiHeader(request.headers))
@@ -280,6 +254,7 @@ def webhook_event():
     resp.data = oapi_resp.body
     resp.status_code = oapi_resp.status_code
     return resp
+
 
 def handle_text(self, data, user: User):
     context = dict()

@@ -1,12 +1,33 @@
 import os
 
+import nest_asyncio
+from flask import Flask
+from flask_cors import CORS
+from flask_socketio import SocketIO
+
 from channel.channel import Channel
-from channel.http.http_api import http_app
-from channel.http.socketIO_api import socketio
+from channel.http import socketio_handler
+from channel.http.http_api import api
+from channel.http.socketio_handler import socket_handler
 
 from common import const, log
 from common.functions import is_path_empty_or_nonexistent
 from config import channel_conf
+
+nest_asyncio.apply()
+http_app = Flask(__name__, template_folder='templates', static_folder='static')
+http_app.register_blueprint(api)  # 注册蓝图
+socketio = SocketIO(http_app, ping_timeout=5 * 60, ping_interval=30, cors_allowed_origins="*")
+
+# 自动重载模板文件
+http_app.jinja_env.auto_reload = True
+http_app.config['TEMPLATES_AUTO_RELOAD'] = True
+CORS(http_app)
+handler = socket_handler(socketio)
+handler.register_socketio_events()  # 注册socket_handler类中的事件
+
+# 设置静态文件缓存过期时间
+http_app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
 
 class HttpChannel(Channel):
