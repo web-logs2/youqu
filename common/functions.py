@@ -114,3 +114,4 @@ def get_max_token(model):
         max_tokens = 32000
     else:
         max_tokens = 4000
+    return max_tokens
