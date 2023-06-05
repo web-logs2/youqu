@@ -86,6 +86,7 @@ class socket_handler():
             return
 
         if context['conversation_type'] == 'reading':
+
             records = DocumentRecord.select().where(DocumentRecord.id == context['document'])
             if records.count() <= 0:
                 log.error("文档未找到")
@@ -96,15 +97,20 @@ class socket_handler():
                 yield True, "书籍未训练完成"
             log.info("Trained file path:" + records[0].trained_file_path)
             start_time = time.time()
-            res = public_query_documents(records[0].trained_file_path, context["msg"])
-            response = ""
-            for token in res.response_gen:
-                response += token
-                yield False, response
-            yield True, response
-            end_time = time.time()
-            log.info("Total time elapsed: {}".format(end_time - start_time))
-            return
+            try:
+                res = public_query_documents(records[0].trained_file_path, context["msg"])
+                response = ""
+                for token in res.response_gen:
+                    response += token
+                    yield False, response
+                yield True, response
+                end_time = time.time()
+                log.info("Total time elapsed: {}".format(end_time - start_time))
+                return
+            except Exception as e:
+                log.error(traceback.format_exc())
+                yield True, "文档查询失败"
+                return
 
         if context['response_type'] == "picture":
             yield True, Channel.build_picture_reply_content(context)
