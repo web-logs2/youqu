@@ -3,11 +3,12 @@ import datetime
 import json
 import re
 import time
+import traceback
 
 import openai
+import tiktoken
 from expiring_dict import ExpiringDict
 from flask import request
-from peewee import DateTimeField
 from typing import List
 
 from requests.exceptions import ChunkedEncodingError
@@ -17,19 +18,20 @@ from common import log
 from common.db.conversation import Conversation
 from common.db.query_record import QueryRecord
 from common.db.user import User
-from common.functions import ip_reader
+from common.functions import num_tokens_from_messages, num_tokens_from_string, get_max_token
+from service.global_values import inStopMessages, removeStopMessages
 from config import model_conf
-from model.menu_functions.document_list import DocumentList
-from model.menu_functions.pre_train_documnt import PreTrainDcoumnet
-from model.menu_functions.query_document import QueryDcoumnet
+from common.menu_functions.document_list import DocumentList
+from common.menu_functions.pre_train_documnt import PreTrainDcoumnet
+from common.menu_functions.query_document import QueryDcoumnet
 from model.model import Model
 
-from model.menu_functions.cnblogs_query_document import CnblogsQueryDcoumnet
-from model.menu_functions.cnblogs_pre_train_document import CnblogsPreTrainDocument
+from common.menu_functions.cnblogs_query_document import CnblogsQueryDcoumnet
+from common.menu_functions.cnblogs_pre_train_document import CnblogsPreTrainDocument
 
-from model.menu_functions.wx_pre_train_document import WxPreTrainDocument
-from model.menu_functions.wx_query_document import WxQueryDocument
-from model.menu_functions.clear_memory import ClearMemory
+from common.menu_functions.wx_pre_train_document import WxPreTrainDocument
+from common.menu_functions.wx_query_document import WxQueryDocument
+from common.menu_functions.clear_memory import ClearMemory
 
 if model_conf(const.OPEN_AI).get('expires_in_seconds'):
     user_session = ExpiringDict(model_conf(const.OPEN_AI).get('expires_in_seconds'))
@@ -46,94 +48,91 @@ class ChatGPTModel(Model):
         if proxy:
             openai.proxy = proxy
 
-    def reply(self, query, context=None):
-        # acquire reply content
-        if not context or not context.get('type') or context.get('type') == 'TEXT':
-            log.info("[CHATGPT] query={}".format(query))
-            from_user_id = context['from_user_id']
-            if query == '#清除记忆':
-                Session.clear_session_by_user(from_user_id)
-                return '记忆已清除'
-            system_prompt = context['system_prompt']
-            new_query = Session.build_session_query(query, from_user_id, system_prompt)
-            log.debug("userid:{} [CHATGPT] session query={}".format(from_user_id, new_query))
+    # def reply(self, query, context=None):
+    #     # acquire reply content
+    #     if not context or not context.get('type') or context.get('type') == 'TEXT':
+    #         log.info("[CHATGPT] query={}".format(query))
+    #         from_user_id = context['from_user_id']
+    #         if query == '#清除记忆':
+    #             Session.clear_session_by_user(from_user_id)
+    #             return '记忆已清除'
+    #         system_prompt = context['system_prompt']
+    #         new_query = Session.build_session_query(query, from_user_id, system_prompt)
+    #         log.debug("userid:{} [CHATGPT] session query={}".format(from_user_id, new_query))
+    #
+    #         # if context.get('stream'):
+    #         #     # reply in stream
+    #         #     return self.reply_text_stream(query, new_query, from_user_id)
+    #
+    #         reply_content = self.reply_text(new_query, from_user_id, 0)
+    #         log.debug("[CHATGPT] new_query={}, user={}, reply_cont={}".format(new_query, from_user_id, reply_content))
+    #         return reply_content
+    #
+    #     elif context.get('type', None) == 'IMAGE_CREATE':
+    #         return self.create_img(query, 0)
 
-            # if context.get('stream'):
-            #     # reply in stream
-            #     return self.reply_text_stream(query, new_query, from_user_id)
+    # def reply_text(self, query, user_id, retry_count=0):
+    #
+    #     try:
+    #         start_time = time.time()  # 记录开始时间
+    #         response = openai.ChatCompletion.create(
+    #             model=model_conf(const.OPEN_AI).get("model") or "gpt-3.5-turbo",  # 对话模型的名称
+    #             messages=query,
+    #             temperature=0.8,  # 值在[0,1]之间，越大表示回复越具有不确定性
+    #             top_p=1,
+    #             frequency_penalty=0.0,  # [-2,2]之间，该值越大则更倾向于产生不同的内容
+    #             presence_penalty=0.0,  # [-2,2]之间，该值越大则更倾向于产生不同的内容
+    #         )
+    #         reply_content = response.choices[0]['message']['content']
+    #         end_time = time.time()  # 记录结束时间
+    #         execution_time = end_time - start_time  # 计算执行时间
+    #         log.info("[Execution Time] {:.4f} seconds", execution_time)  # 打印执行时间
+    #         used_token = response['usage']['total_tokens']
+    #         log.info("total tokens usage:{}".format(used_token))
+    #         log.debug(response)
+    #         # log.info("[CHATGPT] reply={}", reply_content)
+    #         if reply_content:
+    #             # save conversation
+    #             Session.save_session(query, reply_content, user_id, used_token)
+    #         return response.choices[0]['message']['content']
+    #     except openai.error.RateLimitError as e:
+    #         # rate limit exception
+    #         log.warn(e)
+    #         if retry_count < 1:
+    #             time.sleep(5)
+    #             log.warn("[CHATGPT] RateLimit exceed, 第{}次重试".format(retry_count + 1))
+    #             return self.reply_text(query, user_id, retry_count + 1)
+    #         else:
+    #             return "提问太快啦，请休息一下再问我吧"
+    #     except openai.error.APIConnectionError as e:
+    #         log.warn(e)
+    #         log.warn("[CHATGPT] APIConnection failed")
+    #         return "我连接不到网络，请稍后重试"
+    #     except openai.error.Timeout as e:
+    #         log.warn(e)
+    #         log.warn("[CHATGPT] Timeout")
+    #         return "我没有收到消息，请稍后重试"
+    #     except Exception as e:
+    #         # unknown exception
+    #         log.exception(e)
+    #         Session.clear_session_by_user(user_id)
+    #         return "请再问我一次吧"
 
-            reply_content = self.reply_text(new_query, from_user_id, 0)
-            log.debug("[CHATGPT] new_query={}, user={}, reply_cont={}".format(new_query, from_user_id, reply_content))
-            return reply_content
-
-        elif context.get('type', None) == 'IMAGE_CREATE':
-            return self.create_img(query, 0)
-
-    def reply_text(self, query, user_id, retry_count=0):
-
-        try:
-            start_time = time.time()  # 记录开始时间
-            response = openai.ChatCompletion.create(
-                model=model_conf(const.OPEN_AI).get("model") or "gpt-3.5-turbo",  # 对话模型的名称
-                messages=query,
-                temperature=0.8,  # 值在[0,1]之间，越大表示回复越具有不确定性
-                top_p=1,
-                frequency_penalty=0.0,  # [-2,2]之间，该值越大则更倾向于产生不同的内容
-                presence_penalty=0.0,  # [-2,2]之间，该值越大则更倾向于产生不同的内容
-            )
-            reply_content = response.choices[0]['message']['content']
-            end_time = time.time()  # 记录结束时间
-            execution_time = end_time - start_time  # 计算执行时间
-            log.info("[Execution Time] {:.4f} seconds", execution_time)  # 打印执行时间
-            used_token = response['usage']['total_tokens']
-            log.info("total tokens usage:{}".format(used_token))
-            log.debug(response)
-            # log.info("[CHATGPT] reply={}", reply_content)
-            if reply_content:
-                # save conversation
-                Session.save_session(query, reply_content, user_id, used_token)
-            return response.choices[0]['message']['content']
-        except openai.error.RateLimitError as e:
-            # rate limit exception
-            log.warn(e)
-            if retry_count < 1:
-                time.sleep(5)
-                log.warn("[CHATGPT] RateLimit exceed, 第{}次重试".format(retry_count + 1))
-                return self.reply_text(query, user_id, retry_count + 1)
-            else:
-                return "提问太快啦，请休息一下再问我吧"
-        except openai.error.APIConnectionError as e:
-            log.warn(e)
-            log.warn("[CHATGPT] APIConnection failed")
-            return "我连接不到网络，请稍后重试"
-        except openai.error.Timeout as e:
-            log.warn(e)
-            log.warn("[CHATGPT] Timeout")
-            return "我没有收到消息，请稍后重试"
-        except Exception as e:
-            # unknown exception
-            log.exception(e)
-            Session.clear_session(user_id)
-            return "请再问我一次吧"
-
-    async def reply_text_stream(self, query, context, retry_count=0):
+    async def reply_text_stream(self, context, retry_count=0):
         try:
             user: User = context['user']
             conversation_id = context['conversation_id']
             system_prompt = context['system_prompt']
             model = context['model']
-            if model == const.MODEL_GPT4_8K:
-                max_tokens = 9000
-            else:
-                max_tokens = 4500
+            query = context['msg']
 
             user_session_id = user.user_id + conversation_id
             if query == '#清除记忆':
                 # Session.clear_session(user_session_id)
-                Session.clear_session_by_user(user.user_id)
+                Session.clear_session(user_session_id)
                 yield True, '记忆已清除'
                 return
-            new_query = Session.build_session_query(query, user_session_id, system_prompt, max_tokens=max_tokens)
+            new_query = Session.build_session_query(query, user_session_id, system_prompt, model=model)
 
             #
             # headers = request.headers
@@ -157,13 +156,14 @@ class ChatGPTModel(Model):
                 reply="",
                 ip=ip,
                 model_name=model,
+                prompt_count=num_tokens_from_messages(new_query, model),
                 created_time=datetime.datetime.now(),
                 updated_time=datetime.datetime.now(),
             )
             query_record.update_ip_location()
             query_record.set_query_trail(new_query)
 
-            log.info("[chatgpt]: model={} max_tokens={} query={}", model, max_tokens, new_query)
+            log.info("[chatgpt]: model={} query={}", model, new_query)
             res = openai.ChatCompletion.create(
                 model=model,  # 对话模型的名称
                 messages=new_query,
@@ -175,7 +175,9 @@ class ChatGPTModel(Model):
                 # [-2,2]之间，该值越大则越降低模型一行中的重复用词，更倾向于产生不同的内容
                 presence_penalty=model_conf(const.OPEN_AI).get("presence_penalty", 1.0),
                 # [-2,2]之间，该值越大则越不受输入限制，将鼓励模型生成输入中不存在的新词，更倾向于产生不同的内容
-                stream=True
+                stream=True,
+                timeout=5,
+                # stop=["\n", "。", "？", "！"],
             )
             full_response = ""
             for chunk in res:
@@ -185,8 +187,10 @@ class ChatGPTModel(Model):
                 chunk_message = chunk['choices'][0]['delta'].get("content")
                 if (chunk_message):
                     full_response += chunk_message
+                if inStopMessages(user.user_id):
+                    break
                 yield False, full_response
-            Session.save_session(query, full_response, user_session_id, max_tokens=max_tokens)
+            Session.save_session(full_response, user_session_id, model=model)
             log.info("[chatgpt]: reply={}", full_response)
             conversation = Conversation.select().where(Conversation.conversation_id == conversation_id).first()
             if conversation is None:
@@ -203,7 +207,9 @@ class ChatGPTModel(Model):
                 conversation.total_query = conversation.total_query + 1;
             conversation.save()
             query_record.reply = full_response
+            query_record.complication_count = num_tokens_from_string(full_response)
             query_record.save()
+            removeStopMessages(user.user_id)
             yield True, full_response
 
         except openai.error.RateLimitError as e:
@@ -213,7 +219,7 @@ class ChatGPTModel(Model):
                 yield False, "[CHATGPT] Connection broken, 第{}次重试，等待{}秒".format(retry_count + 1, 5)
                 time.sleep(5)
                 log.warn("[CHATGPT] RateLimit exceed, 第{}次重试".format(retry_count + 1))
-                yield True, self.reply_text_stream(query, user_session_id, retry_count + 1)
+                yield True, self.reply_text_stream(context, retry_count + 1)
             else:
                 yield True, "提问太快啦，请休息一下再问我吧"
         except openai.error.APIConnectionError as e:
@@ -226,18 +232,18 @@ class ChatGPTModel(Model):
             yield True, "我没有收到消息，请稍后重试"
         except ChunkedEncodingError as e:
             log.warn(e)
-            if retry_count < 3:
+            if retry_count < 1:
                 wait_time = (retry_count + 1) * 5
                 yield False, "[CHATGPT] Connection broken, 第{}次重试，等待{}秒".format(retry_count + 1, wait_time)
                 log.warn("[CHATGPT] Connection broken, 第{}次重试，等待{}秒".format(retry_count + 1, wait_time))
                 time.sleep(wait_time)
-                yield True, self.reply_text_stream(query, user_session_id, retry_count + 1)
+                yield True, self.reply_text_stream(context, retry_count + 1)
             else:
                 yield True, "我连接不到网络，请稍后重试"
         except Exception as e:
             # unknown exception
-            log.error(e)
-            Session.clear_session(user_session_id)
+            log.error(traceback.format_exc())
+            Session.clear_session_by_user(user_session_id)
             yield True, "请再问我一次吧"
 
     def create_img(self, query, retry_count=0):
@@ -246,7 +252,7 @@ class ChatGPTModel(Model):
             response = openai.Image.create(
                 prompt=query,  # 图片描述
                 n=1,  # 每次生成图片的数量
-                size="256x256"  # 图片大小,可选有 256x256, 512x512, 1024x1024
+                size="1024x1024"  # 图片大小,可选有 256x256, 512x512, 1024x1024
             )
             image_url = response['data'][0]['url']
             log.info("[OPEN_AI] image_url={}".format(image_url))
@@ -260,7 +266,7 @@ class ChatGPTModel(Model):
             else:
                 return "提问太快啦，请休息一下再问我吧"
         except Exception as e:
-            log.exception(e)
+            log.error(traceback.format_exc())
             return None
 
     def menuList(self, arg):
@@ -271,7 +277,7 @@ class ChatGPTModel(Model):
 
 class Session(object):
     @staticmethod
-    def build_session_query(query, user_id, system_prompt, max_tokens=4000):
+    def build_session_query(query, user_id, system_prompt, model=const.MODEL_GPT_35_TURBO):
         '''
         build query with conversation history
         e.g.  [
@@ -284,6 +290,8 @@ class Session(object):
         :param user_id: from user id
         :return: query content with conversaction
         '''
+
+        max_tokens = get_max_token(model)
         session = user_session.get(user_id, [])
         if len(session) == 0:
             # system_prompt = model_conf(const.OPEN_AI).get("character_desc", "")
@@ -292,41 +300,40 @@ class Session(object):
             user_session[user_id] = session
         user_item = {'role': 'user', 'content': query}
         session.append(user_item)
-        while Session.count_words(session) > max_tokens:
+        prompt_count = num_tokens_from_messages(session, model)
+        while prompt_count > max_tokens:
             # pop first conversation (TODO: more accurate calculation)
             try:
                 session.pop(1)
                 session.pop(1)
+                prompt_count = num_tokens_from_messages(session, model)
             except Exception as e:
-                log.error(e)
+                log.error(traceback.format_exc())
                 break
+        log.info("Prompt count:{}", prompt_count)
         return session
 
     @staticmethod
-    def save_session(query, answer, sid, used_tokens=0, max_tokens=4000):
+    def save_session(answer, sid, model=const.MODEL_GPT_35_TURBO):
         session = user_session.get(sid)
+        max_tokens = get_max_token(model)
         if session:
             # append conversation
             gpt_item = {'role': 'assistant', 'content': answer}
+            log.info("answer:{} Used tokens:{}".format(answer, num_tokens_from_string(answer)))
             session.append(gpt_item)
             # if used_tokens == 0:
             #     used_tokens = Session.count_words(session)
             #     log.info("Session:{} Used tokens:{}".format(session, used_tokens))
-            while Session.count_words(session) > max_tokens:
+            while num_tokens_from_messages(session, model) > max_tokens:
                 # pop first conversation (TODO: more accurate calculation)
                 session.pop(1)
                 session.pop(1)
 
     @staticmethod
-    # Session is a list, count words
-    def count_words(session: List) -> int:
-        # 使用正则表达式匹配单词、汉字和符号
-        pattern = r'\w+|[\u4e00-\u9fa5]|[^a-zA-Z0-9\u4e00-\u9fa5\s]'
-        return len(re.findall(pattern, str(json.dumps(session))))
-
-    @staticmethod
     def clear_session(session_id):
-        user_session[session_id] = []
+        if session_id in user_session:
+            user_session[session_id] = []
 
     @staticmethod
     def clear_session_by_user(user_id):
@@ -336,3 +343,4 @@ class Session(object):
             if key.startswith(user_id):
                 user_session[key] = []
                 log.info("clear session:{}".format(key))
+

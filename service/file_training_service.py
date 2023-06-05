@@ -1,26 +1,31 @@
 import datetime
 import logging
 import os
+import re
 import time
+from unicodedata import normalize
 
 from flask import jsonify
 from llama_index import SimpleDirectoryReader
+from werkzeug.utils import secure_filename
 
+from common import log
 from common.db.document_record import DocumentRecord
 from common.log import logger
-from model.menu_functions.document_list import DocumentList
+from common.menu_functions.document_list import DocumentList
 
 from config import project_conf
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 
-from model.menu_functions.public_train_methods import public_train_documents
+from common.menu_functions.public_train_methods import public_train_documents
 
 executor = ThreadPoolExecutor(8)
 
 
-def upload_file_service(file, uid):
-    filename = file.filename.replace(" ", "")
+def upload_file_service(file, user):
+    log.info("upload_file_service start{}",file.filename)
+    filename = custom_secure_filename(file.filename)
     records = DocumentRecord.select().where(DocumentRecord.title == filename)
     if records.count() > 0:
         return jsonify({'content': '上传失败，同名文件已经存在。'})
@@ -28,7 +33,7 @@ def upload_file_service(file, uid):
 
     try:
         new_document = DocumentRecord(
-            user_id=uid,
+            user_id=user.user_id,
             title=filename,
             path=upload_dir,
             deleted=False,
@@ -47,7 +52,7 @@ def upload_file_service(file, uid):
         file.save(os.path.join(upload_dir, filename))
     except Exception as e:
         logger.exception(e)
-        return jsonify({'content': 'Error!'})
+        return jsonify({'content': 'Error!'}), 400
     training_service(new_document)
     return jsonify({'content': '文件训练中，请使用"{}"命令查看训练状态。'.format(DocumentList.getCmd())}), 200
 
@@ -87,3 +92,11 @@ def train_work(record: DocumentRecord):
     except Exception as e:
         record.trained = False
         logging.error(e)
+
+def custom_secure_filename(filename):
+    """
+    自定义文件名安全处理函数，保留中文字符
+    """
+    filename = normalize("NFC", filename)
+    filename = re.sub(r"[^\w\u4e00-\u9fa5_.-]", "", filename).strip().lower()
+    return filename

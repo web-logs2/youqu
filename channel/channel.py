@@ -3,7 +3,7 @@ Message sending channel abstract class
 """
 
 from bridge.bridge import Bridge
-from model.menu_functions.menu_function import MenuFunction
+from common.menu_functions.menu_function import MenuFunction
 
 
 class Channel(object):
@@ -52,31 +52,35 @@ class Channel(object):
                 return cmd.execute(cmds)
         return Bridge().fetch_text_reply_content(query, context)
 
-    def build_picture_reply_content(self, query, context=None):
-        return Bridge().fetch_picture_reply_content(query)
+    @staticmethod
+    def build_picture_reply_content(context):
+        return Bridge().fetch_picture_reply_content(context)
 
     def getMenuList(self) -> list[MenuFunction]:
         return Bridge.fetch_menu_list(self)
 
-    async def build_reply_stream(self, query, context=None):
-        if query == '#菜单':
-            yield True, self.menuString
-            return
-        if query.startswith("#") and query != "#清除记忆":
-            cmds = query.split()
-            cmd = self.menuDict.get(cmds[0])
-            if cmd is not None:
-                res = cmd.execute(cmds)
-                if type(res) == str:
-                    yield True, res
-                    return
-                else:
-                    response = ""
-                    for token in res:
-                        response += token
-                        yield False, response
+    @staticmethod
+    async def build_reply_stream(context=None):
+        # if query == '#菜单':
+        #     yield True, self.menuString
+        #     return
+        # if query.startswith("#") and query != "#清除记忆":
+        #     cmds = query.split()
+        #     cmd = self.menuDict.get(cmds[0])
+        #     if cmd is not None:
+        #         res = cmd.execute(cmds)
+        #         if type(res) == str:
+        #             yield True, res
+        #             return
+        #         else:
+        #             response = ""
+        #             for token in res:
+        #                 response += token
+        #                 yield False, response
                     #yield True, response
                     #return
-        else:
-            async for final, response in Bridge().fetch_reply_stream(query, context):
-                yield final, response
+        # else:
+        #     async for final, response in Bridge().fetch_reply_stream(query, context):
+        #         yield final, response
+        async for final, response in Bridge().fetch_reply_stream(context):
+            yield final, response

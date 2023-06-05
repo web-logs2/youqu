@@ -7,8 +7,8 @@ from common import const
 from common import log
 from common.db.document_record import DocumentRecord
 from config import model_conf
-from model.menu_functions.menu_function import MenuFunction
-from model.menu_functions.public_train_methods import public_query_documents
+from common.menu_functions.menu_function import MenuFunction
+from common.menu_functions.public_train_methods import public_query_documents
 
 os.environ["OPENAI_API_KEY"] = model_conf(const.OPEN_AI).get('api_key')
 

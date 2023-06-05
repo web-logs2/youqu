@@ -57,8 +57,9 @@ class OpenAIModel(Model):
         if query and full_response:
             Session.save_session(query, full_response, user_id)
 
-    def create_img(self, query, retry_count=0):
+    def create_img(self, context, retry_count=0):
         try:
+            query = context['msg']
             log.info("[OPEN_AI] image_query={}".format(query))
             response = openai.Image.create(
                 prompt=query,  # 图片描述

@@ -1,3 +1,4 @@
+import json
 
 from peewee import (
     Model,
@@ -12,7 +13,7 @@ from common.db.dbconfig import db
 
 class DocumentRecord(Model):
     id = AutoField()
-    user_id = CharField(unique=True, max_length=64)
+    user_id = CharField(unique=False, max_length=64)
     title = CharField(unique=True, max_length=255)
     path = CharField(max_length=255)
     deleted = BooleanField()
@@ -25,9 +26,29 @@ class DocumentRecord(Model):
     # 2.博客园     cnblogs
     type = CharField(default='', max_length=20)
 
+    def dict(self):
+        return {
+            "id": self.id,
+            "title": self.title,
+            "trained": self.trained,
+            "type": self.type
+        }
+
+    #query all available documents
+    @staticmethod
+    def query_all_available_documents(user_id):
+        #return all documents to string
+        #,DocumentRecord.user_id==user_id
+        documents: list[DocumentRecord] = DocumentRecord.select().where(DocumentRecord.deleted == 0,DocumentRecord.trained==1)
+        document_list = []
+        for document in documents:
+            document_list.append(document.dict())
+        return document_list
+
+
     class Meta:
         database = db
-        table_name = "document_reocrd"
+        table_name = "document_record"
 
     @staticmethod
     def type_mapping(type) -> any:
