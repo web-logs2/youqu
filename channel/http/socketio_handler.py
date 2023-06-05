@@ -11,8 +11,10 @@ from channel.http import auth
 from common import const, log
 
 from common.db.dbconfig import db
+from common.db.document_record import DocumentRecord
 from common.db.user import User
 from common.functions import num_tokens_from_string
+from common.menu_functions.public_train_methods import public_query_documents
 from config import model_conf
 from model.azure.azure_model import AZURE
 from model.openai.chatgpt_model import Session
@@ -33,7 +35,6 @@ class socket_handler():
         self.socketio.on_event('stop', self.stop, namespace='/chat')
         self.socketio.on_event('disconnect', self.disconnect, namespace='/chat')
         self.socketio.on_event('heartbeat', self.heart_beat, namespace='/chat')
-        self.socketio.on_event('reading', self.reading, namespace='/chat')
 
     async def return_stream(self, data, user: User):
         try:
@@ -65,7 +66,9 @@ class socket_handler():
             'request_type': data.get("request_type", "text"),
             'model': data.get("model", const.MODEL_GPT_35_TURBO),
             'system_prompt': data.get("system_prompt", model_conf(const.OPEN_AI).get("character_desc", "")),
-            'msg': data.get("msg", "")
+            'msg': data.get("msg", ""),
+            'conversation_type': data.get("conversation_type", "chat"),
+            'document': data.get("document", ""),
         }
 
         if context['model'] not in user.get_available_models():
@@ -74,9 +77,35 @@ class socket_handler():
             context['system_prompt'] = model_conf(const.OPEN_AI).get("character_desc", "")
         # if context['request_type'] == "voice":
         # context["msg"] = await get_voice_text(data["voice_message"])
-        log.info("message:" + data["msg"])
+        log.info("message:" + context["msg"])
+        log.info("user:" + user.email)
         # if context['response_type']=='voice':
         #     addStopMessages(context['msg'])
+        if context["msg"] == "":
+            yield True, "请说话"
+            return
+
+        if context['conversation_type'] == 'reading':
+            records = DocumentRecord.select().where(DocumentRecord.id == context['document'])
+            if records.count() <= 0:
+                log.error("文档未找到")
+                yield True, "文档未找到"
+                return
+            if records[0].trained == 0:
+                log.error("书籍未训练完成")
+                yield True, "书籍未训练完成"
+            log.info("Trained file path:" + records[0].trained_file_path)
+            start_time = time.time()
+            res = public_query_documents(records[0].trained_file_path, context["msg"])
+            response = ""
+            for token in res.response_gen:
+                response += token
+                yield False, response
+            yield True, response
+            end_time = time.time()
+            log.info("Total time elapsed: {}".format(end_time - start_time))
+            return
+
         if context['response_type'] == "picture":
             yield True, Channel.build_picture_reply_content(context)
         else:
@@ -90,21 +119,7 @@ class socket_handler():
                     audio_base64 = base64.b64encode(audio_data).decode("utf-8")
                     yield final, audio_base64
 
-    # async def get_voice_text(voice_message):
-    #     try:
-    #         session = Session()
-    #         text = session.stt(voice_message)
-    #         return text
-    #     except Exception as e:
-    #         log.error("get_voice_text error:{}", e)
-    #         return ""
-
     def message(self, data):
-        user = self.verify_stream()
-        if user and data:
-            asyncio.run(self.return_stream(data, user))
-
-    def reading(self, data):
         user = self.verify_stream()
         if user and data:
             asyncio.run(self.return_stream(data, user))
@@ -121,7 +136,8 @@ class socket_handler():
             conversation_id = data['conversation_id']
             log.info("update_conversation:" + conversation_id)
             Session.clear_session(user.user_id + conversation_id)
-            self.socketio.emit('update_conversation', {'info': "conversation updated"}, room=request.sid, namespace='/chat')
+            self.socketio.emit('update_conversation', {'info': "conversation updated"}, room=request.sid,
+                               namespace='/chat')
 
     def connect(self):
         user = self.verify_stream()
