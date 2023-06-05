@@ -11,6 +11,7 @@ from larksuiteoapi import OapiHeader
 from larksuiteoapi.card import handle_card
 from larksuiteoapi.event import handle_event
 from larksuiteoapi.model import OapiRequest
+from werkzeug.utils import secure_filename
 
 import common.email
 import config
@@ -92,23 +93,44 @@ def picture():
         return jsonify(response)
 
 
+# @api.route('/upload', methods=['POST'])
+# def upload_file():
+#     if 'token' not in request.form:
+#         return jsonify({"error": "Token is missing"}), 400
+#     token = request.form['token']
+#     user = auth.identify(token)
+#     if user is None:
+#         log.info("Token error")
+#         return
+#     if len(request.files) <= 0:
+#         return jsonify({'content': 'No file selected'}), 400
+#
+#     file = request.files['files']
+#     # 检查文件名是否为空
+#     if file.filename == '':
+#         return jsonify({'content': 'No file selected'}), 400
+#     return upload_file_service(file, user.user_id)
+
+
 @api.route('/upload', methods=['POST'])
 def upload_file():
-    if 'token' not in request.form:
+    token = request.headers.get('Authorization')
+    if token is None:
         return jsonify({"error": "Token is missing"}), 400
-    token = request.form['token']
+
     user = auth.identify(token)
     if user is None:
         log.info("Token error")
-        return
-    if len(request.files) <= 0:
-        return jsonify({'content': 'No file selected'}), 400
+        return jsonify({"error": "Invalid token"}), 403
 
-    file = request.files['files']
-    # 检查文件名是否为空
+    if 'file' not in request.files:
+        return {"error": "No file in request"}, 400
+
+    file = request.files['file']
     if file.filename == '':
-        return jsonify({'content': 'No file selected'}), 400
-    return upload_file_service(file, user.user_id)
+        return {"error": "No file selected"}, 400
+
+    return upload_file_service(file, user)
 
 
 @api.route("/", methods=['GET'])

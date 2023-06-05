@@ -1,5 +1,7 @@
 import os
 import re
+from unicodedata import normalize
+
 import geoip2
 import tiktoken
 from geoip2.errors import AddressNotFoundError
@@ -101,3 +103,6 @@ def num_tokens_from_string(string: str, encoding_name="cl100k_base") -> int:
     encoding = tiktoken.get_encoding(encoding_name)
     num_tokens = len(encoding.encode(string))
     return num_tokens
+
+
+

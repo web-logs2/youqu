@@ -13,7 +13,7 @@ from common.db.dbconfig import db
 
 class DocumentRecord(Model):
     id = AutoField()
-    user_id = CharField(unique=True, max_length=64)
+    user_id = CharField(unique=False, max_length=64)
     title = CharField(unique=True, max_length=255)
     path = CharField(max_length=255)
     deleted = BooleanField()
@@ -48,7 +48,7 @@ class DocumentRecord(Model):
 
     class Meta:
         database = db
-        table_name = "document_reocrd"
+        table_name = "document_record"
 
     @staticmethod
     def type_mapping(type) -> any:

@@ -3,7 +3,7 @@ import base64
 import time
 import traceback
 
-from flask import request
+from flask import request, jsonify
 from flask_socketio import SocketIO
 
 from channel.channel import Channel
@@ -16,6 +16,7 @@ from common.functions import num_tokens_from_string
 from config import model_conf
 from model.azure.azure_model import AZURE
 from model.openai.chatgpt_model import Session
+from service.file_training_service import upload_file_service
 from service.global_values import addStopMessages
 
 
@@ -32,7 +33,7 @@ class socket_handler():
         self.socketio.on_event('stop', self.stop, namespace='/chat')
         self.socketio.on_event('disconnect', self.disconnect, namespace='/chat')
         self.socketio.on_event('heartbeat', self.heart_beat, namespace='/chat')
-
+        self.socketio.on_event('upload', self.handle_upload_file, namespace='/chat')
     async def return_stream(self, data, user: User):
         try:
             async for final, response in self.handle_stream(data=data, user=user):
@@ -96,6 +97,26 @@ class socket_handler():
     #     except Exception as e:
     #         log.error("get_voice_text error:{}", e)
     #         return ""
+
+    def handle_upload_file(self, data):
+        token = request.args.get('token', '')
+        user = auth.identify(token)
+        if user is None:
+            log.info("Token error")
+            self.socketio.emit('logout', {'error': "invalid cookie"}, room=request.sid, namespace='/chat')
+
+        file_data = data.get('file', None)
+        file_name = data.get('file_name', None)
+
+        if file_data is None or file_name is None:
+            return jsonify({'content': 'No file selected'}), 400
+
+        decoded_file = base64.b64decode(file_data)
+        decoded_file = decoded_file.decode('utf-8')
+        # 保存文件
+        with open(file_name, 'wb') as file:
+            file.write(decoded_file)
+            return upload_file_service(file, user)
 
     def message(self, data):
         token = request.args.get('token', '')
