@@ -33,7 +33,8 @@ class socket_handler():
         self.socketio.on_event('stop', self.stop, namespace='/chat')
         self.socketio.on_event('disconnect', self.disconnect, namespace='/chat')
         self.socketio.on_event('heartbeat', self.heart_beat, namespace='/chat')
-        self.socketio.on_event('upload', self.handle_upload_file, namespace='/chat')
+        self.socketio.on_event('reading', self.reading, namespace='/chat')
+
     async def return_stream(self, data, user: User):
         try:
             async for final, response in self.handle_stream(data=data, user=user):
@@ -98,83 +99,57 @@ class socket_handler():
     #         log.error("get_voice_text error:{}", e)
     #         return ""
 
-    def handle_upload_file(self, data):
-        token = request.args.get('token', '')
-        user = auth.identify(token)
-        if user is None:
-            log.info("Token error")
-            self.socketio.emit('logout', {'error': "invalid cookie"}, room=request.sid, namespace='/chat')
-
-        file_data = data.get('file', None)
-        file_name = data.get('file_name', None)
-
-        if file_data is None or file_name is None:
-            return jsonify({'content': 'No file selected'}), 400
-
-        decoded_file = base64.b64decode(file_data)
-        decoded_file = decoded_file.decode('utf-8')
-        # 保存文件
-        with open(file_name, 'wb') as file:
-            file.write(decoded_file)
-            return upload_file_service(file, user)
-
     def message(self, data):
-        token = request.args.get('token', '')
-        user = auth.identify(token)
-        if user is None:
-            log.info("Token error")
-            self.socketio.emit('logout', {'error': "invalid cookie"}, room=request.sid, namespace='/chat')
-        # data = json.loads(data)
-        if data:
+        user = self.verify_stream()
+        if user and data:
+            asyncio.run(self.return_stream(data, user))
+
+    def reading(self, data):
+        user = self.verify_stream()
+        if user and data:
             asyncio.run(self.return_stream(data, user))
 
     def stop(self, data):
-        token = request.args.get('token', '')
-        user = auth.identify(token)
-        if user is None:
-            log.info("Token error")
-            self.socketio.emit('logout', {'error': "invalid cookie"}, room=request.sid, namespace='/chat')
-        addStopMessages(user.user_id)
-        self.socketio.server.emit('stop', {'info': "stopped"}, room=request.sid, namespace='/chat')
+        user = self.verify_stream()
+        if user:
+            addStopMessages(user.user_id)
+            self.socketio.server.emit('stop', {'info': "stopped"}, room=request.sid, namespace='/chat')
 
     def update_conversation(self, data):
-        token = request.args.get('token', '')
-        user = auth.identify(token)
-        if user is None:
-            log.info("Token error")
-            self.socketio.emit('logout', {'error': "invalid cookie"}, room=request.sid, namespace='/chat')
-        conversation_id = data['conversation_id']
-        log.info("update_conversation:" + conversation_id)
-        Session.clear_session(user.user_id + conversation_id)
-        self.socketio.emit('update_conversation', {'info': "conversation updated"}, room=request.sid, namespace='/chat')
+        user = self.verify_stream()
+        if user and data:
+            conversation_id = data['conversation_id']
+            log.info("update_conversation:" + conversation_id)
+            Session.clear_session(user.user_id + conversation_id)
+            self.socketio.emit('update_conversation', {'info': "conversation updated"}, room=request.sid, namespace='/chat')
 
     def connect(self):
-        token = request.args.get('token', '')
-        user = auth.identify(token)
-        if user is None:
-            log.info("Token error")
-            self.disconnect()
-            return
-        log.info('{} connected', user.email)
-        self.socketio.emit('connected', {'info': "connected"}, room=request.sid, namespace='/chat')
+        user = self.verify_stream()
+        if user:
+            log.info('{} connected', user.email)
+            self.socketio.emit('connected', {'info': "connected"}, room=request.sid, namespace='/chat')
 
     def heart_beat(self, message):
         log.info("heart beat:{}", message)
-        token = request.args.get('token', '')
-        user_id = auth.identify_token(token)
-        if user_id is None:
-            log.info("Token error")
-            self.socketio.emit('logout', {'error': "invalid cookie"}, room=request.sid, namespace='/chat')
-            self.disconnect()
-            return
-        log.info('{} heart beat', user_id)
-        self.socketio.server.emit(
-            'heartbeat',
-            'pang', request.sid,
-            namespace="/chat")
+        user = self.verify_stream()
+        if user:
+            log.info('{} heart beat', user.user_id)
+            self.socketio.server.emit(
+                'heartbeat',
+                'pang', request.sid,
+                namespace="/chat")
 
     def disconnect(self):
         log.info('disconnect')
-        time.sleep(1)
         self.socketio.server.disconnect(request.sid, namespace="/chat")
         db.close()
+
+    def verify_stream(self):
+        token = request.args.get('token', '')
+        user = auth.identify(token)
+        if user is None:
+            log.info("Token error")
+            self.socketio.emit('logout', {'error': "invalid cookie"}, room=request.sid, namespace='/chat')
+            time.sleep(1)
+            self.disconnect()
+        return user
