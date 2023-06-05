@@ -33,15 +33,8 @@ class QueryDcoumnet(MenuFunction):
             if (records[0].trained == False):
                 return '书籍未训练完成'
             log.info("Trained file path:"+records[0].trained_file_path)
-            # index = GPTSimpleVectorIndex.load_from_disk(records[0].trained_file_path)
 
             start_time = time.time()
-
-            # res = index.query(arg[2],
-            #                   streaming=True,
-            #                   # mode="embedding",
-            #                   # response_mode="tree_summary",  # possible: default, compact, tree_summary
-            #                   optimizer=SentenceEmbeddingOptimizer(threshold_cutoff=0.7))
 
             res = public_query_documents(records[0].trained_file_path, arg[2])
 
@@ -51,8 +44,7 @@ class QueryDcoumnet(MenuFunction):
 
             end_time = time.time()
             logging.info("Total time elapsed: {}".format(end_time - start_time))
-            # return res.response_gen
-            return res.response
+            return res.response_gen
         except Exception as e:
             log.exception(e)
             return '读取失败，请重试'
