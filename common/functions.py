@@ -7,6 +7,8 @@ import tiktoken
 from geoip2.errors import AddressNotFoundError
 import geoip2.database
 
+from common import const
+
 
 def contain_chinese(str):
     """
@@ -105,4 +107,10 @@ def num_tokens_from_string(string: str, encoding_name="cl100k_base") -> int:
     return num_tokens
 
 
-
+def get_max_token(model):
+    if model == const.MODEL_GPT4_8K or model == const.MODEL_GPT4_0314:
+        max_tokens = 8000
+    elif model == const.MODEL_GPT4_32K:
+        max_tokens = 32000
+    else:
+        max_tokens = 4000

@@ -18,7 +18,7 @@ from common import log
 from common.db.conversation import Conversation
 from common.db.query_record import QueryRecord
 from common.db.user import User
-from common.functions import num_tokens_from_messages, num_tokens_from_string
+from common.functions import num_tokens_from_messages, num_tokens_from_string, get_max_token
 from service.global_values import inStopMessages, removeStopMessages
 from config import model_conf
 from common.menu_functions.document_list import DocumentList
@@ -290,12 +290,8 @@ class Session(object):
         :param user_id: from user id
         :return: query content with conversaction
         '''
-        if model == const.MODEL_GPT4_8K:
-            max_tokens = 8000
-        elif model == const.MODEL_GPT4_32K:
-            max_tokens = 32000
-        else:
-            max_tokens = 4000
+
+        max_tokens = get_max_token(model)
         session = user_session.get(user_id, [])
         if len(session) == 0:
             # system_prompt = model_conf(const.OPEN_AI).get("character_desc", "")
@@ -320,12 +316,7 @@ class Session(object):
     @staticmethod
     def save_session(answer, sid, model=const.MODEL_GPT_35_TURBO):
         session = user_session.get(sid)
-        if model == const.MODEL_GPT4_8K:
-            max_tokens = 8000
-        elif model == const.MODEL_GPT4_32K:
-            max_tokens = 32000
-        else:
-            max_tokens = 4000
+        max_tokens = get_max_token(model)
         if session:
             # append conversation
             gpt_item = {'role': 'assistant', 'content': answer}
@@ -352,3 +343,4 @@ class Session(object):
             if key.startswith(user_id):
                 user_session[key] = []
                 log.info("clear session:{}".format(key))
+
