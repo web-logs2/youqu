@@ -1,11 +1,11 @@
-openai~=0.27.6
+openai
 expiring-dict
 itchat-uos==1.5.0.dev0
 werobot~=1.13.1
 PyJWT~=2.6.0
 flask~=2.2.3
 slack_bolt
-llama-index
+llama-index~=0.6.19
 azure-cognitiveservices-vision-computervision
 azure-cognitiveservices-speech
 boto~=2.49.0
@@ -74,7 +74,7 @@ oauthlib~=3.2.2
 isodate~=0.6.1
 pandas~=2.0.0
 tenacity~=8.2.2
-SQLAlchemy~=1.4.47
+SQLAlchemy
 python-dateutil~=2.8.2
 numexpr~=2.8.4
 yarl~=1.8.2
@@ -100,3 +100,4 @@ platformdirs~=3.2.0
 jsonpickle~=3.0.1
 Werkzeug
 tiktoken
+pypdf

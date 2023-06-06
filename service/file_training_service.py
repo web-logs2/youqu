@@ -59,15 +59,16 @@ def upload_file_service(file, user):
 
 def training_service(record: DocumentRecord):
     executor.submit(train_work, record)
-    logging.info(record.path + "Training work start:")
+    logging.info(record.path + " Training work start:")
     # train_work(record)
 
 
-def train_work(record: DocumentRecord):
-    logging.info("Start training:" + record.title)
-    documents = SimpleDirectoryReader(record.path).load_data()
+def train_work(record):
+    log.info("Start training:" + record.title)
+
 
     try:
+        documents = SimpleDirectoryReader(record.path).load_data()
         start_time = time.time()
         index = public_train_documents(documents)
         record.trained = True

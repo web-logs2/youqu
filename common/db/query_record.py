@@ -41,7 +41,7 @@ class QueryRecord(Model):
 
     class Meta:
         database = db
-        table_name = "query_reocrd"
+        table_name = "query_record"
 
 
 # 如果数据库中不存在表，则创建表
