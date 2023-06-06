@@ -20,6 +20,12 @@ BING = "bing"
 # db
 MYSQL = "mysql"
 
+MODEL_TEXT_ADA_001 = "text-ada-001"
+MODEL_TEXT_BABBAGE_001 = "text-babbage-001"
+MODEL_TEXT_BABBAGE = "text-babbage"
+MODEL_TEXT_CURIE_001 = "text-curie-001"
+MODEL_TEXT_DAVINCI_003 = "text-davinci-003"
+
 MODEL_GPT_35_TURBO = "gpt-3.5-turbo"
 MODEL_GPT4_8K = "gpt-4"
 MODEL_GPT4_32K = "gpt-4-32k"
