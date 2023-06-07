@@ -66,7 +66,6 @@ def training_service(record: DocumentRecord):
 def train_work(record):
     log.info("Start training:" + record.title)
 
-    time.sleep(100)
     try:
         documents = SimpleDirectoryReader(record.path).load_data()
         start_time = time.time()

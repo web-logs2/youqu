@@ -14,21 +14,21 @@ from service.file_training_service import training_service, train_work
 
 def scan_database():
     documents_to_train = DocumentRecord.select().where(DocumentRecord.trained == False, DocumentRecord.deleted == False,
-                                                   DocumentRecord.training_status == 2)
+                                                       DocumentRecord.training_status == 2)
     return documents_to_train
 
 
 def job():
     log.info("Job started")
     # 在此处添加执行任务的逻辑
-    documents_to_train=scan_database()
+    documents_to_train = scan_database()
     for document in documents_to_train:
         log.info("start training document:{}".format(document.title))
         document.training_status = 3
         document.updated_time = datetime.datetime.now()
         document.save()
         train_work(document)
-        #time.sleep(100)  # 模拟任务耗时
+        # time.sleep(100)  # 模拟任务耗时
     log.info("Job completed")
 
 
@@ -42,7 +42,6 @@ def scheduler_job():
             job_thread = threading.Thread(target=job)
             job_thread.start()
     log.info("scheduler_job completed")
-
 
 
 scheduler = BackgroundScheduler()
