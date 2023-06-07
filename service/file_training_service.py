@@ -53,7 +53,7 @@ def upload_file_service(file, user):
     except Exception as e:
         logger.exception(e)
         return jsonify({'content': 'Error!'}), 400
-    training_service(new_document)
+    #training_service(new_document)
     return jsonify({'content': '文件训练中，请使用"{}"命令查看训练状态。'.format(DocumentList.getCmd())}), 200
 
 
@@ -66,7 +66,7 @@ def training_service(record: DocumentRecord):
 def train_work(record):
     log.info("Start training:" + record.title)
 
-
+    time.sleep(100)
     try:
         documents = SimpleDirectoryReader(record.path).load_data()
         start_time = time.time()

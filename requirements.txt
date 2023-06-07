@@ -101,3 +101,4 @@ jsonpickle~=3.0.1
 Werkzeug
 tiktoken
 pypdf
+apscheduler

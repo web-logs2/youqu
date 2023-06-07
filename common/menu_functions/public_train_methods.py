@@ -11,7 +11,7 @@ def public_train_documents(documents):
 
     llm_predictor_chatgpt = LLMPredictor(llm=ChatOpenAI(
         temperature=0,
-        model_name="gpt-3.5-turbo"
+        model_name="gpt-3.5-turbo",
     ))
     service_context = ServiceContext.from_defaults(
         llm_predictor=llm_predictor_chatgpt,
