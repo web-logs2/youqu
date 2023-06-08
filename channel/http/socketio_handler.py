@@ -172,6 +172,6 @@ class socket_handler():
         if user is None:
             log.info("Token error")
             self.socketio.emit('logout', {'error': "invalid cookie"}, room=request.sid, namespace='/chat')
-            time.sleep(1)
+            time.sleep(10)
             self.disconnect()
         return user

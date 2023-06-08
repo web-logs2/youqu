@@ -21,6 +21,7 @@ class DocumentRecord(Model):
     created_time = DateTimeField()
     updated_time = DateTimeField()
     trained = BooleanField()
+    training_status = IntegerField(default=0)   # 0:未开始 1:拒绝训练 2:可以训练 3:正在训练 4:训练完成
     trained_file_path = CharField(unique=True, max_length=512)
     # 1.书籍       book
     # 2.博客园     cnblogs
