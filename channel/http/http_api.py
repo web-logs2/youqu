@@ -160,7 +160,7 @@ def register():
                         created_time=datetime.datetime.now(),
                         updated_time=datetime.datetime.now())
     current_user.save()
-    session["user"] = jsonpickle.encode(current_user)
+    # session["user"] = jsonpickle.encode(current_user)
     token = Auth.encode_auth_token(current_user.user_id, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
     log.info("Registration success: " + current_user.email)
     return jsonify(
