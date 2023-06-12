@@ -135,7 +135,8 @@ class socket_handler():
         user = self.verify_stream()
         if user:
             addStopMessages(user.user_id)
-            self.socketio.server.emit('stop', {'info': "stopped"}, room=request.sid, namespace='/chat')
+            log.info("{} messages stopped",user.user_id)
+            #self.socketio.emit('stop', {'info': "stopped"}, room=request.sid, namespace='/chat')
 
     def update_conversation(self, data):
         user = self.verify_stream()
