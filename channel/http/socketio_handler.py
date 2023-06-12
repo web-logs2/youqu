@@ -95,6 +95,7 @@ class socket_handler():
             if records[0].trained == 0:
                 log.error("书籍未训练完成")
                 yield True, "书籍未训练完成"
+                return
             log.info("Trained file path:" + records[0].trained_file_path)
             start_time = time.time()
             try:
