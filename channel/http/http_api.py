@@ -196,7 +196,7 @@ def login():
         token = Auth.encode_auth_token(current_user.user_id, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
         log.info("Login success: " + current_user.email)
         return jsonify(
-            {"content": "success", "username": current_user.user_name, "token": token, "email": current_user.email,
+            {"content": "success", "username": current_user.user_name,"user_id": current_user.user_id, "token": token, "email": current_user.email,
              "phone": current_user.phone,
              "available_models": current_user.get_available_models()}), 200
 
