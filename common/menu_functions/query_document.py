@@ -36,7 +36,7 @@ class QueryDcoumnet(MenuFunction):
 
             start_time = time.time()
 
-            res = public_query_documents(records[0].trained_file_path, arg[2])
+            res = public_query_documents(records[0].trained_file_path, arg[2], arg[1])
 
             # for token in res.response_gen:
             #     log.info("token:"+token)

@@ -18,7 +18,7 @@ from config import project_conf
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 
-from common.menu_functions.public_train_methods import public_train_documents
+from common.menu_functions.public_train_methods import public_train_documents, store_query_engine
 
 executor = ThreadPoolExecutor(8)
 
@@ -89,6 +89,9 @@ def train_work(record):
         record.updated_time = datetime.datetime.now()
         record.save()
         logging.info("Training successfully:" + path)
+
+        store_query_engine(index, record.id)
+        logging.info("Query engine store successfully:" + path)
 
     except Exception as e:
         record.trained = False

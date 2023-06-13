@@ -18,7 +18,6 @@ from common.menu_functions.public_train_methods import public_query_documents
 from config import model_conf
 from model.azure.azure_model import AZURE
 from model.openai.chatgpt_model import Session
-from service.file_training_service import upload_file_service
 from service.global_values import addStopMessages
 
 
@@ -98,7 +97,7 @@ class socket_handler():
             log.info("Trained file path:" + records[0].trained_file_path)
             start_time = time.time()
             try:
-                res = public_query_documents(records[0].trained_file_path, context["msg"])
+                res = public_query_documents(records[0].trained_file_path, context["msg"], context['document'])
                 response = ""
                 for token in res.response_gen:
                     response += token

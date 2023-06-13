@@ -43,7 +43,7 @@ class WxQueryDocument(MenuFunction):
 
             start_time = time.time()
             # res = index.query(arg[2], optimizer=SentenceEmbeddingOptimizer(threshold_cutoff=0.7))
-            res = public_query_documents(index_path, arg[2])
+            res = public_query_documents(index_path, arg[2], author[0].id)
             end_time = time.time()
             logging.info("Total time elapsed: {}".format(end_time - start_time))
             logging.info("Answer: {}".format(res.response))
