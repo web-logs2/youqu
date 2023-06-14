@@ -119,6 +119,8 @@ def get_max_token(model):
         max_tokens = 8000
     elif model == const.MODEL_GPT4_32K:
         max_tokens = 32000
+    elif model == const.MODEL_GPT_35_turbo_16K:
+        max_tokens = 16000
     else:
         max_tokens = 4000
     return max_tokens
