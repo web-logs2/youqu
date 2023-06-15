@@ -94,6 +94,7 @@ class socket_handler():
             if records[0].trained == 0:
                 log.error("书籍未训练完成")
                 yield True, "书籍未训练完成"
+                return
             log.info("Trained file path:" + records[0].trained_file_path)
             start_time = time.time()
             try:
@@ -133,7 +134,8 @@ class socket_handler():
         user = self.verify_stream()
         if user:
             addStopMessages(user.user_id)
-            self.socketio.server.emit('stop', {'info': "stopped"}, room=request.sid, namespace='/chat')
+            log.info("{} messages stopped",user.user_id)
+            #self.socketio.emit('stop', {'info': "stopped"}, room=request.sid, namespace='/chat')
 
     def update_conversation(self, data):
         user = self.verify_stream()
@@ -171,6 +173,6 @@ class socket_handler():
         if user is None:
             log.info("Token error")
             self.socketio.emit('logout', {'error': "invalid cookie"}, room=request.sid, namespace='/chat')
-            time.sleep(1)
+            time.sleep(10)
             self.disconnect()
         return user

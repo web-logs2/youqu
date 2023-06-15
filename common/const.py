@@ -27,9 +27,11 @@ MODEL_TEXT_CURIE_001 = "text-curie-001"
 MODEL_TEXT_DAVINCI_003 = "text-davinci-003"
 
 MODEL_GPT_35_TURBO = "gpt-3.5-turbo"
+MODEL_GPT_35_TURBO_0301 = "gpt-3.5-turbo-0301"
 MODEL_GPT4_8K = "gpt-4"
 MODEL_GPT4_32K = "gpt-4-32k"
-MODEL_GPT4_0314="gpt-4-0314"
+MODEL_GPT4_0314 = "gpt-4-0314"
+MODEL_GPT_35_turbo_16K = "gpt-3.5-turbo-16k"
 
 EMAIL_SENDER = "no-reply@youqu.app"
 EMAIL_SENDER_NAME = "YouQu"

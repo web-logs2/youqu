@@ -1,5 +1,6 @@
 import os
 import re
+import traceback
 from unicodedata import normalize
 
 import geoip2
@@ -7,7 +8,7 @@ import tiktoken
 from geoip2.errors import AddressNotFoundError
 import geoip2.database
 
-from common import const
+from common import const, log
 
 
 def contain_chinese(str):
@@ -27,8 +28,7 @@ def check_prefix(content, prefix_list):
 
 
 def is_valid_password(password):
-    regex = r'^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$'
-    return re.match(regex, password) is not None
+    return len(password) >= 8
 
 
 def is_valid_username(username):
@@ -72,18 +72,21 @@ def num_tokens_from_messages(messages, model="gpt-3.5-turbo-0301"):
     try:
         encoding = tiktoken.encoding_for_model(model)
     except KeyError:
-        print("Warning: model not found. Using cl100k_base encoding.")
+        log.info("Warning: model not found. Using cl100k_base encoding.")
         encoding = tiktoken.get_encoding("cl100k_base")
-    if model == "gpt-3.5-turbo":
-        print("Warning: gpt-3.5-turbo may change over time. Returning num tokens assuming gpt-3.5-turbo-0301.")
+    except Exception as e:
+        # log.error(traceback.format_exc())
+        return 0
+    if model == const.MODEL_GPT_35_TURBO or model == const.MODEL_GPT_35_turbo_16K:
+        log.info("Warning: gpt-3.5-turbo may change over time. Returning num tokens assuming gpt-3.5-turbo-0301.")
         return num_tokens_from_messages(messages, model="gpt-3.5-turbo-0301")
-    elif model == "gpt-4":
-        print("Warning: gpt-4 may change over time. Returning num tokens assuming gpt-4-0314.")
+    elif model == const.MODEL_GPT4_8K or model==const.MODEL_GPT4_32K:
+        log.info("Warning: gpt-4 may change over time. Returning num tokens assuming gpt-4-0314.")
         return num_tokens_from_messages(messages, model="gpt-4-0314")
-    elif model == "gpt-3.5-turbo-0301":
+    elif model == const.MODEL_GPT_35_TURBO_0301:
         tokens_per_message = 4  # every message follows <|start|>{role/name}\n{content}<|end|>\n
         tokens_per_name = -1  # if there's a name, the role is omitted
-    elif model == "gpt-4-0314":
+    elif model == const.MODEL_GPT4_0314:
         tokens_per_message = 3
         tokens_per_name = 1
     else:
@@ -101,10 +104,14 @@ def num_tokens_from_messages(messages, model="gpt-3.5-turbo-0301"):
 
 
 def num_tokens_from_string(string: str, encoding_name="cl100k_base") -> int:
-    """Returns the number of tokens in a text string."""
-    encoding = tiktoken.get_encoding(encoding_name)
-    num_tokens = len(encoding.encode(string))
-    return num_tokens
+    try:
+        """Returns the number of tokens in a text string."""
+        encoding = tiktoken.get_encoding(encoding_name)
+        num_tokens = len(encoding.encode(string))
+        return num_tokens
+    except Exception as e:
+        # log.error(traceback.format_exc())
+        return 0
 
 
 def get_max_token(model):
@@ -112,6 +119,8 @@ def get_max_token(model):
         max_tokens = 8000
     elif model == const.MODEL_GPT4_32K:
         max_tokens = 32000
+    elif model == const.MODEL_GPT_35_turbo_16K:
+        max_tokens = 16000
     else:
         max_tokens = 4000
     return max_tokens

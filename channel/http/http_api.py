@@ -160,7 +160,7 @@ def register():
                         created_time=datetime.datetime.now(),
                         updated_time=datetime.datetime.now())
     current_user.save()
-    session["user"] = jsonpickle.encode(current_user)
+    # session["user"] = jsonpickle.encode(current_user)
     token = Auth.encode_auth_token(current_user.user_id, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
     log.info("Registration success: " + current_user.email)
     return jsonify(
@@ -196,7 +196,8 @@ def login():
         token = Auth.encode_auth_token(current_user.user_id, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
         log.info("Login success: " + current_user.email)
         return jsonify(
-            {"content": "success", "username": current_user.user_name, "token": token, "email": current_user.email,
+            {"content": "success", "username": current_user.user_name, "user_id": current_user.user_id, "token": token,
+             "email": current_user.email,
              "phone": current_user.phone,
              "available_models": current_user.get_available_models()}), 200
 
@@ -243,7 +244,7 @@ def get_user_info():
     current_user = auth.identify(token)
     if current_user is None:
         return jsonify({"error": "Invalid user"}), 401
-    return jsonify({"username": current_user.user_name, "email": current_user.email,
+    return jsonify({"username": current_user.user_name, "user_id": current_user.user_id, "email": current_user.email,
                     "phone": current_user.phone,
                     "available_models": current_user.get_available_models(),
                     "available_documents": DocumentRecord.query_all_available_documents(current_user.user_id)}), 200

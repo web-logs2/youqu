@@ -56,7 +56,8 @@ class Auth:
         try:
             # 取消过期时间验证
             payload = jwt.decode(auth_token, channel_conf(const.HTTP).get(
-                'http_auth_secret_key'), algorithms='HS256')  # options={'verify_exp': False} 加上后不验证token过期时间
+                'http_auth_secret_key'), algorithms='HS256',
+                                 options={'verify_exp': False})  # options={'verify_exp': False} 加上后不验证token过期时间
             if 'data' in payload and 'id' in payload['data']:
                 return payload
             else:
@@ -125,6 +126,7 @@ def identify_token(token: str):
         # result = '没有提供认证token'
         return None
 
+
 # def authenticate(password):
 #     """
 #     用户登录，登录成功返回token
@@ -142,7 +144,7 @@ def identify_token(token: str):
 def authenticate(email, password) -> User:
     if password == '' or email == '':
         return
-    #login_user= User.select().where(User.email == email and User.password).first()
+    # login_user= User.select().where(User.email == email and User.password).first()
     current_user = User.select().where((User.email == email) & (User.password == sha256_encrypt(password))).first()
     if current_user is None:
         return
