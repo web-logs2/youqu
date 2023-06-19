@@ -3,7 +3,8 @@ import logging
 from langchain import OpenAI
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain.chat_models import ChatOpenAI
-from llama_index import StorageContext, load_index_from_storage, ResponseSynthesizer, ServiceContext, LLMPredictor
+from llama_index import StorageContext, load_index_from_storage, ResponseSynthesizer, ServiceContext, LLMPredictor, \
+    set_global_service_context
 from llama_index.indices.document_summary import GPTDocumentSummaryIndex, DocumentSummaryIndexRetriever, \
     DocumentSummaryIndexEmbeddingRetriever
 from llama_index.indices.response import ResponseMode
@@ -27,7 +28,7 @@ current_querying_model = MODEL_GPT_35_TURBO
 # ))
 # index_service_context = ServiceContext.from_defaults(
 #     llm_predictor=index_llm_predictor,
-#     # chunk_size_limit=1024
+#     # chunk_size_limit=2048
 # )
 # index_response_synthesizer = ResponseSynthesizer.from_args(
 #     streaming=True,
@@ -41,11 +42,12 @@ current_querying_model = MODEL_GPT_35_TURBO
 #     # use_async=True,
 #     temperature=0,
 #     model_name=current_querying_model,
+#     # max_tokens=100,
 #     # callbacks=[StreamingStdOutCallbackHandler()]
 # ))
 # query_service_context = ServiceContext.from_defaults(
 #     llm_predictor=query_llm_predictor,
-#     # chunk_size_limit=1024
+#     # chunk_size_limit=2048
 # )
 # query_response_synthesizer_chatgpt = ResponseSynthesizer.from_args(
 #     streaming=True,
@@ -64,7 +66,7 @@ def public_train_documents(documents):
     ))
     index_service_context = ServiceContext.from_defaults(
         llm_predictor=index_llm_predictor,
-        # chunk_size_limit=1024
+        chunk_size_limit=2048
     )
     index_response_synthesizer = ResponseSynthesizer.from_args(
         # streaming=True,
@@ -85,11 +87,12 @@ def store_query_engine(index, index_order):
         # use_async=True,
         temperature=0,
         model_name=current_querying_model,
+        # max_tokens=100,
         # callbacks=[StreamingStdOutCallbackHandler()]
     ))
     query_service_context = ServiceContext.from_defaults(
         llm_predictor=query_llm_predictor,
-        # chunk_size_limit=1024
+        chunk_size_limit=2048
     )
     query_response_synthesizer = ResponseSynthesizer.from_args(
         streaming=True,
@@ -109,6 +112,7 @@ def store_query_engine(index, index_order):
         service_context=query_service_context,
         response_synthesizer=query_response_synthesizer
     )
+    set_global_service_context(query_service_context)
     query_engine_dict[index_order] = query_engine
 
 
@@ -123,7 +127,7 @@ def public_load_index(index_path):
     ))
     index_service_context = ServiceContext.from_defaults(
         llm_predictor=index_llm_predictor,
-        # chunk_size_limit=1024
+        chunk_size_limit=2048
     )
     index_response_synthesizer = ResponseSynthesizer.from_args(
         # streaming=True,
@@ -153,11 +157,12 @@ def public_query_documents(index_path, query_keywords, index_order):
     #     # use_async=True,
     #     temperature=0,
     #     model_name=current_querying_model,
+    #     # max_tokens=100,
     #     # callbacks=[StreamingStdOutCallbackHandler()]
     # ))
     # query_service_context = ServiceContext.from_defaults(
     #     llm_predictor=query_llm_predictor,
-    #     # chunk_size_limit=1024
+    #     # chunk_size_limit=2048
     # )
     # query_response_synthesizer = ResponseSynthesizer.from_args(
     #     streaming=True,
