@@ -1,4 +1,5 @@
 import logging
+import time
 
 from langchain import OpenAI
 from langchain.chat_models import ChatOpenAI
@@ -205,5 +206,7 @@ def public_query_documents(index_path, query_keywords, index_order):
     if query_engine_dict.get(index_order) is None:
         index = public_load_index(index_path)
         store_query_engine(index, index_order)
+    else:
+        query_engine_dict[index_order]['last_access_time'] = time.time()
     query_engine = query_engine_dict[index_order]
     return query_engine.query(query_keywords)
