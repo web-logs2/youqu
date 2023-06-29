@@ -1,7 +1,6 @@
 import logging
 
 from langchain import OpenAI
-from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain.chat_models import ChatOpenAI
 from llama_index import StorageContext, load_index_from_storage, ResponseSynthesizer, ServiceContext, LLMPredictor, \
     set_global_service_context
@@ -10,10 +9,9 @@ from llama_index.indices.document_summary import GPTDocumentSummaryIndex, Docume
 from llama_index.indices.response import ResponseMode
 from llama_index.query_engine import RetrieverQueryEngine
 
-from app import query_engine_dict
-# from app import query_engine_dict
+from app import query_engine_dict, query_engine_dict_size
 from common.const import MODEL_GPT_35_TURBO, MODEL_TEXT_BABBAGE_001
-
+from common.expire_time import ExpireTime
 
 current_learning_model = MODEL_TEXT_BABBAGE_001
 current_querying_model = MODEL_GPT_35_TURBO
@@ -112,7 +110,22 @@ def store_query_engine(index, index_order):
         service_context=query_service_context,
         response_synthesizer=query_response_synthesizer
     )
-    set_global_service_context(query_service_context)
+    # set_global_service_context(query_service_context)
+
+    # store query engine
+    query_engine['expire_time'] = ExpireTime()
+    # pop the index expired or least recently used
+    if len(query_engine_dict) >= query_engine_dict_size:
+        # pop the item expired or closest to the expired time
+        is_popped = False
+        for key in query_engine_dict.keys():
+            if query_engine_dict[key]['expire_time'].is_expired():
+                query_engine_dict.pop(key)
+                is_popped = True
+                break
+        if not is_popped:
+            query_engine_dict.pop(min(query_engine_dict, key=lambda k: query_engine_dict[k]['last_access_time']))
+
     query_engine_dict[index_order] = query_engine
 
 
