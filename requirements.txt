@@ -5,7 +5,7 @@ werobot~=1.13.1
 PyJWT~=2.6.0
 flask~=2.2.3
 slack_bolt
-llama-index~=0.6.35
+llama-index~=0.6.24
 azure-cognitiveservices-vision-computervision
 azure-cognitiveservices-speech
 boto~=2.49.0
