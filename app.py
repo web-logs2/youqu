@@ -4,6 +4,11 @@ import config
 from channel import channel_factory
 from common import log
 
+# generate query engine list
+global query_engine_dict, query_engine_dict_size
+query_engine_dict = {}
+query_engine_dict_size = 20
+
 if __name__ == '__main__':
     try:
         # load config
@@ -19,6 +24,7 @@ if __name__ == '__main__':
 
         # startup channel
         channel.startup()
+
     except Exception as e:
         log.error("App startup failed!")
         log.exception(e)
