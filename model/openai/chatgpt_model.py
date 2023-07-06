@@ -118,6 +118,11 @@ class ChatGPTModel(Model):
     #         Session.clear_session_by_user(user_id)
     #         return "请再问我一次吧"
 
+    @staticmethod
+    def send_mail(self, mail, msg):
+        log.info("send mail triggered, send: {} to {}".format(msg, mail))
+        return "mail sent!"
+
     async def reply_text_stream(self, context, retry_count=0):
         try:
             user: User = context['user']
@@ -164,9 +169,32 @@ class ChatGPTModel(Model):
             query_record.set_query_trail(new_query)
 
             log.info("[chatgpt]: model={} query={}", model, new_query)
+
+            functions = [{
+                "name": "send_mail",
+                "description": "Send mail to user and return the result",
+                "parameters": {
+                    "type": "object",
+                    "required": ["mail", "msg"],
+                    "properties": {
+                        "mail": {
+                            "type": "string",
+                            "description": "A email address",
+                        },
+                        "msg": {
+                            "type": "string",
+                            "description": "The content of the mail"
+                        },
+                    },
+                },
+            }]
+
             res = openai.ChatCompletion.create(
-                model=model,  # 对话模型的名称
+                model="gpt-3.5-turbo-0613",
+                function_call="auto",
+                functions=functions,
                 messages=new_query,
+
                 temperature=model_conf(const.OPEN_AI).get("temperature", 0.8),
                 # 熵值，在[0,1]之间，越大表示选取的候选词越随机，回复越具有不确定性，建议和top_p参数二选一使用，创意性任务越大越好，精确性任务越小越好
                 # max_tokens=8100,  # 回复最大的字符数，为输入和输出的总数
@@ -179,19 +207,102 @@ class ChatGPTModel(Model):
                 timeout=5,
                 # stop=["\n", "。", "？", "！"],
             )
+
+            # deep clone res
+            # json_res = json.dumps(res)
+            # res_test = json.loads(json_res)
+
+            # res = openai.ChatCompletion.create(
+            #     model=model,  # 对话模型的名称
+            #     messages=new_query,
+            #     temperature=model_conf(const.OPEN_AI).get("temperature", 0.8),
+            #     # 熵值，在[0,1]之间，越大表示选取的候选词越随机，回复越具有不确定性，建议和top_p参数二选一使用，创意性任务越大越好，精确性任务越小越好
+            #     # max_tokens=8100,  # 回复最大的字符数，为输入和输出的总数
+            #     # top_p=model_conf(const.OPEN_AI).get("top_p", 0.7),,  #候选词列表。0.7 意味着只考虑前70%候选词的标记，建议和temperature参数二选一使用
+            #     frequency_penalty=model_conf(const.OPEN_AI).get("frequency_penalty", 0.0),
+            #     # [-2,2]之间，该值越大则越降低模型一行中的重复用词，更倾向于产生不同的内容
+            #     presence_penalty=model_conf(const.OPEN_AI).get("presence_penalty", 1.0),
+            #     # [-2,2]之间，该值越大则越不受输入限制，将鼓励模型生成输入中不存在的新词，更倾向于产生不同的内容
+            #     stream=True,
+            #     timeout=5,
+            #     # stop=["\n", "。", "？", "！"],
+            # )
             full_response = ""
+
+            function_call = {
+                "name": "",
+                "arguments": "",
+            }
+            function_call_flag = False
+            # count = 0
             for chunk in res:
-                log.debug(chunk)
+                # count = count+1
+                # log.info("chunk No.{}, {}".format(count, chunk))
+                if "function_call" in chunk['choices'][0]['delta']:
+                    function_call_flag = True
+                    if "name" in chunk['choices'][0]['delta']["function_call"]:
+                        function_call["name"] += chunk['choices'][0]['delta']["function_call"]["name"]
+                    if "arguments" in chunk['choices'][0]['delta']["function_call"]:
+                        function_call["arguments"] += chunk['choices'][0]['delta']["function_call"]["arguments"]
+                if chunk.choices[0].finish_reason == "function_call":
+                    break
+                # if not chunk.get("content", None):
+                #     continue
+
                 if (chunk["choices"][0]["finish_reason"] == "stop"):
                     break
                 chunk_message = chunk['choices'][0]['delta'].get("content")
+                log.info("chunk_message = {}".format(chunk_message))
                 if (chunk_message):
                     full_response += chunk_message
                 if inStopMessages(user.user_id):
                     break
                 yield False, full_response
+
+            if function_call_flag:
+                log.info("function call={}", function_call)
+                new_query.append({
+                    "role": "assistant", "content": None, "function_call": function_call
+                })
+                parameters = json.loads(function_call["arguments"])
+                # log.info("parameters={}", parameters)
+                # log.info("mail={}, and msg={}", parameters["mail"], parameters["msg"])
+                content = self.send_mail(self, mail=parameters["mail"], msg=parameters["msg"])
+                # log.info("content={}", content)
+                new_query.append({
+                    "role": "function", "name": function_call["name"], "content": content
+                })
+
+                res = openai.ChatCompletion.create(
+                    model="gpt-3.5-turbo-0613",
+                    functions=functions,
+                    messages=new_query,
+
+                    temperature=model_conf(const.OPEN_AI).get("temperature", 0.8),
+                    # 熵值，在[0,1]之间，越大表示选取的候选词越随机，回复越具有不确定性，建议和top_p参数二选一使用，创意性任务越大越好，精确性任务越小越好
+                    # max_tokens=8100,  # 回复最大的字符数，为输入和输出的总数
+                    # top_p=model_conf(const.OPEN_AI).get("top_p", 0.7),,  #候选词列表。0.7 意味着只考虑前70%候选词的标记，建议和temperature参数二选一使用
+                    frequency_penalty=model_conf(const.OPEN_AI).get("frequency_penalty", 0.0),
+                    # [-2,2]之间，该值越大则越降低模型一行中的重复用词，更倾向于产生不同的内容
+                    presence_penalty=model_conf(const.OPEN_AI).get("presence_penalty", 1.0),
+                    # [-2,2]之间，该值越大则越不受输入限制，将鼓励模型生成输入中不存在的新词，更倾向于产生不同的内容
+                    stream=True,
+                    timeout=5,
+                    # stop=["\n", "。", "？", "！"],
+                )
+
+                for chunk in res:
+                    log.debug(chunk)
+                    if (chunk["choices"][0]["finish_reason"] == "stop"):
+                        break
+                    chunk_message = chunk['choices'][0]['delta'].get("content")
+                    log.info("chunk_message = {}".format(chunk_message))
+                    if (chunk_message):
+                        full_response += chunk_message
+                    if inStopMessages(user.user_id):
+                        break
+                    yield False, full_response
             Session.save_session(full_response, user_session_id, model=model)
-            log.info("[chatgpt]: reply={}", full_response)
             conversation = Conversation.select().where(Conversation.conversation_id == conversation_id).first()
             if conversation is None:
                 conversation = Conversation(
@@ -284,7 +395,11 @@ class Session(object):
             {"role": "system", "content": "You are a helpful assistant."},
             {"role": "user", "content": "Who won the world series in 2020?"},
             {"role": "assistant", "content": "The Los Angeles Dodgers won the World Series in 2020."},
+            {"role": "assistant", "content": null,
+                "function_call": {"name": "send_mail", "arguments":
+                    {"mail": "", "msg": "The Los Angeles Dodgers won the World Series in 2020."}}},
             {"role": "user", "content": "Where was it played?"}
+            {"role": "function", "name": "send_mail", "content": "Mail Sent!"}
         ]
         :param query: query content
         :param user_id: from user id
@@ -343,4 +458,3 @@ class Session(object):
             if key.startswith(user_id):
                 user_session[key] = []
                 log.info("clear session:{}".format(key))
-

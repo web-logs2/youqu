@@ -1,4 +1,4 @@
-openai
+openai~=0.27.8
 expiring-dict
 itchat-uos==1.5.0.dev0
 werobot~=1.13.1
