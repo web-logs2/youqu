@@ -11,7 +11,6 @@ from larksuiteoapi import OapiHeader
 from larksuiteoapi.card import handle_card
 from larksuiteoapi.event import handle_event
 from larksuiteoapi.model import OapiRequest
-from werkzeug.utils import secure_filename
 
 import common.email
 import config
@@ -33,10 +32,16 @@ api = Blueprint('api', __name__)
 
 @api.route("/text", methods=['POST'])
 def text():
-    user = auth.identify(request)
+    token = request.args.get('token', '')
+    user = auth.identify(token)
     if user is None:
-        log.INFO("Cookie error")
-        return
+        log.info("Token error")
+        response = {
+            "success": False,
+            "error": "invalid token",
+            "code": "0000001",
+        }
+        return jsonify(response)
     data = json.loads(request.data)
     if data:
         msg = data['msg']
@@ -47,7 +52,13 @@ def text():
         reply_text = handle_text(data=data)
         # reply_text="Test reply"
         return {'content': reply_text}
-
+    else:
+        response = {
+            "success": False,
+            "error": "invalid input parameters",
+            "code": "0000002",
+        }
+        return response
 
 @api.route("/voice", methods=['POST'])
 def voice():
@@ -92,6 +103,20 @@ def picture():
         }
         return jsonify(response)
 
+
+
+# def verify_api(self):
+#     token = request.args.get('token', '')
+#     user = auth.identify(token)
+#     if user is None:
+#         log.info("Token error")
+#         response = {
+#             "success":False,
+#             "error": "invalid token",
+#             "code": "0000001",
+#         }
+#         return jsonify(response)
+#     return user
 
 # @api.route('/upload', methods=['POST'])
 # def upload_file():
