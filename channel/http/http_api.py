@@ -61,6 +61,7 @@ def text():
         data['messageID'] = generate_uuid()
         data['model']= MODEL_GPT_35_turbo_16K
         data['system_prompt'] = BOT_SYSTEM_PROMPT
+        data['user']=user
         reply_text = handle_text(data=data)
         return {'content': reply_text}
     else:

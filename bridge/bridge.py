@@ -8,7 +8,7 @@ class Bridge(object):
         pass
 
     def fetch_text_reply_content(self, context):
-        return model_factory.create_bot(config.conf().get("model").get("type")).reply(context)
+        return model_factory.create_bot(config.conf().get("model").get("type")).reply_text(context)
 
     def fetch_picture_reply_content(self, context):
         return model_factory.create_bot(config.conf().get("model").get("picture")).create_img(context)
