@@ -42,15 +42,15 @@ class Channel(object):
         """
         raise NotImplementedError
 
-    def build_text_reply_content(self, query, context=None):
-        if query == '#菜单':
-            return self.menuString
-        if query.startswith("#"):
-            cmds = query.split()
-            cmd = self.menuDict.get(cmds[0])
-            if cmd is not None:
-                return cmd.execute(cmds)
-        return Bridge().fetch_text_reply_content(query, context)
+    def build_text_reply_content(context=None):
+        # if query == '#菜单':
+        #     return self.menuString
+        # if query.startswith("#"):
+        #     cmds = query.split()
+        #     cmd = self.menuDict.get(cmds[0])
+        #     if cmd is not None:
+        #         return cmd.execute(cmds)
+        return Bridge().fetch_text_reply_content(context)
 
     @staticmethod
     def build_picture_reply_content(context):

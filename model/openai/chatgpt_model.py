@@ -48,75 +48,75 @@ class ChatGPTModel(Model):
         if proxy:
             openai.proxy = proxy
 
-    # def reply(self, query, context=None):
-    #     # acquire reply content
-    #     if not context or not context.get('type') or context.get('type') == 'TEXT':
-    #         log.info("[CHATGPT] query={}".format(query))
-    #         from_user_id = context['from_user_id']
-    #         if query == '#清除记忆':
-    #             Session.clear_session_by_user(from_user_id)
-    #             return '记忆已清除'
-    #         system_prompt = context['system_prompt']
-    #         new_query = Session.build_session_query(query, from_user_id, system_prompt)
-    #         log.debug("userid:{} [CHATGPT] session query={}".format(from_user_id, new_query))
-    #
-    #         # if context.get('stream'):
-    #         #     # reply in stream
-    #         #     return self.reply_text_stream(query, new_query, from_user_id)
-    #
-    #         reply_content = self.reply_text(new_query, from_user_id, 0)
-    #         log.debug("[CHATGPT] new_query={}, user={}, reply_cont={}".format(new_query, from_user_id, reply_content))
-    #         return reply_content
-    #
-    #     elif context.get('type', None) == 'IMAGE_CREATE':
-    #         return self.create_img(query, 0)
+    def reply(self, query, context=None):
+        # acquire reply content
+        if not context or not context.get('type') or context.get('type') == 'TEXT':
+            log.info("[CHATGPT] query={}".format(query))
+            from_user_id = context['from_user_id']
+            if query == '#清除记忆':
+                Session.clear_session_by_user(from_user_id)
+                return '记忆已清除'
+            system_prompt = context['system_prompt']
+            new_query = Session.build_session_query(query, from_user_id, system_prompt)
+            log.debug("userid:{} [CHATGPT] session query={}".format(from_user_id, new_query))
 
-    # def reply_text(self, query, user_id, retry_count=0):
-    #
-    #     try:
-    #         start_time = time.time()  # 记录开始时间
-    #         response = openai.ChatCompletion.create(
-    #             model=model_conf(const.OPEN_AI).get("model") or "gpt-3.5-turbo",  # 对话模型的名称
-    #             messages=query,
-    #             temperature=0.8,  # 值在[0,1]之间，越大表示回复越具有不确定性
-    #             top_p=1,
-    #             frequency_penalty=0.0,  # [-2,2]之间，该值越大则更倾向于产生不同的内容
-    #             presence_penalty=0.0,  # [-2,2]之间，该值越大则更倾向于产生不同的内容
-    #         )
-    #         reply_content = response.choices[0]['message']['content']
-    #         end_time = time.time()  # 记录结束时间
-    #         execution_time = end_time - start_time  # 计算执行时间
-    #         log.info("[Execution Time] {:.4f} seconds", execution_time)  # 打印执行时间
-    #         used_token = response['usage']['total_tokens']
-    #         log.info("total tokens usage:{}".format(used_token))
-    #         log.debug(response)
-    #         # log.info("[CHATGPT] reply={}", reply_content)
-    #         if reply_content:
-    #             # save conversation
-    #             Session.save_session(query, reply_content, user_id, used_token)
-    #         return response.choices[0]['message']['content']
-    #     except openai.error.RateLimitError as e:
-    #         # rate limit exception
-    #         log.warn(e)
-    #         if retry_count < 1:
-    #             time.sleep(5)
-    #             log.warn("[CHATGPT] RateLimit exceed, 第{}次重试".format(retry_count + 1))
-    #             return self.reply_text(query, user_id, retry_count + 1)
-    #         else:
-    #             return "提问太快啦，请休息一下再问我吧"
-    #     except openai.error.APIConnectionError as e:
-    #         log.warn(e)
-    #         log.warn("[CHATGPT] APIConnection failed")
-    #         return "我连接不到网络，请稍后重试"
-    #     except openai.error.Timeout as e:
-    #         log.warn(e)
-    #         log.warn("[CHATGPT] Timeout")
-    #         return "我没有收到消息，请稍后重试"
-    #     except Exception as e:
-    #         # unknown exception
-    #         log.exception(e)
-    #         Session.clear_session_by_user(user_id)
-    #         return "请再问我一次吧"
+            # if context.get('stream'):
+            #     # reply in stream
+            #     return self.reply_text_stream(query, new_query, from_user_id)
+
+            reply_content = self.reply_text(new_query, from_user_id, 0)
+            log.debug("[CHATGPT] new_query={}, user={}, reply_cont={}".format(new_query, from_user_id, reply_content))
+            return reply_content
+
+        elif context.get('type', None) == 'IMAGE_CREATE':
+            return self.create_img(query, 0)
+
+    def reply_text(self, query, user_id, retry_count=0):
+
+        try:
+            start_time = time.time()  # 记录开始时间
+            response = openai.ChatCompletion.create(
+                model=model_conf(const.OPEN_AI).get("model") or "gpt-3.5-turbo",  # 对话模型的名称
+                messages=query,
+                temperature=0.8,  # 值在[0,1]之间，越大表示回复越具有不确定性
+                top_p=1,
+                frequency_penalty=0.0,  # [-2,2]之间，该值越大则更倾向于产生不同的内容
+                presence_penalty=0.0,  # [-2,2]之间，该值越大则更倾向于产生不同的内容
+            )
+            reply_content = response.choices[0]['message']['content']
+            end_time = time.time()  # 记录结束时间
+            execution_time = end_time - start_time  # 计算执行时间
+            log.info("[Execution Time] {:.4f} seconds", execution_time)  # 打印执行时间
+            used_token = response['usage']['total_tokens']
+            log.info("total tokens usage:{}".format(used_token))
+            log.debug(response)
+            # log.info("[CHATGPT] reply={}", reply_content)
+            if reply_content:
+                # save conversation
+                Session.save_session(query, reply_content, user_id, used_token)
+            return response.choices[0]['message']['content']
+        except openai.error.RateLimitError as e:
+            # rate limit exception
+            log.warn(e)
+            if retry_count < 1:
+                time.sleep(5)
+                log.warn("[CHATGPT] RateLimit exceed, 第{}次重试".format(retry_count + 1))
+                return self.reply_text(query, user_id, retry_count + 1)
+            else:
+                return "提问太快啦，请休息一下再问我吧"
+        except openai.error.APIConnectionError as e:
+            log.warn(e)
+            log.warn("[CHATGPT] APIConnection failed")
+            return "我连接不到网络，请稍后重试"
+        except openai.error.Timeout as e:
+            log.warn(e)
+            log.warn("[CHATGPT] Timeout")
+            return "我没有收到消息，请稍后重试"
+        except Exception as e:
+            # unknown exception
+            log.exception(e)
+            Session.clear_session_by_user(user_id)
+            return "请再问我一次吧"
 
     async def reply_text_stream(self, context, retry_count=0):
         try:

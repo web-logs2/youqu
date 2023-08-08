@@ -33,6 +33,12 @@ MODEL_GPT4_32K = "gpt-4-32k"
 MODEL_GPT4_0314 = "gpt-4-0314"
 MODEL_GPT_35_turbo_16K = "gpt-3.5-turbo-16k"
 
+
+
+BOT_SYSTEM_PROMPT = "你是一个人工智能音响，你回复的所有文字都会被转成语音，请尽量用汉语回答所有的问题。除非明确要求你说英语。"
+
+
+
 EMAIL_SENDER = "no-reply@youqu.app"
 EMAIL_SENDER_NAME = "YouQu"
 EMAIL_TEMPLATE_RESET_PASSWORD = "d-a054f2d7236d4ee7be847308bbbfc5f0"
