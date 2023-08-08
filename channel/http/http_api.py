@@ -11,14 +11,15 @@ from larksuiteoapi import OapiHeader
 from larksuiteoapi.card import handle_card
 from larksuiteoapi.event import handle_event
 from larksuiteoapi.model import OapiRequest
-from werkzeug.utils import secure_filename
 
 import common.email
 import config
+from channel.channel import Channel
 from channel.feishu.common_service import conf
 from channel.http import auth
 from channel.http.auth import sha256_encrypt, Auth
 from common import log
+from common.const import MODEL_GPT_35_turbo_16K, BOT_SYSTEM_PROMPT
 from common.db.dbconfig import db
 from common.db.document_record import DocumentRecord
 from common.db.user import User
@@ -31,22 +32,45 @@ from service.file_training_service import upload_file_service
 api = Blueprint('api', __name__)
 
 
-@api.route("/text", methods=['POST'])
+@api.route("/bot/text", methods=['POST'])
 def text():
-    user = auth.identify(request)
+    token = request.headers.get('token', '')
+    user = auth.identify(token)
     if user is None:
-        log.INFO("Cookie error")
-        return
+        log.info("Token error")
+        response = {
+            "success": False,
+            "error": "invalid token",
+            "code": "0000001",
+        }
+        return jsonify(response)
     data = json.loads(request.data)
     if data:
-        msg = data['msg']
-        data['uid'] = user.user_id
-        request_type = data.get('request_type', "text")
+        msg = data.get("msg", ""),
         if not msg:
-            return
+            response = {
+                "success": False,
+                "error": "您没有输入有效的问题",
+                "code": "0000003",
+            }
+            return response
+        data['uid'] = user.user_id
+        data['request_type'] = "text"
+        data['response_type'] = "text"
+        data['conversation_id'] = user.user_id
+        data['messageID'] = generate_uuid()
+        data['model']= MODEL_GPT_35_turbo_16K
+        data['system_prompt'] = BOT_SYSTEM_PROMPT
+        data['user']=user
         reply_text = handle_text(data=data)
-        # reply_text="Test reply"
         return {'content': reply_text}
+    else:
+        response = {
+            "success": False,
+            "error": "invalid input parameters",
+            "code": "0000002",
+        }
+        return response
 
 
 @api.route("/voice", methods=['POST'])
@@ -92,6 +116,19 @@ def picture():
         }
         return jsonify(response)
 
+
+# def verify_api(self):
+#     token = request.args.get('token', '')
+#     user = auth.identify(token)
+#     if user is None:
+#         log.info("Token error")
+#         response = {
+#             "success":False,
+#             "error": "invalid token",
+#             "code": "0000001",
+#         }
+#         return jsonify(response)
+#     return user
 
 # @api.route('/upload', methods=['POST'])
 # def upload_file():
@@ -279,11 +316,8 @@ def webhook_event():
     return resp
 
 
-def handle_text(self, data, user: User):
-    context = dict()
-    context['user'] = user
-    context['conversation_id'] = str(data["conversation_id"])
-    return super().build_text_reply_content(data["msg"], context)
+def handle_text(data):
+    return Channel.build_text_reply_content(data)
 
 
 def handle_picture(self, data, user: User):
