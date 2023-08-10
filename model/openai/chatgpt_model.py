@@ -19,6 +19,7 @@ from common.db.conversation import Conversation
 from common.db.query_record import QueryRecord
 from common.db.user import User
 from common.functions import num_tokens_from_messages, num_tokens_from_string, get_max_token
+from common.menu_functions.function_call_library import detect_function_and_call, functions_definition
 from service.global_values import inStopMessages, removeStopMessages
 from config import model_conf
 from common.menu_functions.document_list import DocumentList
@@ -106,15 +107,34 @@ class ChatGPTModel(Model):
 
             log.info("[chatgpt]: model={} query={}", model, new_query)
 
-            response = openai.ChatCompletion.create(
-                model=model,  # 对话模型的名称
-                messages=new_query,
-                temperature=0.8,  # 值在[0,1]之间，越大表示回复越具有不确定性
-                top_p=1,
-                frequency_penalty=0.0,  # [-2,2]之间，该值越大则更倾向于产生不同的内容
-                presence_penalty=0.0,  # [-2,2]之间，该值越大则更倾向于产生不同的内容
-            )
-            reply_content = response.choices[0]['message']['content']
+            # response = openai.ChatCompletion.create(
+            #     model=model,  # 对话模型的名称
+            #     messages=new_query,
+            #     temperature=0.8,  # 值在[0,1]之间，越大表示回复越具有不确定性
+            #     top_p=1,
+            #     frequency_penalty=0.0,  # [-2,2]之间，该值越大则更倾向于产生不同的内容
+            #     presence_penalty=0.0,  # [-2,2]之间，该值越大则更倾向于产生不同的内容
+            # )
+
+            response = self.get_GPT_answer(model, new_query, False)
+
+            function_call = {
+                "name": "",
+                "arguments": "",
+            }
+            reply_message = response.choices[0]['message']
+            reply_content = reply_message['content']
+
+            if "function_call" in reply_message:
+                if "name" in reply_message["function_call"]:
+                    function_call["name"] = reply_message["function_call"]["name"]
+                if "arguments" in reply_message["function_call"]:
+                    function_call["arguments"] = reply_message["function_call"]["arguments"]
+
+                function_response = self.get_GPT_function_call_answer(model, new_query, function_call, False)
+
+                reply_content = function_response.choices[0]['message']['content']
+
             end_time = time.time()  # 记录结束时间
             execution_time = end_time - start_time  # 计算执行时间
             log.info("[Execution Time] {:.4f} seconds", execution_time)  # 打印执行时间
@@ -125,7 +145,7 @@ class ChatGPTModel(Model):
             if reply_content:
                 # save conversation
                 Session.save_session(reply_content, user_session_id, model)
-            return response.choices[0]['message']['content']
+            return reply_content
 
 
 
@@ -152,10 +172,6 @@ class ChatGPTModel(Model):
             Session.clear_session_by_user(user_session_id)
             return "请再问我一次吧"
 
-    @staticmethod
-    def send_mail(self, mail, msg):
-        log.info("send mail triggered, send: {} to {}".format(msg, mail))
-        return "mail sent!"
 
     async def reply_text_stream(self, context, retry_count=0):
         try:
@@ -204,29 +220,11 @@ class ChatGPTModel(Model):
 
             log.info("[chatgpt]: model={} query={}", model, new_query)
 
-            functions = [{
-                "name": "send_mail",
-                "description": "Send mail to user and return the result",
-                "parameters": {
-                    "type": "object",
-                    "required": ["mail", "msg"],
-                    "properties": {
-                        "mail": {
-                            "type": "string",
-                            "description": "A email address",
-                        },
-                        "msg": {
-                            "type": "string",
-                            "description": "The content of the mail"
-                        },
-                    },
-                },
-            }]
-
             res = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo-0613",
+                # model="gpt-3.5-turbo-0613",
+                model=model,
                 function_call="auto",
-                functions=functions,
+                functions=functions_definition,
                 messages=new_query,
 
                 temperature=model_conf(const.OPEN_AI).get("temperature", 0.8),
@@ -242,25 +240,6 @@ class ChatGPTModel(Model):
                 # stop=["\n", "。", "？", "！"],
             )
 
-            # deep clone res
-            # json_res = json.dumps(res)
-            # res_test = json.loads(json_res)
-
-            # res = openai.ChatCompletion.create(
-            #     model=model,  # 对话模型的名称
-            #     messages=new_query,
-            #     temperature=model_conf(const.OPEN_AI).get("temperature", 0.8),
-            #     # 熵值，在[0,1]之间，越大表示选取的候选词越随机，回复越具有不确定性，建议和top_p参数二选一使用，创意性任务越大越好，精确性任务越小越好
-            #     # max_tokens=8100,  # 回复最大的字符数，为输入和输出的总数
-            #     # top_p=model_conf(const.OPEN_AI).get("top_p", 0.7),,  #候选词列表。0.7 意味着只考虑前70%候选词的标记，建议和temperature参数二选一使用
-            #     frequency_penalty=model_conf(const.OPEN_AI).get("frequency_penalty", 0.0),
-            #     # [-2,2]之间，该值越大则越降低模型一行中的重复用词，更倾向于产生不同的内容
-            #     presence_penalty=model_conf(const.OPEN_AI).get("presence_penalty", 1.0),
-            #     # [-2,2]之间，该值越大则越不受输入限制，将鼓励模型生成输入中不存在的新词，更倾向于产生不同的内容
-            #     stream=True,
-            #     timeout=5,
-            #     # stop=["\n", "。", "？", "！"],
-            # )
             full_response = ""
 
             function_call = {
@@ -298,28 +277,26 @@ class ChatGPTModel(Model):
                 new_query.append({
                     "role": "assistant", "content": None, "function_call": function_call
                 })
+
+                function_name = function_call["name"]
                 parameters = json.loads(function_call["arguments"])
-                # log.info("parameters={}", parameters)
-                # log.info("mail={}, and msg={}", parameters["mail"], parameters["msg"])
-                content = self.send_mail(self, mail=parameters["mail"], msg=parameters["msg"])
+
+                # call function
+                content = detect_function_and_call(function_name, parameters)
                 # log.info("content={}", content)
+
                 new_query.append({
                     "role": "function", "name": function_call["name"], "content": content
                 })
 
                 res = openai.ChatCompletion.create(
-                    model="gpt-3.5-turbo-0613",
-                    functions=functions,
+                    model=model,
+                    functions=functions_definition,
                     messages=new_query,
 
                     temperature=model_conf(const.OPEN_AI).get("temperature", 0.8),
-                    # 熵值，在[0,1]之间，越大表示选取的候选词越随机，回复越具有不确定性，建议和top_p参数二选一使用，创意性任务越大越好，精确性任务越小越好
-                    # max_tokens=8100,  # 回复最大的字符数，为输入和输出的总数
-                    # top_p=model_conf(const.OPEN_AI).get("top_p", 0.7),,  #候选词列表。0.7 意味着只考虑前70%候选词的标记，建议和temperature参数二选一使用
                     frequency_penalty=model_conf(const.OPEN_AI).get("frequency_penalty", 0.0),
-                    # [-2,2]之间，该值越大则越降低模型一行中的重复用词，更倾向于产生不同的内容
                     presence_penalty=model_conf(const.OPEN_AI).get("presence_penalty", 1.0),
-                    # [-2,2]之间，该值越大则越不受输入限制，将鼓励模型生成输入中不存在的新词，更倾向于产生不同的内容
                     stream=True,
                     timeout=5,
                     # stop=["\n", "。", "？", "！"],
@@ -413,6 +390,55 @@ class ChatGPTModel(Model):
         except Exception as e:
             log.error(traceback.format_exc())
             return None
+
+    def get_GPT_answer(self, model, new_query, is_stream):
+        return openai.ChatCompletion.create(
+            # model="gpt-3.5-turbo-0613",
+            model=model,
+            function_call="auto",
+            functions=functions_definition,
+            messages=new_query,
+
+            temperature=model_conf(const.OPEN_AI).get("temperature", 0.8),
+            # 熵值，在[0,1]之间，越大表示选取的候选词越随机，回复越具有不确定性，建议和top_p参数二选一使用，创意性任务越大越好，精确性任务越小越好
+            # max_tokens=8100,  # 回复最大的字符数，为输入和输出的总数
+            # top_p=model_conf(const.OPEN_AI).get("top_p", 0.7),,  #候选词列表。0.7 意味着只考虑前70%候选词的标记，建议和temperature参数二选一使用
+            frequency_penalty=model_conf(const.OPEN_AI).get("frequency_penalty", 0.0),
+            # [-2,2]之间，该值越大则越降低模型一行中的重复用词，更倾向于产生不同的内容
+            presence_penalty=model_conf(const.OPEN_AI).get("presence_penalty", 1.0),
+            # [-2,2]之间，该值越大则越不受输入限制，将鼓励模型生成输入中不存在的新词，更倾向于产生不同的内容
+            stream=is_stream,
+            timeout=5,
+            # stop=["\n", "。", "？", "！"],
+        )
+
+    def get_GPT_function_call_answer(self, model, new_query, function_call, is_stream):
+        new_query.append({
+            "role": "assistant", "content": None, "function_call": function_call
+        })
+
+        function_name = function_call["name"]
+        parameters = json.loads(function_call["arguments"])
+
+        # call function
+        content = detect_function_and_call(function_name, parameters)
+        # log.info("content={}", content)
+
+        new_query.append({
+            "role": "function", "name": function_name, "content": content
+        })
+
+        return openai.ChatCompletion.create(
+            model=model,
+            functions=functions_definition,
+            messages=new_query,
+
+            temperature=model_conf(const.OPEN_AI).get("temperature", 0.8),
+            frequency_penalty=model_conf(const.OPEN_AI).get("frequency_penalty", 0.0),
+            presence_penalty=model_conf(const.OPEN_AI).get("presence_penalty", 1.0),
+            stream=is_stream,
+            timeout=5,
+        )
 
     def menuList(self, arg):
         return [PreTrainDcoumnet(), QueryDcoumnet(), DocumentList(),
