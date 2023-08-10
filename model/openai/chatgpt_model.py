@@ -107,15 +107,6 @@ class ChatGPTModel(Model):
 
             log.info("[chatgpt]: model={} query={}", model, new_query)
 
-            # response = openai.ChatCompletion.create(
-            #     model=model,  # 对话模型的名称
-            #     messages=new_query,
-            #     temperature=0.8,  # 值在[0,1]之间，越大表示回复越具有不确定性
-            #     top_p=1,
-            #     frequency_penalty=0.0,  # [-2,2]之间，该值越大则更倾向于产生不同的内容
-            #     presence_penalty=0.0,  # [-2,2]之间，该值越大则更倾向于产生不同的内容
-            # )
-
             response = self.get_GPT_answer(model, new_query, False)
 
             function_call = {
@@ -220,25 +211,7 @@ class ChatGPTModel(Model):
 
             log.info("[chatgpt]: model={} query={}", model, new_query)
 
-            res = openai.ChatCompletion.create(
-                # model="gpt-3.5-turbo-0613",
-                model=model,
-                function_call="auto",
-                functions=functions_definition,
-                messages=new_query,
-
-                temperature=model_conf(const.OPEN_AI).get("temperature", 0.8),
-                # 熵值，在[0,1]之间，越大表示选取的候选词越随机，回复越具有不确定性，建议和top_p参数二选一使用，创意性任务越大越好，精确性任务越小越好
-                # max_tokens=8100,  # 回复最大的字符数，为输入和输出的总数
-                # top_p=model_conf(const.OPEN_AI).get("top_p", 0.7),,  #候选词列表。0.7 意味着只考虑前70%候选词的标记，建议和temperature参数二选一使用
-                frequency_penalty=model_conf(const.OPEN_AI).get("frequency_penalty", 0.0),
-                # [-2,2]之间，该值越大则越降低模型一行中的重复用词，更倾向于产生不同的内容
-                presence_penalty=model_conf(const.OPEN_AI).get("presence_penalty", 1.0),
-                # [-2,2]之间，该值越大则越不受输入限制，将鼓励模型生成输入中不存在的新词，更倾向于产生不同的内容
-                stream=True,
-                timeout=5,
-                # stop=["\n", "。", "？", "！"],
-            )
+            res = self.get_GPT_answer(model, new_query, True)
 
             full_response = ""
 
@@ -274,35 +247,10 @@ class ChatGPTModel(Model):
 
             if function_call_flag:
                 log.info("function call={}", function_call)
-                new_query.append({
-                    "role": "assistant", "content": None, "function_call": function_call
-                })
 
-                function_name = function_call["name"]
-                parameters = json.loads(function_call["arguments"])
+                fuc_res = self.get_GPT_function_call_answer(model, new_query, function_call, False)
 
-                # call function
-                content = detect_function_and_call(function_name, parameters)
-                # log.info("content={}", content)
-
-                new_query.append({
-                    "role": "function", "name": function_call["name"], "content": content
-                })
-
-                res = openai.ChatCompletion.create(
-                    model=model,
-                    functions=functions_definition,
-                    messages=new_query,
-
-                    temperature=model_conf(const.OPEN_AI).get("temperature", 0.8),
-                    frequency_penalty=model_conf(const.OPEN_AI).get("frequency_penalty", 0.0),
-                    presence_penalty=model_conf(const.OPEN_AI).get("presence_penalty", 1.0),
-                    stream=True,
-                    timeout=5,
-                    # stop=["\n", "。", "？", "！"],
-                )
-
-                for chunk in res:
+                for chunk in fuc_res:
                     log.debug(chunk)
                     if (chunk["choices"][0]["finish_reason"] == "stop"):
                         break
