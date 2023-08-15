@@ -29,7 +29,8 @@ functions_definition = [{
         "properties": {
             "city": {
                 "type": "string",
-                "description": "City name, state code and country code divided by comma, use ISO 3166 country codes.",
+                "description": "City name, state code and country code divided by comma in English, "
+                               "use ISO 3166 country codes.",
             },
             "units": {
                 "type": "string",
@@ -89,9 +90,11 @@ def send_mail(mail, msg):
 def get_weather_by_location(city, units="standard", latitude=None, longitude=None):
     api_key = conf().get("functions_library").get("openWeather_api_key")
 
-    response = requests.get(url="https://api.openweatherma.org/data/2.5/weather?"
+    response = requests.get(url="https://api.openweathermap.org/data/2.5/weather?"
                                 "appid={}&q={}&units={}&lang={}"
                             .format(api_key, city, units, "zh_cn"))
+
+    return response.text
 
 # def get_latest_chinese_stock_price(self, stock_name, stock_code):
 #     requests.post(url="http://stock.salefx.cn:10000/api/stock/realTime", json={"code": stock_code})

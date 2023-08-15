@@ -38,35 +38,36 @@ class socket_handler():
 
     async def return_stream(self, data, user: User):
 
-        data['user'] = user
-        reply = handle_text(data)
-        self.socketio.server.emit(
-                        'final',
-                        {'content': reply, 'messageID': data['messageID'],
-                         'conversation_id': data['conversation_id'],
-                         'final': True, "response_type": data.get("response_type", "text")}, request.sid,
-                        namespace="/chat")
-
-        # try:
-        #     async for final, response in self.handle_stream(data=data, user=user):
-        #         if final:
-        #             # log.info("Final:" + response)
-        #             self.socketio.server.emit(
+        # test api method
+        # data['user'] = user
+        # reply = handle_text(data)
+        # self.socketio.server.emit(
         #                 'final',
-        #                 {'content': response, 'messageID': data['messageID'],
+        #                 {'content': reply, 'messageID': data['messageID'],
         #                  'conversation_id': data['conversation_id'],
-        #                  'final': final, "response_type": data.get("response_type", "text")}, request.sid,
+        #                  'final': True, "response_type": data.get("response_type", "text")}, request.sid,
         #                 namespace="/chat")
-        #         else:
-        #             self.socketio.sleep(0.001)
-        #             self.socketio.server.emit(
-        #                 'reply',
-        #                 {'content': response, 'messageID': data['messageID'],
-        #                  'conversation_id': data['conversation_id'],
-        #                  'final': final, "response_type": data.get("response_type", "text")}, request.sid,
-        #                 namespace="/chat")
-        # except Exception as e:
-        #     log.error(traceback.format_exc())
+
+        try:
+            async for final, response in self.handle_stream(data=data, user=user):
+                if final:
+                    # log.info("Final:" + response)
+                    self.socketio.server.emit(
+                        'final',
+                        {'content': response, 'messageID': data['messageID'],
+                         'conversation_id': data['conversation_id'],
+                         'final': final, "response_type": data.get("response_type", "text")}, request.sid,
+                        namespace="/chat")
+                else:
+                    self.socketio.sleep(0.001)
+                    self.socketio.server.emit(
+                        'reply',
+                        {'content': response, 'messageID': data['messageID'],
+                         'conversation_id': data['conversation_id'],
+                         'final': final, "response_type": data.get("response_type", "text")}, request.sid,
+                        namespace="/chat")
+        except Exception as e:
+            log.error(traceback.format_exc())
 
     async def handle_stream(self, data, user: User):
         context = {
