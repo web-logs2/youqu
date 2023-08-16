@@ -248,7 +248,7 @@ class ChatGPTModel(Model):
             if function_call_flag:
                 log.info("function call={}", function_call)
 
-                fuc_res = self.get_GPT_function_call_answer(model, new_query, function_call, False)
+                fuc_res = self.get_GPT_function_call_answer(model, new_query, function_call, True)
 
                 for chunk in fuc_res:
                     log.debug(chunk)
