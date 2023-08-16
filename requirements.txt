@@ -32,7 +32,7 @@ sendgrid~=6.10.0
 geoip2~=4.7.0
 dnspython~=2.3.0
 idna~=3.4
-requests
+requests~=2.31.0
 defusedxml~=0.7.1
 cffi~=1.15.1
 Pillow~=9.5.0
@@ -50,7 +50,7 @@ ipywidgets~=8.0.6
 notebook~=6.5.4
 multidict~=6.0.4
 aiohttp~=3.8.4
-urllib3~=1.26.15
+urllib3~=1.26.16
 msrest~=0.7.1
 MarkupSafe~=2.1.2
 Werkzeug~=2.2.3
