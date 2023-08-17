@@ -8,6 +8,7 @@ from flask_socketio import SocketIO
 
 from channel.channel import Channel
 from channel.http import auth
+from channel.http.http_api import handle_text
 from common import const, log
 
 from common.db.dbconfig import db
@@ -36,6 +37,17 @@ class socket_handler():
         self.socketio.on_event('heartbeat', self.heart_beat, namespace='/chat')
 
     async def return_stream(self, data, user: User):
+
+        # test api method
+        # data['user'] = user
+        # reply = handle_text(data)
+        # self.socketio.server.emit(
+        #                 'final',
+        #                 {'content': reply, 'messageID': data['messageID'],
+        #                  'conversation_id': data['conversation_id'],
+        #                  'final': True, "response_type": data.get("response_type", "text")}, request.sid,
+        #                 namespace="/chat")
+
         try:
             async for final, response in self.handle_stream(data=data, user=user):
                 if final:
