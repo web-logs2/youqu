@@ -1,8 +1,6 @@
 import logging
 
 import requests
-from datetime import datetime, timedelta
-import yfinance as yf
 from common import log
 from config import conf
 from service.tencent_stock import get_cn_quotes, get_us_quotes
