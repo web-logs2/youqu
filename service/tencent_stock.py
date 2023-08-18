@@ -12,7 +12,6 @@ import json
 import requests
 
 param_timestamp = int(time.time())
-eastmoney_quotes_api = 'https://web.sqt.gtimg.cn/q={symbol}?r=0.0'+str(param_timestamp)
 # 接口返回数据对应键名
 cn_index_to_key = {
     1:'name',
@@ -109,8 +108,9 @@ def str_trans_float(strval):
     if '-' in strval : return 0
     return float(strval)
 
-def get_quotes(symbol):
-    url = eastmoney_quotes_api.replace('{symbol}',symbol)
+def get_cn_quotes(symbol):
+    cn_eastmoney_quotes_api = 'https://web.sqt.gtimg.cn/q={symbol}?r=0.0' + str(param_timestamp)
+    url = cn_eastmoney_quotes_api.replace('{symbol}', symbol)
     objs = []
     try:
         result = get(url)
@@ -154,6 +154,28 @@ def get_quotes(symbol):
 
     return objs
 
+
+def get_us_quotes(symbol):
+    us_eastmoney_quotes_api = 'https://qt.gtimg.cn/?q=s_us{symbol}&_=' + str(param_timestamp)
+    url = us_eastmoney_quotes_api.replace('{symbol}', symbol)
+    objs = []
+    try:
+        result = get(url)
+        if result==None:
+            print('请求腾讯实时行情接口错误：'+url)
+            return
+        parts = result.split("~")
+        obj = {}
+        obj['name'] = parts[1]
+        obj['code'] = parts[2]
+        obj['price'] = parts[3]
+        obj['code'] = symbol
+        objs.append(obj)
+        print(objs)
+    except Exception as ex:
+        print(ex)
+
+    return objs
 
 
 def get_time_sharing(symbol):

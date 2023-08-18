@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 import yfinance as yf
 from common import log
 from config import conf
-from service.cn_stock import get_quotes
+from service.tencent_stock import get_cn_quotes, get_us_quotes
 
 functions_definition = [{
     "name": "send_mail",
@@ -143,30 +143,22 @@ def get_weather_by_location(city, units="standard", latitude=None, longitude=Non
 
 
 def get_us_stock_price(code, date=None):
-    ticker_data = yf.Ticker(code)
+    code=code.upper()
     if date is None:
         # 如果没有提供日期，默认为当天
-        today = datetime.today().strftime('%Y-%m-%d')
-        data = ticker_data.history(start=today)
+        result=get_us_quotes(code)
     else:
         # 如果提供了日期，获取该日期的收盘价
-        formatted_date = datetime.strptime(date, '%Y-%m-%d')
-        next_day = formatted_date + timedelta(days=1)
-        data = ticker_data.history(start=formatted_date.strftime('%Y-%m-%d'), end=next_day.strftime('%Y-%m-%d'))
-    logging.INFO(data)
-    if data.empty:
-        return "Market was closed on this day."
-    else:
-        price = data.Close[0]
-        return price
+        return "Specific date query is not implemented yet!"
+    if result is not None:
+        log.info("result:{}",result)
+        return str(result[0].get("price"))
 
 def get_cn_stock_price(code, date=None):
-    #code=lowcase(code)
-    #convert code to lower case
     code=code.lower()
     if date is None:
         # 如果没有提供日期，默认为当天
-        result=get_quotes(code)
+        result=get_cn_quotes(code)
     else:
         # 如果提供了日期，获取该日期的收盘价
         return "Specific date query is not implemented yet!"
