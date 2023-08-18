@@ -101,3 +101,4 @@ Werkzeug
 tiktoken
 pypdf
 apscheduler
+yfinance
