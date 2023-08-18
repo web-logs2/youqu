@@ -14,7 +14,7 @@ import requests
 param_timestamp = int(time.time())
 eastmoney_quotes_api = 'https://web.sqt.gtimg.cn/q={symbol}?r=0.0'+str(param_timestamp)
 # 接口返回数据对应键名
-index_to_key = {
+cn_index_to_key = {
     1:'name',
     3:'code',
     4:'last',
@@ -130,8 +130,8 @@ def get_quotes(symbol):
                 v = item[j]
                 v = v.replace('\n','')
                 v = v.replace('"','')
-                if j in index_to_key:
-                    k = index_to_key[j]
+                if j in cn_index_to_key:
+                    k = cn_index_to_key[j]
                     if k in "open,high,low,last,price,vol,amount" :
                         # 转成浮点数
                         v = str_trans_float(v)

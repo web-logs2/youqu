@@ -1,3 +1,5 @@
+import logging
+
 import requests
 from datetime import datetime, timedelta
 import yfinance as yf
@@ -151,11 +153,12 @@ def get_us_stock_price(code, date=None):
         formatted_date = datetime.strptime(date, '%Y-%m-%d')
         next_day = formatted_date + timedelta(days=1)
         data = ticker_data.history(start=formatted_date.strftime('%Y-%m-%d'), end=next_day.strftime('%Y-%m-%d'))
-    if data:
+    logging.INFO(data)
+    if data.empty:
+        return "Market was closed on this day."
+    else:
         price = data.Close[0]
         return price
-    else:
-        return "Market was closed on this day."
 
 def get_cn_stock_price(code, date=None):
     #code=lowcase(code)
@@ -169,4 +172,4 @@ def get_cn_stock_price(code, date=None):
         return "Specific date query is not implemented yet!"
     if result is not None:
         #log.info("result:{}",result)
-        return result[0].get("price")
+        return str(result[0].get("price"))
