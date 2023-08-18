@@ -12,40 +12,7 @@ import json
 import requests
 
 param_timestamp = int(time.time())
-# 接口返回数据对应键名
-cn_index_to_key = {
-    1:'name',
-    3:'code',
-    4:'last',
-    5:'open',
-    6:'vol',
-    41:'high',
-    42:'low',
-    36:'vol',
-    37:'amount',
-    10:'buy_1_v',
-    9:'price',
-    12:'buy_2_v',
-    11:'buy_2',
-    14:'buy_3_v',
-    13:'buy_3',
-    16:'buy_4_v',
-    15:'buy_4',
-    18:'buy_5_v',
-    17:'buy_5',
-    20:'sell_1_v',
-    19:'sell_1',
-    22:'sell_2_v',
-    21:'sell_2',
-    24:'sell_3_v',
-    23:'sell_3',
-    26:'sell_4_v',
-    25:'sell_4',
-    28:'sell_5_v',
-    27:'sell_5',
-    30:'lastdate',
-    31:'lasttime'
-}
+
 # 分时图数据
 minline_url = "https://web.ifzq.gtimg.cn/appstock/app/minute/query?_var=min_data_{code}&code={code}&r=0.{timestamp}"
 # 五日
@@ -117,38 +84,14 @@ def get_cn_quotes(symbol):
         if result==None:
             print('请求腾讯实时行情接口错误：'+url)
             return
-        print(url)
-        list = result.split(';')
-        codes = symbol.split(",")
-        for i in range(0,len(list)):
-            item = list[i]
-            if len(item)<10 : continue
-            code = codes[i]
-            item = item.split('~')
-            obj = {}
-            for j in range(1,len(item)):
-                v = item[j]
-                v = v.replace('\n','')
-                v = v.replace('"','')
-                if j in cn_index_to_key:
-                    k = cn_index_to_key[j]
-                    if k in "open,high,low,last,price,vol,amount" :
-                        # 转成浮点数
-                        v = str_trans_float(v)
-                    if 'buy_' in k or 'sell_' in k :
-                        # 转成浮点数
-                        v = str_trans_float(v)
-                    obj[k] = v
-            ld = obj['lastdate']
-            lastdate = ld[:4]+"-"+ld[4:6]+"-"+ld[6:8]
-            lasttime = ld[8:10]+":"+ld[10:12]+":"+ld[12:14]
-            obj['lastdate'] = lastdate
-            obj['lasttime'] = lasttime
-            obj['code'] = code
-            obj['_id'] = code
-            objs.append(obj)
-
-    #print(objs)
+        parts = result.split("~")
+        obj = {}
+        obj['name'] = parts[1]
+        obj['code'] = parts[2]
+        obj['price'] = parts[3]
+        obj['code'] = symbol
+        objs.append(obj)
+        print(objs)
     except Exception as ex:
         print(ex)
 
