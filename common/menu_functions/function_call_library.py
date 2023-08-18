@@ -151,11 +151,11 @@ def get_us_stock_price(code, date=None):
         formatted_date = datetime.strptime(date, '%Y-%m-%d')
         next_day = formatted_date + timedelta(days=1)
         data = ticker_data.history(start=formatted_date.strftime('%Y-%m-%d'), end=next_day.strftime('%Y-%m-%d'))
-    if data.empty:
-        return "Market was closed on this day."
-    else:
+    if data:
         price = data.Close[0]
         return price
+    else:
+        return "Market was closed on this day."
 
 def get_cn_stock_price(code, date=None):
     #code=lowcase(code)
