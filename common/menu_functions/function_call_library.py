@@ -1,7 +1,9 @@
 import requests
-
+from datetime import datetime, timedelta
+import yfinance as yf
 from common import log
 from config import conf
+from service.cn_stock import get_quotes
 
 functions_definition = [{
     "name": "send_mail",
@@ -39,8 +41,45 @@ functions_definition = [{
                                "for Celsius use units=metric and Kelvin units by default"
             },
         }
+    }
+},
+    {
+        "name": "get_us_stock_price",
+        "description": "",
+        "parameters": {
+            "type": "object",
+            "required": ["code", "date"],
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "description": "code of a US stock, e.g. AAPL",
+                },
+                "date": {
+                    "type": "string",
+                    "description": "optional, date of the stock price, e.g. 2021-05-28"
+                },
+            }
+        }
     },
-}, ]
+    {
+        "name": "get_cn_stock_price",
+        "description": "",
+        "parameters": {
+            "type": "object",
+            "required": ["code", "date"],
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "description": "code of a china stock, e.g. sh600036 or sz000001",
+                },
+                "date": {
+                    "type": "string",
+                    "description": "optional, date of the stock price, e.g. 2021-05-28 "
+                },
+            }
+        }
+    },
+]
 
 
 def detect_function_and_call(function_name, parameters):
@@ -96,5 +135,38 @@ def get_weather_by_location(city, units="standard", latitude=None, longitude=Non
 
     return response.text
 
+
 # def get_latest_chinese_stock_price(self, stock_name, stock_code):
 #     requests.post(url="http://stock.salefx.cn:10000/api/stock/realTime", json={"code": stock_code})
+
+
+def get_us_stock_price(code, date=None):
+    ticker_data = yf.Ticker(code)
+    if date is None:
+        # 如果没有提供日期，默认为当天
+        today = datetime.today().strftime('%Y-%m-%d')
+        data = ticker_data.history(start=today)
+    else:
+        # 如果提供了日期，获取该日期的收盘价
+        formatted_date = datetime.strptime(date, '%Y-%m-%d')
+        next_day = formatted_date + timedelta(days=1)
+        data = ticker_data.history(start=formatted_date.strftime('%Y-%m-%d'), end=next_day.strftime('%Y-%m-%d'))
+    if data.empty:
+        return "Market was closed on this day."
+    else:
+        price = data.Close[0]
+        return price
+
+def get_cn_stock_price(code, date=None):
+    #code=lowcase(code)
+    #convert code to lower case
+    code=code.lower()
+    if date is None:
+        # 如果没有提供日期，默认为当天
+        result=get_quotes(code)
+    else:
+        # 如果提供了日期，获取该日期的收盘价
+        return "Specific date query is not implemented yet!"
+    if result is not None:
+        #log.info("result:{}",result)
+        return result[0].get("price")
