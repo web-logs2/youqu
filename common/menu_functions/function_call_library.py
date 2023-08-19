@@ -1,6 +1,10 @@
 import logging
+from datetime import datetime
 
+import pytz
 import requests
+from flask import request
+
 from common import log
 from config import conf
 from service.tencent_stock import get_cn_quotes, get_us_quotes
@@ -45,7 +49,7 @@ functions_definition = [{
 },
     {
         "name": "get_us_stock_price",
-        "description": "",
+        "description": "get us stock price",
         "parameters": {
             "type": "object",
             "required": ["code", "date"],
@@ -63,7 +67,7 @@ functions_definition = [{
     },
     {
         "name": "get_cn_stock_price",
-        "description": "",
+        "description": "get China mainland stock price",
         "parameters": {
             "type": "object",
             "required": ["code", "date"],
@@ -76,6 +80,16 @@ functions_definition = [{
                     "type": "string",
                     "description": "optional, date of the stock price, e.g. 2021-05-28 "
                 },
+            }
+        }
+    },
+    {
+        "name": "get_current_time_and_timezone",
+        "description": "get current time and timezone",
+        "parameters": {
+            "type": "object",
+            "required": [],
+            "properties": {
             }
         }
     },
@@ -141,25 +155,48 @@ def get_weather_by_location(city, units="standard", latitude=None, longitude=Non
 
 
 def get_us_stock_price(code, date=None):
-    code=code.upper()
+    code = code.upper()
     if date is None:
         # 如果没有提供日期，默认为当天
-        result=get_us_quotes(code)
+        result = get_us_quotes(code)
     else:
         # 如果提供了日期，获取该日期的收盘价
         return "Specific date query is not implemented yet!"
     if result is not None:
-        log.info("result:{}",result)
+        log.info("result:{}", result)
         return str(result[0].get("price"))
 
+
 def get_cn_stock_price(code, date=None):
-    code=code.lower()
+    code = code.lower()
     if date is None:
         # 如果没有提供日期，默认为当天
-        result=get_cn_quotes(code)
+        result = get_cn_quotes(code)
     else:
         # 如果提供了日期，获取该日期的收盘价
         return "Specific date query is not implemented yet!"
     if result is not None:
-        #log.info("result:{}",result)
+        # log.info("result:{}",result)
         return str(result[0].get("price"))
+
+
+def get_current_time_and_timezone():
+    try:
+        # get public ip
+        ip = request.headers.get("X-Forwarded-For", request.remote_addr)
+
+        # get location info by ip
+        data = requests.get(f'https://ipapi.co/{ip}/json/').json()
+
+        # get timezone by location
+        location_tz = data['timezone']
+
+        tz = pytz.timezone(location_tz)
+    except:
+        # if fail, use Beijing timezone
+        location_tz = 'Asia/Shanghai'
+        tz = pytz.timezone(location_tz)
+
+    now = datetime.now(tz)
+
+    return now.strftime("%Y-%m-%d %H:%M:%S") + f', Timezone: {location_tz}'
