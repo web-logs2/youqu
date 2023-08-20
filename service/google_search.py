@@ -8,9 +8,9 @@ import requests
 
 def get_content_by_url(url):
     try:
-        response = requests.get(url)  # 获取网页内容，返回的是HTML代码
-        page_content = response.text  # 使用BeautifulSoup解析这段代码
-        soup = BeautifulSoup(page_content, 'html.parser')  # 现在你可以通过soup对象获取你需要的任意网页元素，
+        resp = requests.get(url)
+        resp.encoding = resp.apparent_encoding  # 使用正确的编码
+        soup = BeautifulSoup(resp.text, 'html.parser')
         # 例如获取所有的段落<p>标签：
         paragraphs = soup.find_all('p')  # 打印出第一个段落的文字
         # print(paragraphs[0].get_text())
@@ -22,11 +22,16 @@ def get_content_by_url(url):
 
 def search_google(key):
     result = ""
+    current_size=0
     for url in search(key,num_results=10):
         logger.info("current url:"+url)
-        result = result + get_content_by_url(url)
-        if num_tokens_from_string(result) > 10000:
+        tem_result=get_content_by_url(url)
+        logger.info("current result:"+tem_result)
+        tem_result_size=num_tokens_from_string(tem_result)
+        if current_size+tem_result_size > 12000:
             logger.info("Too many results, break")
             break
-    logger.info(result)
+        else:
+            result=result+tem_result
+            current_size=current_size+num_tokens_from_string(tem_result)
     return result
