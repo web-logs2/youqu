@@ -101,3 +101,5 @@ Werkzeug
 tiktoken
 pypdf
 apscheduler
+googlesearch-python
+beautifulsoup4
