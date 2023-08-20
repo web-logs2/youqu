@@ -238,7 +238,7 @@ class ChatGPTModel(Model):
                 if (chunk["choices"][0]["finish_reason"] == "stop"):
                     break
                 chunk_message = chunk['choices'][0]['delta'].get("content")
-                log.info("chunk_message = {}".format(chunk_message))
+                # log.info("chunk_message = {}".format(chunk_message))
                 if (chunk_message):
                     full_response += chunk_message
                 if inStopMessages(user.user_id):
