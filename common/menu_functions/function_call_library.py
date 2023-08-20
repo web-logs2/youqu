@@ -6,7 +6,9 @@ import requests
 from flask import request
 
 from common import log
+from common.log import logger
 from config import conf
+from service.google_search import search_google
 from service.tencent_stock import get_cn_quotes, get_us_quotes
 
 functions_definition = [{
@@ -92,6 +94,50 @@ functions_definition = [{
             "properties": {
             }
         }
+    },{
+        "name": "query_cheap_flight",
+        "description": "get cheap flight price between two airports",
+        "parameters": {
+            "type": "object",
+            "required": ["from_city", "to_city", "start_date", "end_date", "max_price", "direct"],
+            "properties": {
+                "from_city": {
+                    "type": "string",
+                    "description": "IATA code of an airport, e.g. NNG",
+                },
+                "to_city": {
+                    "type": "string",
+                    "description": "IATA code of an airport, e.g. NNG",
+                },
+                "start_date": {
+                    "type": "string",
+                    "description": "start date of the flight, e.g. 20210528"
+                },
+                "end_date": {
+                    "type": "string",
+                    "description": "end date of the flight, e.g. 20210528"
+                },
+                "max_price": {
+                    "type": "string",
+                    "description": "max price of the flight, e.g. 1000"
+                },
+                "direct": {
+                    "type": "string",
+                    "description": "direct flight or not, e.g. true or false"
+                }
+            }}
+    },{
+        "name": "search_google_get_contents",
+        "description": "search from google and get contents",
+        "parameters": {
+            "type": "object",
+            "required": ["key"],
+            "properties": {
+                "key": {
+                    "type": "string",
+                    "description": "key words to search",
+                }
+            }}
     },
 ]
 
@@ -200,3 +246,50 @@ def get_current_time_and_timezone():
     now = datetime.now(tz)
 
     return now.strftime("%Y-%m-%d %H:%M:%S") + f', Timezone: {location_tz}'
+
+
+
+def query_cheap_flight(from_city, to_city, start_date, end_date, max_price, direct="false"):
+    ##convert max_price to int
+    max_price = int(max_price)
+
+    # use this api
+    # https://flights.ctrip.com/itinerary/api/12808/lowestPrice?
+
+    # flightWay=Oneway >Oneway单向飞 Roundtrip往返
+    #
+    # dcity=NNG >出发地（编号对应的地点看下面的tx），这里是南宁
+    #
+    # acity=WUH >目的地（编号对应的地点看下面的tx），这里是武汉
+    #
+    # direct=true >是否直飞(不转站)true:是，false:否
+    #
+    # army=false >可加可不加
+
+    # return "the cheapest flight from {} to {} from {} to {} with max price{} and direct flight{}".format(from_city, to_city, start_date, end_date, max_price, direct)
+    url = "https://flights.ctrip.com/itinerary/api/12808/lowestPrice?"
+    #
+    url += "flightWay=Oneway"
+    url += "&dcity=" + from_city
+    url += "&acity=" + to_city
+    url += "&direct=" + direct
+    logger.info(url)
+    try:
+        data = requests.get(url).json()
+        if data == None:
+            logger.info('请求携程机票接口错误：' + url)
+            return '请求携程机票接口错误：'
+        cheap_prices = data['data']['oneWayPrice'][0]
+        valid_prices = {date: price for date, price in cheap_prices.items()
+                        if start_date <= date <= end_date and price <= max_price}
+        sorted_prices = dict(sorted(valid_prices.items(), key=lambda item: item[1]))
+        logger.info(sorted_prices)
+        return str(sorted_prices)
+
+    except Exception as ex:
+        logger.info(ex)
+        return '请求携程机票接口错误：'
+
+
+def search_google_get_contents(key):
+    return search_google(key)
