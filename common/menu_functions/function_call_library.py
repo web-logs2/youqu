@@ -30,7 +30,7 @@ functions_definition = [{
     },
 }, {
     "name": "get_weather_by_location",
-    "description": "",
+    "description": "Get weather by location",
     "parameters": {
         "type": "object",
         "required": ["city", "units"],
@@ -51,7 +51,7 @@ functions_definition = [{
 },
     {
         "name": "get_us_stock_price",
-        "description": "get us stock price",
+        "description": "get US stock price",
         "parameters": {
             "type": "object",
             "required": ["code", "date"],
@@ -111,11 +111,11 @@ functions_definition = [{
                 },
                 "start_date": {
                     "type": "string",
-                    "description": "start date of the flight, e.g. 20210528"
+                    "description": "start date of the flight, format is yyyymmdd,e.g. 20210528"
                 },
                 "end_date": {
                     "type": "string",
-                    "description": "end date of the flight, e.g. 20210528"
+                    "description": "end date of the flight, format is yyyymmdd,e.g. 20210528"
                 },
                 "max_price": {
                     "type": "string",
