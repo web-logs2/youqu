@@ -107,24 +107,8 @@ class ChatGPTModel(Model):
 
             log.info("[chatgpt]: model={} query={}", model, new_query)
 
-            response = self.get_GPT_answer(model, new_query, False)
-
-            function_call = {
-                "name": "",
-                "arguments": "",
-            }
-            reply_message = response.choices[0]['message']
-            reply_content = reply_message['content']
-
-            if "function_call" in reply_message:
-                if "name" in reply_message["function_call"]:
-                    function_call["name"] = reply_message["function_call"]["name"]
-                if "arguments" in reply_message["function_call"]:
-                    function_call["arguments"] = reply_message["function_call"]["arguments"]
-
-                function_response = self.get_GPT_function_call_answer(model, new_query, function_call, False)
-
-                reply_content = function_response.choices[0]['message']['content']
+            response = self.get_non_stream_full_response_for_one_question(model, new_query)
+            reply_content = response.choices[0]['message']['content']
 
             end_time = time.time()  # 记录结束时间
             execution_time = end_time - start_time  # 计算执行时间
@@ -162,7 +146,6 @@ class ChatGPTModel(Model):
             log.exception(e)
             Session.clear_session_by_user(user_session_id)
             return "请再问我一次吧"
-
 
     async def reply_text_stream(self, context, retry_count=0):
         try:
@@ -211,56 +194,8 @@ class ChatGPTModel(Model):
 
             log.info("[chatgpt]: model={} query={}", model, new_query)
 
-            res = self.get_GPT_answer(model, new_query, True)
+            full_response = self.get_stream_full_response_for_one_question(user, model, new_query)
 
-            full_response = ""
-
-            function_call = {
-                "name": "",
-                "arguments": "",
-            }
-            function_call_flag = False
-            # count = 0
-            for chunk in res:
-                # count = count+1
-                # log.info("chunk No.{}, {}".format(count, chunk))
-                if "function_call" in chunk['choices'][0]['delta']:
-                    function_call_flag = True
-                    if "name" in chunk['choices'][0]['delta']["function_call"]:
-                        function_call["name"] += chunk['choices'][0]['delta']["function_call"]["name"]
-                    if "arguments" in chunk['choices'][0]['delta']["function_call"]:
-                        function_call["arguments"] += chunk['choices'][0]['delta']["function_call"]["arguments"]
-                if chunk.choices[0].finish_reason == "function_call":
-                    break
-                # if not chunk.get("content", None):
-                #     continue
-
-                if (chunk["choices"][0]["finish_reason"] == "stop"):
-                    break
-                chunk_message = chunk['choices'][0]['delta'].get("content")
-                # log.info("chunk_message = {}".format(chunk_message))
-                if (chunk_message):
-                    full_response += chunk_message
-                if inStopMessages(user.user_id):
-                    break
-                yield False, full_response
-
-            if function_call_flag:
-                log.info("function call={}", function_call)
-
-                fuc_res = self.get_GPT_function_call_answer(model, new_query, function_call, True)
-
-                for chunk in fuc_res:
-                    log.debug(chunk)
-                    if (chunk["choices"][0]["finish_reason"] == "stop"):
-                        break
-                    chunk_message = chunk['choices'][0]['delta'].get("content")
-                    #log.info("chunk_message = {}".format(chunk_message))
-                    if (chunk_message):
-                        full_response += chunk_message
-                    if inStopMessages(user.user_id):
-                        break
-                    yield False, full_response
             Session.save_session(full_response, user_session_id, model=model)
             conversation = Conversation.select().where(Conversation.conversation_id == conversation_id).first()
             if conversation is None:
@@ -338,6 +273,77 @@ class ChatGPTModel(Model):
         except Exception as e:
             log.error(traceback.format_exc())
             return None
+
+    def get_non_stream_full_response_for_one_question(self, model, new_query):
+        is_stream = False
+        response = self.get_GPT_answer(model, new_query, is_stream)
+
+        function_call = {
+            "name": "",
+            "arguments": "",
+        }
+
+        # count = 0
+
+        while True:
+            # log.info("count time: {}".format(count))
+            # count = count + 1
+
+            reply_message = response.choices[0]['message']
+            if "function_call" in reply_message:
+                if "name" in reply_message["function_call"]:
+                    function_call["name"] = reply_message["function_call"]["name"]
+                if "arguments" in reply_message["function_call"]:
+                    function_call["arguments"] = reply_message["function_call"]["arguments"]
+
+                response = self.get_GPT_function_call_answer(model, new_query, function_call, is_stream)
+            else:
+                return response
+
+    def get_stream_full_response_for_one_question(self, user, model, new_query):
+        is_stream = True
+        res = self.get_GPT_answer(model, new_query, is_stream)
+
+        full_response = ""
+
+        function_call = {
+            "name": "",
+            "arguments": "",
+        }
+        # count = 0
+
+        while True:
+            # log.info("count time: {}".format(count))
+            # count = count + 1
+            for chunk in res:
+                # log.info("chunk No.{}, {}".format(count, chunk))
+                if "function_call" in chunk['choices'][0]['delta']:
+                    function_call_flag = True
+                    if "name" in chunk['choices'][0]['delta']["function_call"]:
+                        function_call["name"] += chunk['choices'][0]['delta']["function_call"]["name"]
+                    if "arguments" in chunk['choices'][0]['delta']["function_call"]:
+                        function_call["arguments"] += chunk['choices'][0]['delta']["function_call"]["arguments"]
+                if chunk.choices[0].finish_reason == "function_call":
+                    if function_call_flag:
+                        log.info("function call={}", function_call)
+                        res = self.get_GPT_function_call_answer(model, new_query, function_call, is_stream)
+                        function_call = {
+                            "name": "",
+                            "arguments": "",
+                        }
+                    break
+                # if not chunk.get("content", None):
+                #     continue
+
+                if (chunk["choices"][0]["finish_reason"] == "stop"):
+                    # break
+                    return full_response
+                chunk_message = chunk['choices'][0]['delta'].get("content")
+                # log.info("chunk_message = {}".format(chunk_message))
+                if (chunk_message):
+                    full_response += chunk_message
+                if inStopMessages(user.user_id):
+                    break
 
     def get_GPT_answer(self, model, new_query, is_stream):
         return openai.ChatCompletion.create(
