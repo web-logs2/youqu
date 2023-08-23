@@ -94,7 +94,7 @@ functions_definition = [{
             "properties": {
             }
         }
-    },{
+    }, {
         "name": "query_cheap_flight",
         "description": "get cheap flight price between two airports",
         "parameters": {
@@ -126,19 +126,21 @@ functions_definition = [{
                     "description": "direct flight or not, e.g. true or false"
                 }
             }}
-    },{
-        "name": "search_google_get_contents",
-        "description": "search from google and get contents",
-        "parameters": {
-            "type": "object",
-            "required": ["key"],
-            "properties": {
-                "key": {
-                    "type": "string",
-                    "description": "key words to search",
-                }
-            }}
     },
+
+    # {
+    #     "name": "search_google_get_contents",
+    #     "description": "search from google and get contents",
+    #     "parameters": {
+    #         "type": "object",
+    #         "required": ["key"],
+    #         "properties": {
+    #             "key": {
+    #                 "type": "string",
+    #                 "description": "key words to search",
+    #             }
+    #         }}
+    # },
 ]
 
 
@@ -246,7 +248,6 @@ def get_current_time_and_timezone():
     now = datetime.now(tz)
 
     return now.strftime("%Y-%m-%d %H:%M:%S") + f', Timezone: {location_tz}'
-
 
 
 def query_cheap_flight(from_city, to_city, start_date, end_date, max_price, direct="false"):
