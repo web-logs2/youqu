@@ -5,8 +5,6 @@ import io
 import json
 import time
 
-import edge_tts
-import jsonpickle
 from flask import jsonify, send_file
 from flask import request, render_template, make_response, session, redirect, Blueprint
 from larksuiteoapi import OapiHeader
@@ -94,9 +92,6 @@ def voice():
 
 
 
-async def my_function(text):
-    tts = edge_tts.Communicate(text=text, voice=voice)
-    await tts.save(output)
 
 
 
