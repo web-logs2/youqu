@@ -96,7 +96,7 @@ functions_definition = [{
         }
     },{
         "name": "query_cheap_flight",
-        "description": "get cheap flight price between two airports with time range",
+        "description": "get cheap flight price between two airports",
         "parameters": {
             "type": "object",
             "required": ["from_city", "to_city", "start_date", "end_date", "max_price", "direct"],
