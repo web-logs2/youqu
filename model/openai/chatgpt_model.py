@@ -194,28 +194,29 @@ class ChatGPTModel(Model):
 
             log.info("[chatgpt]: model={} query={}", model, new_query)
 
-            full_response = self.get_stream_full_response_for_one_question(user, model, new_query)
-
-            Session.save_session(full_response, user_session_id, model=model)
-            conversation = Conversation.select().where(Conversation.conversation_id == conversation_id).first()
-            if conversation is None:
-                conversation = Conversation(
-                    conversation_id=conversation_id,
-                    user_id=user.user_id,
-                    promote=system_prompt,
-                    total_query=1,
-                    created_time=datetime.datetime.now(),
-                    updated_time=datetime.datetime.now()
-                )
-            else:
-                conversation.updated_time = datetime.datetime.now()
-                conversation.total_query = conversation.total_query + 1;
-            conversation.save()
-            query_record.reply = full_response
-            query_record.complication_count = num_tokens_from_string(full_response)
-            query_record.save()
-            removeStopMessages(user.user_id)
-            yield True, full_response
+            async for final, reply in self.get_stream_full_response_for_one_question(user, model, new_query):
+                if final:
+                    full_response = reply
+                    Session.save_session(full_response, user_session_id, model=model)
+                    conversation = Conversation.select().where(Conversation.conversation_id == conversation_id).first()
+                    if conversation is None:
+                        conversation = Conversation(
+                            conversation_id=conversation_id,
+                            user_id=user.user_id,
+                            promote=system_prompt,
+                            total_query=1,
+                            created_time=datetime.datetime.now(),
+                            updated_time=datetime.datetime.now()
+                        )
+                    else:
+                        conversation.updated_time = datetime.datetime.now()
+                        conversation.total_query = conversation.total_query + 1;
+                    conversation.save()
+                    query_record.reply = full_response
+                    query_record.complication_count = num_tokens_from_string(full_response)
+                    query_record.save()
+                    removeStopMessages(user.user_id)
+                yield final, reply
 
         except openai.error.RateLimitError as e:
             # rate limit exception
@@ -300,7 +301,7 @@ class ChatGPTModel(Model):
             else:
                 return response
 
-    def get_stream_full_response_for_one_question(self, user, model, new_query):
+    async def get_stream_full_response_for_one_question(self, user, model, new_query):
         is_stream = True
         res = self.get_GPT_answer(model, new_query, is_stream)
 
@@ -312,7 +313,9 @@ class ChatGPTModel(Model):
         }
         # count = 0
 
-        while True:
+        final = False
+
+        while not final:
             # log.info("count time: {}".format(count))
             # count = count + 1
             for chunk in res:
@@ -337,11 +340,14 @@ class ChatGPTModel(Model):
 
                 if (chunk["choices"][0]["finish_reason"] == "stop"):
                     # break
-                    return full_response
+                    final = True
+                    yield final, full_response
+                    return
                 chunk_message = chunk['choices'][0]['delta'].get("content")
                 # log.info("chunk_message = {}".format(chunk_message))
                 if (chunk_message):
                     full_response += chunk_message
+                    yield final, full_response
                 if inStopMessages(user.user_id):
                     break
 
