@@ -31,7 +31,7 @@ from model.azure.azure_model import AZURE
 from service.file_training_service import upload_file_service
 
 api = Blueprint('api', __name__)
-azure=AZURE()
+# azure=AZURE()
 
 
 
@@ -76,19 +76,19 @@ def text():
         return response
 
 
-@api.route("/bot/voice", methods=['POST'])
-def voice():
-    response=text()
-    if response and response["content"]:
-        reply = response["content"]
-    elif response and response["error"]:
-        reply = response["error"]
-    else:
-        reply = "未知错误"
-    logger.info("reply generated")
-    audio_data = AZURE().synthesize_speech(reply).audio_data
-    logger.info("audio_data generated")
-    return send_file(io.BytesIO(audio_data), mimetype='audio/mpeg')
+# @api.route("/bot/voice", methods=['POST'])
+# def voice():
+#     response=text()
+#     if response and response["content"]:
+#         reply = response["content"]
+#     elif response and response["error"]:
+#         reply = response["error"]
+#     else:
+#         reply = "未知错误"
+#     logger.info("reply generated")
+#     audio_data = AZURE().synthesize_speech(reply).audio_data
+#     logger.info("audio_data generated")
+#     return send_file(io.BytesIO(audio_data), mimetype='audio/mpeg')
 
 
 
