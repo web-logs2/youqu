@@ -1,11 +1,13 @@
 # encoding:utf-8
 import base64
 import datetime
+import io
 import json
 import time
 
+import edge_tts
 import jsonpickle
-from flask import jsonify
+from flask import jsonify, send_file
 from flask import request, render_template, make_response, session, redirect, Blueprint
 from larksuiteoapi import OapiHeader
 from larksuiteoapi.card import handle_card
@@ -25,11 +27,14 @@ from common.db.document_record import DocumentRecord
 from common.db.user import User
 from common.functions import is_valid_password, is_valid_email, is_valid_username, is_valid_phone
 from common.generator import generate_uuid
+from common.log import logger
 from model import model_factory
 from model.azure.azure_model import AZURE
 from service.file_training_service import upload_file_service
 
 api = Blueprint('api', __name__)
+azure=AZURE()
+
 
 
 @api.route("/bot/text", methods=['POST'])
@@ -73,28 +78,26 @@ def text():
         return response
 
 
-@api.route("/voice", methods=['POST'])
+@api.route("/bot/voice", methods=['POST'])
 def voice():
-    user = auth.identify(request)
-    if user is None:
-        log.INFO("Cookie error")
-        return
-    data = json.loads(request.data)
-    if data:
-        msg = data['msg']
-        data['uid'] = user.user_id
-        request_type = data.get('request_type', "text")
-        if not msg:
-            return
-        reply_text = handle_text(data=data)
-        azure = AZURE()
-        audio_data = azure.synthesize_speech(reply_text).audio_data
-        audio_base64 = base64.b64encode(audio_data).decode("utf-8")
-        response = {
-            "audio_data": audio_base64,
-            "result": reply_text,
-        }
-        return jsonify(response)
+    response=text()
+    if response and response["content"]:
+        reply = response["content"]
+    elif response and response["error"]:
+        reply = response["error"]
+    else:
+        reply = "未知错误"
+    logger.info("reply generated")
+    audio_data = AZURE().synthesize_speech(reply).audio_data
+    logger.info("audio_data generated")
+    return send_file(io.BytesIO(audio_data), mimetype='audio/mpeg')
+
+
+
+async def my_function(text):
+    tts = edge_tts.Communicate(text=text, voice=voice)
+    await tts.save(output)
+
 
 
 @api.route("/picture", methods=['POST'])

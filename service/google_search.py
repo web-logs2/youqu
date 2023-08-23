@@ -22,16 +22,16 @@ def get_content_by_url(url):
 
 def search_google(key):
     result = ""
-    current_size=0
-    for url in search(key,num_results=10):
-        logger.info("current url:"+url)
-        tem_result=get_content_by_url(url)
-        logger.info("current result:"+tem_result)
-        tem_result_size=num_tokens_from_string(tem_result)
-        if current_size+tem_result_size > 12000:
+    current_size = 0
+    for url in search(key, num_results=5):
+        logger.info("current url:" + url)
+        tem_result = get_content_by_url(url)
+        logger.info("current result:" + tem_result)
+        tem_result_size = num_tokens_from_string(tem_result)
+        if current_size + tem_result_size > 8000:
             logger.info("Too many results, break")
             break
         else:
-            result=result+tem_result
-            current_size=current_size+num_tokens_from_string(tem_result)
+            result = f"{result}\n{tem_result}"
+            current_size = current_size + num_tokens_from_string(tem_result)
     return result
