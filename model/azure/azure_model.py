@@ -26,7 +26,7 @@ class AZURE:
                    xmlns:mstts="https://www.w3.org/2001/mstts" xml:lang="{self.xml_lang}">
                 <voice name="{self.voice_name}">
                     <mstts:express-as style="{self.style}" styledegree="{self.styledegree}">
-                        <mstts:prosody rate="-5.00%" rate-as="48kHz">
+                        <mstts:prosody rate="5.00%" rate-as="48kHz">
                             {text}
                         </mstts:prosody>
                     </mstts:express-as>
