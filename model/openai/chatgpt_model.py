@@ -316,11 +316,13 @@ class ChatGPTModel(Model):
         final = False
 
         while not final:
-            log.info("count time: {}".format(count))
+            # log.info("count time: {}".format(count))
+            # log.info("response No. {}: {}".format(count, res))
             count = count + 1
-            log.info("response No. {}: {}".format(count, res))
+            chunk_count = 0
             for chunk in res:
-                # log.info("chunk No.{}, {}".format(count, chunk))
+                log.info("query No. {}, chunk No.{}, {}".format(count, chunk_count, chunk))
+                chunk_count = chunk_count + 1
                 if "function_call" in chunk['choices'][0]['delta']:
                     function_call_flag = True
                     if "name" in chunk['choices'][0]['delta']["function_call"]:
@@ -350,7 +352,10 @@ class ChatGPTModel(Model):
                     full_response += chunk_message
                     yield final, full_response
                 if inStopMessages(user.user_id):
-                    break
+                    # break
+                    final = True
+                    yield final, full_response
+                    return
 
     def get_GPT_answer(self, model, new_query, is_stream):
         return openai.ChatCompletion.create(
