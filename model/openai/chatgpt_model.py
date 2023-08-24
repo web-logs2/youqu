@@ -318,6 +318,7 @@ class ChatGPTModel(Model):
         while not final:
             log.info("count time: {}".format(count))
             count = count + 1
+            log.info("response No. {}: {}".format(count, res))
             for chunk in res:
                 # log.info("chunk No.{}, {}".format(count, chunk))
                 if "function_call" in chunk['choices'][0]['delta']:
