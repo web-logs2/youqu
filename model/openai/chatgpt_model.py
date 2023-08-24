@@ -341,6 +341,16 @@ class ChatGPTModel(Model):
                 # if not chunk.get("content", None):
                 #     continue
 
+                if (chunk["choices"][0]["finish_reason"] == "length"):
+                    final = True
+                    full_response = full_response + " (The answer is too long to load, please try to separate " \
+                                                    "your question or use the model supported more tokens.)"
+                    yield final, full_response
+                    return
+                if (chunk["choices"][0]["finish_reason"] == "content_filter"):
+                    final = True
+                    yield final, full_response
+                    return
                 if (chunk["choices"][0]["finish_reason"] == "stop"):
                     # break
                     final = True
