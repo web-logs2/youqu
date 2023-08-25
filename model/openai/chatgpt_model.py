@@ -107,7 +107,7 @@ class ChatGPTModel(Model):
 
             log.info("[chatgpt]: model={} query={}", model, new_query)
 
-            response = self.  get_non_stream_full_response_for_one_question(model, new_query)
+            response = self.get_non_stream_full_response_for_one_question(model, new_query)
             reply_content = response.choices[0]['message']['content']
 
             end_time = time.time()  # 记录结束时间
@@ -311,15 +311,18 @@ class ChatGPTModel(Model):
             "name": "",
             "arguments": "",
         }
-        # count = 0
+        count = 0
 
         final = False
 
         while not final:
             # log.info("count time: {}".format(count))
-            # count = count + 1
+            # log.info("response No. {}: {}".format(count, res))
+            count = count + 1
+            chunk_count = 0
             for chunk in res:
-                # log.info("chunk No.{}, {}".format(count, chunk))
+                log.info("query No. {}, chunk No.{}, {}".format(count, chunk_count, chunk))
+                chunk_count = chunk_count + 1
                 if "function_call" in chunk['choices'][0]['delta']:
                     function_call_flag = True
                     if "name" in chunk['choices'][0]['delta']["function_call"]:
@@ -338,6 +341,16 @@ class ChatGPTModel(Model):
                 # if not chunk.get("content", None):
                 #     continue
 
+                if (chunk["choices"][0]["finish_reason"] == "length"):
+                    final = True
+                    full_response = full_response + " (The answer is too long to load, please try to separate " \
+                                                    "your question or use the model supported more tokens.)"
+                    yield final, full_response
+                    return
+                if (chunk["choices"][0]["finish_reason"] == "content_filter"):
+                    final = True
+                    yield final, full_response
+                    return
                 if (chunk["choices"][0]["finish_reason"] == "stop"):
                     # break
                     final = True
@@ -349,7 +362,10 @@ class ChatGPTModel(Model):
                     full_response += chunk_message
                     yield final, full_response
                 if inStopMessages(user.user_id):
-                    break
+                    # break
+                    final = True
+                    yield final, full_response
+                    return
 
     def get_GPT_answer(self, model, new_query, is_stream):
         return openai.ChatCompletion.create(
