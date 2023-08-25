@@ -128,19 +128,19 @@ functions_definition = [{
             }}
     },
 
-    # {
-    #     "name": "search_google_get_contents",
-    #     "description": "search from google and get contents",
-    #     "parameters": {
-    #         "type": "object",
-    #         "required": ["key"],
-    #         "properties": {
-    #             "key": {
-    #                 "type": "string",
-    #                 "description": "key words to search",
-    #             }
-    #         }}
-    # },
+    {
+        "name": "search_google_get_contents",
+        "description": "search from google and get contents",
+        "parameters": {
+            "type": "object",
+            "required": ["key"],
+            "properties": {
+                "key": {
+                    "type": "string",
+                    "description": "key words to search",
+                }
+            }}
+    },
 ]
 
 

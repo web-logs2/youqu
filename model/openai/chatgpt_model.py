@@ -107,7 +107,7 @@ class ChatGPTModel(Model):
 
             log.info("[chatgpt]: model={} query={}", model, new_query)
 
-            response = self.get_non_stream_full_response_for_one_question(model, new_query)
+            response = self.  get_non_stream_full_response_for_one_question(model, new_query)
             reply_content = response.choices[0]['message']['content']
 
             end_time = time.time()  # 记录结束时间
