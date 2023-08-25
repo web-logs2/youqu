@@ -22,6 +22,8 @@ from common import log
 from common.const import MODEL_GPT_35_turbo_16K, BOT_SYSTEM_PROMPT
 from common.db.dbconfig import db
 from common.db.document_record import DocumentRecord
+from common.db.function import Function
+from common.db.prompt import Prompt
 from common.db.user import User
 from common.functions import is_valid_password, is_valid_email, is_valid_username, is_valid_phone
 from common.generator import generate_uuid
@@ -279,10 +281,15 @@ def get_user_info():
     current_user = auth.identify(token)
     if current_user is None:
         return jsonify({"error": "Invalid user"}), 401
+    available_prompts = Prompt.get_available_prompts(current_user.user_id)
+    available_functions= Function.get_available_functions(current_user.user_id)
     return jsonify({"username": current_user.user_name, "user_id": current_user.user_id, "email": current_user.email,
                     "phone": current_user.phone,
                     "available_models": current_user.get_available_models(),
-                    "available_documents": DocumentRecord.query_all_available_documents(current_user.user_id)}), 200
+                    "available_documents": DocumentRecord.query_all_available_documents(current_user.user_id),
+                    "available_prompts": available_prompts,
+                    "available_functions": available_functions
+                    }), 200
 
 
 @api.teardown_request
