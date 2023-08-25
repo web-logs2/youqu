@@ -306,7 +306,7 @@ class ChatGPTModel(Model):
 
     async def get_stream_full_response_for_one_question(self, user, model, new_query,functions_definition):
         is_stream = True
-        res = self.get_GPT_answer(model, new_query, is_stream)
+        res = self.get_GPT_answer(model, new_query, is_stream,functions_definition)
 
         full_response = ""
 
