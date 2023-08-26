@@ -1,7 +1,10 @@
 # encoding:utf-8
 import datetime
 import json
+import os
 import re
+import subprocess
+import tempfile
 import time
 import traceback
 
@@ -21,6 +24,7 @@ from common.db.query_record import QueryRecord
 from common.db.user import User
 from common.functions import num_tokens_from_messages, num_tokens_from_string, get_max_token
 from common.menu_functions.function_call_library import detect_function_and_call
+from model.openai.chat_session import Session
 from service.global_values import inStopMessages, removeStopMessages
 from config import model_conf
 from common.menu_functions.document_list import DocumentList
@@ -35,11 +39,6 @@ from common.menu_functions.wx_pre_train_document import WxPreTrainDocument
 from common.menu_functions.wx_query_document import WxQueryDocument
 from common.menu_functions.clear_memory import ClearMemory
 
-if model_conf(const.OPEN_AI).get('expires_in_seconds'):
-    user_session = ExpiringDict(model_conf(const.OPEN_AI).get('expires_in_seconds'))
-    # logging.info("Set dict expire time "+model_conf(const.OPEN_AI).get('expires_in_seconds'))
-else:
-    user_session = ExpiringDict(3600)
 
 
 # OpenAI对话模型API (可用)
@@ -334,7 +333,7 @@ class ChatGPTModel(Model):
                         function_call["arguments"] += chunk['choices'][0]['delta']["function_call"]["arguments"]
                 if chunk.choices[0].finish_reason == "function_call":
                     if function_call_flag:
-                        log.info("function call={}", function_call)
+                        #log.info("function call={}", function_call)
                         res = self.get_GPT_function_call_answer(model, new_query, function_call, is_stream,functions_definition)
                         function_call = {
                             "name": "",
@@ -374,7 +373,6 @@ class ChatGPTModel(Model):
         return openai.ChatCompletion.create(
             # model="gpt-3.5-turbo-0613",
             model=model,
-            function_call="auto",
             functions=functions_definition,
             messages=new_query,
 
@@ -397,11 +395,31 @@ class ChatGPTModel(Model):
         })
 
         function_name = function_call["name"]
-        parameters = json.loads(function_call["arguments"])
 
-        # call function
-        content = detect_function_and_call(function_name, parameters)
-        # log.info("content={}", content)
+        if function_name == "python":
+            # call python function
+            code_block = function_call["arguments"]
+
+            # 生成随机的临时文件名
+            file_name = next(tempfile._get_candidate_names())
+
+            # 组合临时文件路径
+            file_path = os.path.join("tmp/", file_name + '.py')
+
+            # 将代码块写入临时文件
+            with open(file_path, 'w') as file:
+                file.write(code_block)
+
+            # 使用subprocess执行临时文件中的代码，并获取执行结果
+            content = subprocess.run(['python', file_path], capture_output=True, text=True)
+
+            # 删除临时文件
+            os.remove(file_path)
+        else:
+            parameters = json.loads(function_call["arguments"])
+            # call function
+            content = detect_function_and_call(function_name, parameters,functions_definition)
+            # log.info("content={}", content)
 
         new_query.append({
             "role": "function", "name": function_name, "content": content
@@ -425,75 +443,3 @@ class ChatGPTModel(Model):
                 WxQueryDocument(), WxPreTrainDocument(), ClearMemory()]
 
 
-class Session(object):
-    @staticmethod
-    def build_session_query(query, user_id, system_prompt, model=const.MODEL_GPT_35_TURBO):
-        '''
-        build query with conversation history
-        e.g.  [
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": "Who won the world series in 2020?"},
-            {"role": "assistant", "content": "The Los Angeles Dodgers won the World Series in 2020."},
-            {"role": "assistant", "content": null,
-                "function_call": {"name": "send_mail", "arguments":
-                    {"mail": "", "msg": "The Los Angeles Dodgers won the World Series in 2020."}}},
-            {"role": "user", "content": "Where was it played?"}
-            {"role": "function", "name": "send_mail", "content": "Mail Sent!"}
-        ]
-        :param query: query content
-        :param user_id: from user id
-        :return: query content with conversaction
-        '''
-
-        max_tokens = get_max_token(model)
-        session = user_session.get(user_id, [])
-        if len(session) == 0:
-            # system_prompt = model_conf(const.OPEN_AI).get("character_desc", "")
-            system_item = {'role': 'system', 'content': system_prompt}
-            session.append(system_item)
-            user_session[user_id] = session
-        user_item = {'role': 'user', 'content': query}
-        session.append(user_item)
-        prompt_count = num_tokens_from_messages(session, model)
-        while prompt_count > max_tokens:
-            # pop first conversation (TODO: more accurate calculation)
-            try:
-                session.pop(1)
-                session.pop(1)
-                prompt_count = num_tokens_from_messages(session, model)
-            except Exception as e:
-                log.error(traceback.format_exc())
-                break
-        log.info("Prompt count:{}", prompt_count)
-        return session
-
-    @staticmethod
-    def save_session(answer, sid, model=const.MODEL_GPT_35_TURBO):
-        session = user_session.get(sid)
-        max_tokens = get_max_token(model)
-        if session:
-            # append conversation
-            gpt_item = {'role': 'assistant', 'content': answer}
-            log.info("answer:{} Used tokens:{}".format(answer, num_tokens_from_string(answer)))
-            session.append(gpt_item)
-            # if used_tokens == 0:
-            #     used_tokens = Session.count_words(session)
-            #     log.info("Session:{} Used tokens:{}".format(session, used_tokens))
-            while num_tokens_from_messages(session, model) > max_tokens:
-                # pop first conversation (TODO: more accurate calculation)
-                session.pop(1)
-                session.pop(1)
-
-    @staticmethod
-    def clear_session(session_id):
-        if session_id in user_session:
-            user_session[session_id] = []
-
-    @staticmethod
-    def clear_session_by_user(user_id):
-        # list all key
-        for key in user_session.keys():
-            # if key start with user_id
-            if key.startswith(user_id):
-                user_session[key] = []
-                log.info("clear session:{}".format(key))

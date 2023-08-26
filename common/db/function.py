@@ -11,6 +11,7 @@ from peewee import (
 )
 
 from common.db.dbconfig import db
+from common.log import logger
 
 
 class Function(Model):
@@ -37,7 +38,7 @@ class Function(Model):
         return list(functions)
 
     @staticmethod
-    def get_function_by_owner_and_function_id(owner_id, function_ids=None):
+    def get_function_by_owner_and_function_id(owner_id, function_ids):
 
         if function_ids:
             functions = (Function
@@ -47,17 +48,13 @@ class Function(Model):
                                 Function.disabled == '0')
                          )
         else:
-            functions = (Function
-                         .select(Function.function_detail)
-                         .where((Function.owner_id == owner_id) | (Function.owner_id == 'system'),
-                                Function.disabled == '0')
-                         )
+            return None
         if functions is None:
             return None
 
 
         for func in functions:
-            print(json.loads(func.function_detail))
+            logger.debug(json.loads(func.function_detail))
 
 
         return [json.loads(func.function_detail) for func in functions]
