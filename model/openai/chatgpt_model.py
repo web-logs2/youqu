@@ -398,23 +398,24 @@ class ChatGPTModel(Model):
 
         if function_name == "python":
             # call python function
-            code_block = function_call["arguments"]
-
-            # 生成随机的临时文件名
-            file_name = next(tempfile._get_candidate_names())
-
-            # 组合临时文件路径
-            file_path = os.path.join("tmp/", file_name + '.py')
-
-            # 将代码块写入临时文件
-            with open(file_path, 'w') as file:
-                file.write(code_block)
-
-            # 使用subprocess执行临时文件中的代码，并获取执行结果
-            content = subprocess.run(['python', file_path], capture_output=True, text=True)
-
-            # 删除临时文件
-            os.remove(file_path)
+            # code_block = function_call["arguments"]
+            #
+            # # 生成随机的临时文件名
+            # file_name = next(tempfile._get_candidate_names())
+            #
+            # # 组合临时文件路径
+            # file_path = os.path.join("tmp/", file_name + '.py')
+            #
+            # # 将代码块写入临时文件
+            # with open(file_path, 'w') as file:
+            #     file.write(code_block)
+            #
+            # # 使用subprocess执行临时文件中的代码，并获取执行结果
+            # content = subprocess.run(['python', file_path], capture_output=True, text=True)
+            #
+            # # 删除临时文件
+            # os.remove(file_path)
+            content="不允许执行定义函数之外的代码"
         else:
             parameters = json.loads(function_call["arguments"])
             # call function
