@@ -40,7 +40,6 @@ from common.menu_functions.wx_query_document import WxQueryDocument
 from common.menu_functions.clear_memory import ClearMemory
 
 
-
 # OpenAI对话模型API (可用)
 class ChatGPTModel(Model):
     def __init__(self):
@@ -108,7 +107,7 @@ class ChatGPTModel(Model):
 
             log.info("[chatgpt]: model={} query={}", model, new_query)
 
-            response = self.get_non_stream_full_response_for_one_question(model, new_query,functions_definition)
+            response = self.get_non_stream_full_response_for_one_question(model, new_query, functions_definition)
             reply_content = response.choices[0]['message']['content']
 
             end_time = time.time()  # 记录结束时间
@@ -196,7 +195,8 @@ class ChatGPTModel(Model):
 
             log.info("[chatgpt]: model={} query={}", model, new_query)
 
-            async for final, reply in self.get_stream_full_response_for_one_question(user, model, new_query,functions_definition):
+            async for final, reply in self.get_stream_full_response_for_one_question(user, model, new_query,
+                                                                                     functions_definition):
                 if final:
                     full_response = reply
                     Session.save_session(full_response, user_session_id, model=model)
@@ -277,9 +277,9 @@ class ChatGPTModel(Model):
             log.error(traceback.format_exc())
             return None
 
-    def get_non_stream_full_response_for_one_question(self, model, new_query,functions_definition):
+    def get_non_stream_full_response_for_one_question(self, model, new_query, functions_definition):
         is_stream = False
-        response = self.get_GPT_answer(model, new_query, is_stream,functions_definition)
+        response = self.get_GPT_answer(model, new_query, is_stream, functions_definition)
 
         function_call = {
             "name": "",
@@ -299,13 +299,14 @@ class ChatGPTModel(Model):
                 if "arguments" in reply_message["function_call"]:
                     function_call["arguments"] = reply_message["function_call"]["arguments"]
 
-                response = self.get_GPT_function_call_answer(model, new_query, function_call, is_stream,functions_definition)
+                response = self.get_GPT_function_call_answer(model, new_query, function_call, is_stream,
+                                                             functions_definition)
             else:
                 return response
 
-    async def get_stream_full_response_for_one_question(self, user, model, new_query,functions_definition):
+    async def get_stream_full_response_for_one_question(self, user, model, new_query, functions_definition):
         is_stream = True
-        res = self.get_GPT_answer(model, new_query, is_stream,functions_definition)
+        res = self.get_GPT_answer(model, new_query, is_stream, functions_definition)
 
         full_response = ""
 
@@ -323,7 +324,7 @@ class ChatGPTModel(Model):
             count = count + 1
             chunk_count = 0
             for chunk in res:
-                log.info("query No. {}, chunk No.{}, {}".format(count, chunk_count, chunk))
+                log.debug("query No. {}, chunk No.{}, {}".format(count, chunk_count, chunk))
                 chunk_count = chunk_count + 1
                 if "function_call" in chunk['choices'][0]['delta']:
                     function_call_flag = True
@@ -333,8 +334,9 @@ class ChatGPTModel(Model):
                         function_call["arguments"] += chunk['choices'][0]['delta']["function_call"]["arguments"]
                 if chunk.choices[0].finish_reason == "function_call":
                     if function_call_flag:
-                        #log.info("function call={}", function_call)
-                        res = self.get_GPT_function_call_answer(model, new_query, function_call, is_stream,functions_definition)
+                        # log.info("function call={}", function_call)
+                        res = self.get_GPT_function_call_answer(model, new_query, function_call, is_stream,
+                                                                functions_definition)
                         function_call = {
                             "name": "",
                             "arguments": "",
@@ -369,7 +371,7 @@ class ChatGPTModel(Model):
                     yield final, full_response
                     return
 
-    def get_GPT_answer(self, model, new_query, is_stream,functions_definition):
+    def get_GPT_answer(self, model, new_query, is_stream, functions_definition):
         return openai.ChatCompletion.create(
             # model="gpt-3.5-turbo-0613",
             model=model,
@@ -389,7 +391,7 @@ class ChatGPTModel(Model):
             # stop=["\n", "。", "？", "！"],
         )
 
-    def get_GPT_function_call_answer(self, model, new_query, function_call, is_stream,functions_definition):
+    def get_GPT_function_call_answer(self, model, new_query, function_call, is_stream, functions_definition):
         new_query.append({
             "role": "assistant", "content": None, "function_call": function_call
         })
@@ -415,11 +417,11 @@ class ChatGPTModel(Model):
             #
             # # 删除临时文件
             # os.remove(file_path)
-            content="不允许执行定义函数之外的代码"
+            content = "不允许执行定义函数之外的代码"
         else:
             parameters = json.loads(function_call["arguments"])
             # call function
-            content = detect_function_and_call(function_name, parameters,functions_definition)
+            content = detect_function_and_call(function_name, parameters, functions_definition)
             # log.info("content={}", content)
 
         new_query.append({
@@ -442,5 +444,3 @@ class ChatGPTModel(Model):
         return [PreTrainDcoumnet(), QueryDcoumnet(), DocumentList(),
                 CnblogsQueryDcoumnet(), CnblogsPreTrainDocument(),
                 WxQueryDocument(), WxPreTrainDocument(), ClearMemory()]
-
-
