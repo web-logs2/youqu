@@ -37,7 +37,7 @@ class HttpChannel(Channel):
         port = channel_conf(const.HTTP).get('port')
 
         if not ssl_certificate_path:
-            ssl_certificate_path = script_directory = os.path.dirname(os.path.abspath(__file__)) + "/resources"
+            ssl_certificate_path = os.path.dirname(os.path.abspath(__file__)) + "/resources"
         if is_path_empty_or_nonexistent(ssl_certificate_path):
             socketio.run(http_app, host='0.0.0.0', port=port)
             # eventlet.wsgi.server(eventlet.listen(('', port)), http_app)
