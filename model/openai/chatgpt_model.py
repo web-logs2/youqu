@@ -79,8 +79,12 @@ class ChatGPTModel(Model):
             system_prompt = context['system_prompt']
             model = context['model']
             query = context['msg']
-            functions_definition = Function.get_function_by_owner_and_function_id(user.user_id,
-                                                                                  context.get('function_call', None))
+            functions_dict = Function.get_function_by_owner_and_function_id(user.user_id,
+                                                                            context.get('function_call', None))
+            #functions_definition 是functions_dict 的value或者none
+
+            functions_definition=list(functions_dict.values()) if functions_dict else None
+            functions_name=list(functions_dict|functions_dict.keys()) if functions_dict else None
             user_session_id = user.user_id + conversation_id
             if query == '#清除记忆':
                 # Session.clear_session(user_session_id)
@@ -104,6 +108,7 @@ class ChatGPTModel(Model):
             )
             query_record.update_ip_location()
             query_record.set_query_trail(new_query)
+            query_record.set_functions(functions_name)
 
             log.info("[chatgpt]: model={} query={}", model, new_query)
 
@@ -156,8 +161,10 @@ class ChatGPTModel(Model):
             query = context['msg']
             functions_dict = Function.get_function_by_owner_and_function_id(user.user_id,
                                                                                   context.get('function_call', None))
-            functions_definition=list(functions_dict.values())
-            functions_name=list(functions_dict.keys())
+            #functions_definition 是functions_dict 的value或者none
+
+            functions_definition=list(functions_dict.values()) if functions_dict else None
+            functions_name=list(functions_dict|functions_dict.keys()) if functions_dict else None
             user_session_id = user.user_id + conversation_id
             if query == '#清除记忆':
                 # Session.clear_session(user_session_id)
