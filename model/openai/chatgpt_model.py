@@ -313,9 +313,9 @@ class ChatGPTModel(Model):
         }
         count = 0
 
-        final = False
+        is_function_call = True
 
-        while not final:
+        while is_function_call:
             # log.info("count time: {}".format(count))
             # log.info("response No. {}: {}".format(count, res))
             count = count + 1
@@ -329,6 +329,7 @@ class ChatGPTModel(Model):
                         function_call["name"] += chunk['choices'][0]['delta']["function_call"]["name"]
                     if "arguments" in chunk['choices'][0]['delta']["function_call"]:
                         function_call["arguments"] += chunk['choices'][0]['delta']["function_call"]["arguments"]
+                    break
                 if chunk.choices[0].finish_reason == "function_call":
                     if function_call_flag:
                         log.info("function call={}", function_call)
@@ -339,32 +340,30 @@ class ChatGPTModel(Model):
                         }
                     break
                 # if not chunk.get("content", None):
-                #     continue
+                #     continue]
 
-                if (chunk["choices"][0]["finish_reason"] == "length"):
-                    final = True
+                is_function_call = False
+
+                if chunk["choices"][0]["finish_reason"] == "length":
                     full_response = full_response + " (The answer is too long to load, please try to separate " \
                                                     "your question or use the model supported more tokens.)"
-                    yield final, full_response
+                    yield True, full_response
                     return
-                if (chunk["choices"][0]["finish_reason"] == "content_filter"):
-                    final = True
-                    yield final, full_response
+                if chunk["choices"][0]["finish_reason"] == "content_filter":
+                    yield True, full_response
                     return
-                if (chunk["choices"][0]["finish_reason"] == "stop"):
+                if chunk["choices"][0]["finish_reason"] == "stop":
                     # break
-                    final = True
-                    yield final, full_response
+                    yield True, full_response
                     return
                 chunk_message = chunk['choices'][0]['delta'].get("content")
                 # log.info("chunk_message = {}".format(chunk_message))
-                if (chunk_message):
+                if chunk_message:
                     full_response += chunk_message
-                    yield final, full_response
+                    yield False, full_response
                 if inStopMessages(user.user_id):
                     # break
-                    final = True
-                    yield final, full_response
+                    yield True, full_response
                     return
 
     def get_GPT_answer(self, model, new_query, is_stream):
