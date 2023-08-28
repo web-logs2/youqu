@@ -41,23 +41,18 @@ class Function(Model):
     def get_function_by_owner_and_function_id(owner_id, function_ids):
 
         if function_ids:
+            functions_dict = {}
             functions = (Function
-                         .select(Function.function_detail)
+                         .select(Function.function_detail, Function.function_name)
                          .where((Function.owner_id == owner_id) | (Function.owner_id == 'system'),
                                 Function.id.in_(function_ids),
                                 Function.disabled == '0')
                          )
+            for function in functions:
+                functions_dict[function.function_name] = json.loads(function.function_detail)
+            return functions_dict
         else:
             return None
-        if functions is None:
-            return None
-
-
-        for func in functions:
-            logger.debug(json.loads(func.function_detail))
-
-
-        return [json.loads(func.function_detail) for func in functions]
 
 
     def __str__(self):

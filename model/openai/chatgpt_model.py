@@ -154,8 +154,10 @@ class ChatGPTModel(Model):
             system_prompt = context['system_prompt']
             model = context['model']
             query = context['msg']
-            functions_definition = Function.get_function_by_owner_and_function_id(user.user_id,
+            functions_dict = Function.get_function_by_owner_and_function_id(user.user_id,
                                                                                   context.get('function_call', None))
+            functions_definition=list(functions_dict.values())
+            functions_name=list(functions_dict.keys())
             user_session_id = user.user_id + conversation_id
             if query == '#清除记忆':
                 # Session.clear_session(user_session_id)
@@ -192,6 +194,7 @@ class ChatGPTModel(Model):
             )
             query_record.update_ip_location()
             query_record.set_query_trail(new_query)
+            query_record.set_functions(functions_name)
 
             log.info("[chatgpt]: model={} query={}", model, new_query)
 
@@ -372,24 +375,20 @@ class ChatGPTModel(Model):
                     return
 
     def get_GPT_answer(self, model, new_query, is_stream, functions_definition):
-        return openai.ChatCompletion.create(
-            # model="gpt-3.5-turbo-0613",
-            model=model,
-            functions=functions_definition,
-            messages=new_query,
+        openai_params = {
+            'model': model,
+            'messages': new_query,
+            'temperature': model_conf(const.OPEN_AI).get("temperature", 0.8),
+            'frequency_penalty': model_conf(const.OPEN_AI).get("frequency_penalty", 0.0),
+            'presence_penalty': model_conf(const.OPEN_AI).get("presence_penalty", 1.0),
+            'stream': is_stream,
+            'timeout': 5,
+        }
 
-            temperature=model_conf(const.OPEN_AI).get("temperature", 0.8),
-            # 熵值，在[0,1]之间，越大表示选取的候选词越随机，回复越具有不确定性，建议和top_p参数二选一使用，创意性任务越大越好，精确性任务越小越好
-            # max_tokens=8100,  # 回复最大的字符数，为输入和输出的总数
-            # top_p=model_conf(const.OPEN_AI).get("top_p", 0.7),,  #候选词列表。0.7 意味着只考虑前70%候选词的标记，建议和temperature参数二选一使用
-            frequency_penalty=model_conf(const.OPEN_AI).get("frequency_penalty", 0.0),
-            # [-2,2]之间，该值越大则越降低模型一行中的重复用词，更倾向于产生不同的内容
-            presence_penalty=model_conf(const.OPEN_AI).get("presence_penalty", 1.0),
-            # [-2,2]之间，该值越大则越不受输入限制，将鼓励模型生成输入中不存在的新词，更倾向于产生不同的内容
-            stream=is_stream,
-            timeout=5,
-            # stop=["\n", "。", "？", "！"],
-        )
+        if functions_definition is not None:
+            openai_params['functions'] = functions_definition
+
+        return openai.ChatCompletion.create(**openai_params)
 
     def get_GPT_function_call_answer(self, model, new_query, function_call, is_stream, functions_definition):
         new_query.append({
@@ -399,24 +398,6 @@ class ChatGPTModel(Model):
         function_name = function_call["name"]
 
         if function_name == "python":
-            # call python function
-            # code_block = function_call["arguments"]
-            #
-            # # 生成随机的临时文件名
-            # file_name = next(tempfile._get_candidate_names())
-            #
-            # # 组合临时文件路径
-            # file_path = os.path.join("tmp/", file_name + '.py')
-            #
-            # # 将代码块写入临时文件
-            # with open(file_path, 'w') as file:
-            #     file.write(code_block)
-            #
-            # # 使用subprocess执行临时文件中的代码，并获取执行结果
-            # content = subprocess.run(['python', file_path], capture_output=True, text=True)
-            #
-            # # 删除临时文件
-            # os.remove(file_path)
             content = "不允许执行定义函数之外的代码"
         else:
             parameters = json.loads(function_call["arguments"])
