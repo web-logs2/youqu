@@ -43,6 +43,9 @@ else:
 
 # OpenAI对话模型API (可用)
 class ChatGPTModel(Model):
+
+    STREAM_LOOP_BREAK_OUT_LIMIT = 100
+
     def __init__(self):
         openai.api_key = model_conf(const.OPEN_AI).get('api_key')
         proxy = model_conf(const.OPEN_AI).get('proxy')
@@ -365,6 +368,11 @@ class ChatGPTModel(Model):
                     # break
                     yield True, full_response
                     return
+
+            if count >= ChatGPTModel.STREAM_LOOP_BREAK_OUT_LIMIT:
+                full_response = full_response + " (Your question maybe very complex, please ask separately.)"
+                yield True, full_response
+                return
 
     def get_GPT_answer(self, model, new_query, is_stream):
         return openai.ChatCompletion.create(
