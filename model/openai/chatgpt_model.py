@@ -102,7 +102,6 @@ class ChatGPTModel(Model):
                 reply="",
                 ip=ip,
                 model_name=model,
-                prompt_count=num_tokens_from_messages(new_query, model),
                 created_time=datetime.datetime.now(),
                 updated_time=datetime.datetime.now(),
             )
@@ -118,13 +117,29 @@ class ChatGPTModel(Model):
             end_time = time.time()  # 记录结束时间
             execution_time = end_time - start_time  # 计算执行时间
             log.info("[Execution Time] {:.4f} seconds", execution_time)  # 打印执行时间
-            used_token = response['usage']['total_tokens']
-            log.info("total tokens usage:{}".format(used_token))
             log.debug(response)
             # log.info("[CHATGPT] reply={}", reply_content)
             if reply_content:
                 # save conversation
                 Session.save_session(reply_content, user_session_id, model)
+                conversation = Conversation.select().where(Conversation.conversation_id == conversation_id).first()
+                if conversation is None:
+                    conversation = Conversation(
+                        conversation_id=conversation_id,
+                        user_id=user.user_id,
+                        promote=system_prompt,
+                        total_query=1,
+                        created_time=datetime.datetime.now(),
+                        updated_time=datetime.datetime.now()
+                    )
+                else:
+                    conversation.updated_time = datetime.datetime.now()
+                    conversation.total_query = conversation.total_query + 1;
+                conversation.save()
+                query_record.reply = reply_content
+                query_record.complication_count = response['usage']['completion_tokens']
+                query_record.prompt_count = response['usage']['prompt_tokens']
+                query_record.save()
             return reply_content
 
 
@@ -195,7 +210,7 @@ class ChatGPTModel(Model):
                 reply="",
                 ip=ip,
                 model_name=model,
-                prompt_count=num_tokens_from_messages(new_query, model),
+                prompt_count=num_tokens_from_messages(new_query, model)+num_tokens_from_string(str(functions_definition)),
                 created_time=datetime.datetime.now(),
                 updated_time=datetime.datetime.now(),
             )
