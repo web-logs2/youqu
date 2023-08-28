@@ -8,6 +8,7 @@ from common import const
 from common import log
 from config import model_conf
 from model.model import Model
+from model.openai.chat_session import Session
 
 user_session = dict()
 
@@ -82,71 +83,3 @@ class OpenAIModel(Model):
         except Exception as e:
             log.exception(e)
             return None
-
-
-class Session(object):
-    @staticmethod
-    def build_session_query(query, user_id):
-        '''
-        build query with conversation history
-        e.g.  Q: xxx
-              A: xxx
-              Q: xxx
-        :param query: query content
-        :param user_id: from user id
-        :return: query content with conversaction
-        '''
-        prompt = model_conf(const.OPEN_AI).get("character_desc", "")
-        if prompt:
-            prompt += "<|endoftext|>\n\n\n"
-        session = user_session.get(user_id, None)
-        if session:
-            for conversation in session:
-                prompt += "Q: " + conversation["question"] + "\n\n\nA: " + conversation["answer"] + "<|endoftext|>\n"
-            prompt += "Q: " + query + "\nA: "
-            return prompt
-        else:
-            return prompt + "Q: " + query + "\nA: "
-
-    @staticmethod
-    def save_session(query, answer, user_id):
-        max_tokens = model_conf(const.OPEN_AI).get("conversation_max_tokens")
-        if not max_tokens:
-            # default 3000
-            max_tokens = 1000
-        conversation = dict()
-        conversation["question"] = query
-        conversation["answer"] = answer
-        session = user_session.get(user_id)
-        log.debug(conversation)
-        log.debug(session)
-        if session:
-            # append conversation
-            session.append(conversation)
-        else:
-            # create session
-            queue = list()
-            queue.append(conversation)
-            user_session[user_id] = queue
-
-        # discard exceed limit conversation
-        Session.discard_exceed_conversation(user_session[user_id], max_tokens)
-
-    @staticmethod
-    def discard_exceed_conversation(session, max_tokens):
-        count = 0
-        count_list = list()
-        for i in range(len(session) - 1, -1, -1):
-            # count tokens of conversation list
-            history_conv = session[i]
-            count += len(history_conv["question"]) + len(history_conv["answer"])
-            count_list.append(count)
-
-        for c in count_list:
-            if c > max_tokens:
-                # pop first conversation
-                session.pop(0)
-
-    @staticmethod
-    def clear_session(user_id):
-        user_session[user_id] = []

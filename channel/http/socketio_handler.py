@@ -80,6 +80,7 @@ class socket_handler():
             'msg': data.get("msg", ""),
             'conversation_type': data.get("conversation_type", "chat"),
             'document': data.get("document", ""),
+            'function_call': data.get("function_call", ""),
         }
 
         if context['model'] not in user.get_available_models():
