@@ -24,6 +24,7 @@ class QueryRecord(Model):
     query_trail = CharField(unique=False, max_length=100000)
     model_name = CharField(unique=False, max_length=64)
     prompt_count = IntegerField(unique=False, default=0)
+    functions = CharField(unique=False, max_length=1024)
     complication_count = IntegerField(unique=False, default=0)
     created_time = DateTimeField()
     updated_time = DateTimeField()
@@ -34,6 +35,14 @@ class QueryRecord(Model):
     def get_query_trail(self):
         if self.query_trail is not None:
             return json.loads(self.query_trail, encoding='utf-8')
+        return None
+
+    def set_functions(self, functions):
+        self.functions = json.dumps(functions, ensure_ascii=False)
+
+    def get_functions(self):
+        if self.functions is not None:
+            return json.loads(self.functions, encoding='utf-8')
         return None
 
     def update_ip_location(self):
