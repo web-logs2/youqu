@@ -59,6 +59,9 @@ def sign_lantu_payment(data: dict):
     return sign
 
 
+
+
+
 if __name__ == '__main__':
     #load config
     from config import load_config

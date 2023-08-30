@@ -316,7 +316,17 @@ def handle_payment_notify():
     sign = data.pop('sign', '')
     sorted_data = sorted(data.items(), key=lambda x: x[0], reverse=False)
     # sign_str = "&".join(["{}={}".format(k, v) for k, v in sorted_data]) + '&key=' + MERCHANT_KEY
-    if sign_lantu_payment(data) != sign:
+
+    request_dict = {
+        "code": data['code'],
+        "timestamp": data['timestamp'],
+        "mch_id": data['mch_id'],
+        "order_no": data['order_no'],
+        "out_trade_no": data['out_trade_no'],
+        "pay_no" : data['pay_no'],
+        "total_fee": data['total_fee']
+    }
+    if sign_lantu_payment(request_dict) != sign:
         return 'FAIL'
 
     # 检查支付结果并处理业务逻辑
