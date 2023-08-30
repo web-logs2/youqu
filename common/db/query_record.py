@@ -8,6 +8,9 @@ from peewee import (
     AutoField, DecimalField
 )
 
+from common.const import MODEL_GPT_35_TURBO, MODEL_GPT_35_TURBO_COMPLETION_PRICE, MODEL_GPT_35_TURBO_PROMPT_PRICE, \
+    MODEL_GPT_35_turbo_16K, MODEL_GPT_4_PROMPT_PRICE, MODEL_GPT_4_COMPLETION_PRICE, \
+    MODEL_GPT_35_TURBO_16K_COMPLETION_PRICE, MODEL_GPT_35_TURBO_16K_PROMPT_PRICE
 from common.db.dbconfig import db
 from common.functions import get_city_name_in_chinese
 
@@ -47,6 +50,15 @@ class QueryRecord(Model):
 
     def update_ip_location(self):
         self.ip_location = get_city_name_in_chinese(self.ip)
+
+    def set_cost(self):
+        #if model_name start with
+        if self.model_name is MODEL_GPT_35_TURBO :
+            self.cost = MODEL_GPT_35_TURBO_COMPLETION_PRICE * self.complication_count+MODEL_GPT_35_TURBO_PROMPT_PRICE * self.prompt_count
+        elif self.model_name is MODEL_GPT_35_turbo_16K:
+            self.cost = MODEL_GPT_35_TURBO_16K_COMPLETION_PRICE * self.complication_count+MODEL_GPT_35_TURBO_16K_PROMPT_PRICE * self.prompt_count
+        else:
+            self.cost = MODEL_GPT_4_COMPLETION_PRICE * self.complication_count+MODEL_GPT_4_PROMPT_PRICE * self.prompt_count
 
     class Meta:
         database = db
