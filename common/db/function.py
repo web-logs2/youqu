@@ -16,7 +16,7 @@ from common.log import logger
 
 class Function(Model):
     id = AutoField()
-    function_name = CharField(unique=False, max_length=32)
+    function_name = CharField(index=True,unique=False, max_length=32)
     available_models = CharField(null=True, max_length=1024, default='["gpt-3.5-turbo-16k"]')
     function_detail = CharField(null=False, max_length=10240)
     owner_id = CharField(index=True, null=True, max_length=32, default='system')

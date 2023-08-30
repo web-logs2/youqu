@@ -333,16 +333,25 @@ def handle_payment_notify():
     # 检查支付结果并处理业务逻辑
     if data['code'] == '0':
         out_trade_no = data['out_trade_no']
-        affected_rows=Transaction.update(status=1,updated_time=datetime.datetime.now()).where(Transaction.transaction_id == out_trade_no).execute()
-        if affected_rows==0:
+        transaction = Transaction.get_or_none(Transaction.transaction_id == out_trade_no)
+        if not transaction:
             logger.error("out_trade_no:{} not found".format(out_trade_no))
-        else:
-            logger.info("out_trade_no:{} updated".format(out_trade_no))
-        # 这里添加你的业务代码，例如更新订单状态，记得处理重复通知的情况
+            return 'FAIL'
+
+        affected_rows = Transaction.update(status=1, updated_time=datetime.datetime.now()).where(
+            Transaction.transaction_id == out_trade_no).execute()
+
+        if affected_rows != 0:
+            user_id = transaction.user_id
+            affected_rows = User.update(available_balance=User.available_balance + float(data['total_fee'])).where(
+                User.user_id == user_id).execute()
+            if affected_rows == 0:
+                logger.error("user_id:{} not found".format(user_id))
+            else:
+                logger.info("out_trade_no:{} updated".format(out_trade_no))
         return 'SUCCESS'
     else:
         return 'FAIL'
-
 
 
 @api.route("/api/payment/create", methods=['POST'])

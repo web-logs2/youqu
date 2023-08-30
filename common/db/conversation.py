@@ -12,9 +12,9 @@ from common.db.dbconfig import db
 
 class Conversation(Model):
     id = AutoField()
-    conversation_id = CharField(unique=True, max_length=64)
-    user_id = CharField(unique=False, max_length=64)
-    promote = CharField(unique=False, max_length=200)
+    conversation_id = CharField(index=True,unique=True, max_length=64)
+    user_id = CharField(index=True,unique=False, max_length=64)
+    promote = CharField(index=True,unique=False, max_length=200)
     total_query = IntegerField()
     created_time = DateTimeField()
     updated_time = DateTimeField()

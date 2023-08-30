@@ -17,10 +17,10 @@ from common.db.dbconfig import db
 
 class User(Model):
     id = AutoField()
-    user_id = CharField(unique=True, max_length=256)
-    user_name = CharField(unique=False, max_length=32)
-    email = CharField(unique=True, max_length=256)
-    phone = CharField(unique=True, max_length=64)
+    user_id = CharField(index=True,unique=True, max_length=256)
+    user_name = CharField(index=True,unique=False, max_length=32)
+    email = CharField(index=True,unique=True, max_length=256)
+    phone = CharField(index=True,unique=True, max_length=64)
     password = CharField(unique=False, max_length=512)
     available_models = CharField(null=True, max_length=1024, default='["gpt-3.5-turbo"]')
     available_balance = DecimalField(null=False, default=0, max_digits=18, decimal_places=10)

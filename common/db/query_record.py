@@ -14,8 +14,8 @@ from common.functions import get_city_name_in_chinese
 
 class QueryRecord(Model):
     id = AutoField()
-    user_id = CharField(unique=False, max_length=64)
-    conversation_id = CharField(unique=False, max_length=64)
+    user_id = CharField(index=True,unique=False, max_length=64)
+    conversation_id = CharField(index=True,unique=False, max_length=64)
     query = CharField(unique=False, max_length=30000)
     reply = CharField(unique=False, max_length=30000)
     ip = CharField(unique=False, max_length=128)
