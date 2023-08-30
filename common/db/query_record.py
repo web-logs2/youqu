@@ -4,9 +4,8 @@ from peewee import (
     Model,
     IntegerField,
     CharField,
-    BooleanField,
     DateTimeField,
-    AutoField
+    AutoField, DecimalField
 )
 
 from common.db.dbconfig import db
@@ -23,6 +22,7 @@ class QueryRecord(Model):
     ip_location = CharField(unique=False, max_length=1024)
     query_trail = CharField(unique=False, max_length=100000)
     model_name = CharField(unique=False, max_length=64)
+    cost = DecimalField(null=False, default=0, max_digits=18, decimal_places=10)
     prompt_count = IntegerField(unique=False, default=0)
     functions = CharField(unique=False, max_length=1024)
     complication_count = IntegerField(unique=False, default=0)

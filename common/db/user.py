@@ -41,11 +41,11 @@ class User(Model):
     def set_available_balance(self, balance):
         self.available_balance = json.dumps(balance)
 
-    def get_available_balance_json(self):
+    def get_available_balance(self):
         if self.available_balance is not None:
             return json.loads(self.available_balance)
         return 0
-    def get_available_balance(self):
+    def get_available_balance_round2(self):
         if self.available_balance is not None:
             return round(self.available_balance, 2)
         return 0

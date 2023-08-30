@@ -237,7 +237,7 @@ def login():
             {"content": "success", "username": current_user.user_name, "user_id": current_user.user_id, "token": token,
              "email": current_user.email,
              "phone": current_user.phone,
-             "available_balance": current_user.get_available_balance(),
+             "available_balance": current_user.get_available_balance_round2(),
              "available_models": current_user.get_available_models()}), 200
 
 
@@ -290,7 +290,7 @@ def get_user_info():
                     "available_models": current_user.get_available_models(),
                     "available_documents": DocumentRecord.query_all_available_documents(current_user.user_id),
                     "available_prompts": available_prompts,
-                    "available_balance": current_user.get_available_balance(),
+                    "available_balance": current_user.get_available_balance_round2(),
                     "available_functions": available_functions
                     }), 200
 
