@@ -1,4 +1,5 @@
 import json
+from decimal import Decimal
 
 from peewee import (
     Model,
@@ -17,8 +18,8 @@ from common.functions import get_city_name_in_chinese
 
 class QueryRecord(Model):
     id = AutoField()
-    user_id = CharField(index=True,unique=False, max_length=64)
-    conversation_id = CharField(index=True,unique=False, max_length=64)
+    user_id = CharField(index=True, unique=False, max_length=64)
+    conversation_id = CharField(index=True, unique=False, max_length=64)
     query = CharField(unique=False, max_length=30000)
     reply = CharField(unique=False, max_length=30000)
     ip = CharField(unique=False, max_length=128)
@@ -52,12 +53,15 @@ class QueryRecord(Model):
         self.ip_location = get_city_name_in_chinese(self.ip)
 
     def set_cost(self):
-        if self.model_name is MODEL_GPT_35_TURBO :
-            self.cost = MODEL_GPT_35_TURBO_COMPLETION_PRICE * self.complication_count+MODEL_GPT_35_TURBO_PROMPT_PRICE * self.prompt_count
-        elif self.model_name is MODEL_GPT_35_turbo_16K:
-            self.cost = MODEL_GPT_35_TURBO_16K_COMPLETION_PRICE * self.complication_count+MODEL_GPT_35_TURBO_16K_PROMPT_PRICE * self.prompt_count
+        # cost = new Decimal 0
+        cost = Decimal(0)
+
+        if self.model_name == MODEL_GPT_35_TURBO:
+            self.cost = MODEL_GPT_35_TURBO_COMPLETION_PRICE * self.complication_count + MODEL_GPT_35_TURBO_PROMPT_PRICE * self.prompt_count
+        elif self.model_name == MODEL_GPT_35_turbo_16K:
+            self.cost = MODEL_GPT_35_TURBO_16K_COMPLETION_PRICE * self.complication_count + MODEL_GPT_35_TURBO_16K_PROMPT_PRICE * self.prompt_count
         else:
-            self.cost = MODEL_GPT_4_COMPLETION_PRICE * self.complication_count+MODEL_GPT_4_PROMPT_PRICE * self.prompt_count
+            self.cost = MODEL_GPT_4_COMPLETION_PRICE * self.complication_count + MODEL_GPT_4_PROMPT_PRICE * self.prompt_count
 
     class Meta:
         database = db

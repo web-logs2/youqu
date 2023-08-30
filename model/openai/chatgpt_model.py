@@ -142,6 +142,7 @@ class ChatGPTModel(Model):
                 query_record.reply = reply_content
                 query_record.complication_count = response['usage']['completion_tokens']
                 query_record.prompt_count = response['usage']['prompt_tokens']
+                query_record.set_cost()
                 query_record.save()
             return reply_content
 
