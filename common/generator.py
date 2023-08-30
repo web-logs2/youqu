@@ -1,4 +1,5 @@
 import random
+import uuid
 
 
 def generate_uuid():
@@ -10,3 +11,8 @@ def generate_uuid():
     id_template = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
     id = ''.join([replacer(c) for c in id_template])
     return id
+
+def generate_uuid_no_dash():
+    id = uuid.uuid4()
+    id_no_dashes = str(id).replace('-', '')
+    return id_no_dashes

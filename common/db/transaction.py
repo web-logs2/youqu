@@ -31,7 +31,7 @@ class Transaction(Model):
 
     class Meta:
         database = db
-        table_name = "query_record"
+        table_name = "transaction"
 
 
 # 如果数据库中不存在表，则创建表

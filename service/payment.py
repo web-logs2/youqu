@@ -32,15 +32,16 @@ def get_payment_qr(transaction_id, total_fee, body, attach, time_expire='10m'):
     payload += "&sign=" + sign_str
     logger.info("payload:{}".format(payload))
 
-    headers = {'content-type': "application/x-www-form-urlencoded"}
+    headers = {'content-type': "application/x-www-form-urlencoded; charset=UTF-8"}
 
-    conn.request("POST", "/api/wxpay/native", payload, headers)
+    conn.request("POST", "/api/wxpay/native", payload.encode('utf-8'), headers)
 
     res = conn.getresponse()
     data = json.loads(res.read())
     if data['code'] != 0:
         logger.error("transaction_id {} qr failed with error message:{}".format(transaction_id, data['msg']))
         # return data['msg']
+        return None
     logger.info("request id:{}".format(data['request_id']))
     logger.info("url:{}".format(data['data']['QRcode_url']))
     return data['data']['QRcode_url']

@@ -28,7 +28,7 @@ from common.db.prompt import Prompt
 from common.db.transaction import Transaction
 from common.db.user import User
 from common.functions import is_valid_password, is_valid_email, is_valid_username, is_valid_phone
-from common.generator import generate_uuid
+from common.generator import generate_uuid, generate_uuid_no_dash
 from common.log import logger
 from model import model_factory
 from model.azure.azure_model import AZURE
@@ -350,10 +350,10 @@ def handle_payment_create():
     if current_user is None:
         return jsonify({"error": "Invalid user"}), 401
     total_fee = data.get('total_fee', '')
-    if not total_fee or not isinstance(total_fee, float) or total_fee <= 1:
-        return jsonify({"error": "最小充值金额一元"}), 401
+    if not total_fee or not isinstance(total_fee, float) or total_fee < 0.01:
+        return jsonify({"error": "最小充值金额0.01元"}), 401
     body = "充值{}元".format(total_fee)
-    tran = Transaction(user_id=current_user.user_id, transaction_id=generate_uuid(), amount=total_fee,
+    tran = Transaction(user_id=current_user.user_id, transaction_id=generate_uuid_no_dash(), amount=total_fee,
                        status=0, channel=0, ip=request.headers.get("X-Forwarded-For", request.remote_addr),
                        created_time=datetime.datetime.now(),
                        updated_time=datetime.datetime.now())
