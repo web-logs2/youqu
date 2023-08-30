@@ -369,7 +369,7 @@ def handle_payment_notify():
 
 
     # 获取请求数据
-    data = request.get_json()
+    data = request.get_json(force=True)
     logger.info("got lantu call back data:{}".format(data))
 
     # 验证签名

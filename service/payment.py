@@ -42,7 +42,8 @@ def get_payment_qr(transaction_id, total_fee, body, attach, time_expire, develop
     if data['code'] != 0:
         logger.error(data['msg'])
         return None
-    logger.info("request id:{}".format(data['data']['request_id']))
+    logger.info("request id:{}".format(data['request_id']))
+    logger.info("url:{}".format(data['data']['QRcode_url']))
     return data['data']['QRcode_url']
 
 
@@ -62,5 +63,5 @@ if __name__ == '__main__':
     #load config
     from config import load_config
     load_config()
-    get_payment_qr("2sdfd23321", 1, "test", "test", "2021-01-01 00:00:00",
+    get_payment_qr("2sdfd233211", 1, "test", "test", "2021-01-01 00:00:00",
                    "wx9a7e8f8e2b7e9a5a")
