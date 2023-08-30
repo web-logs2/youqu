@@ -7,7 +7,7 @@ from peewee import (
     BooleanField,
     DateTimeField,
     AutoField,
-    DoubleField
+    DecimalField
 )
 
 from common.db.dbconfig import db
@@ -18,7 +18,7 @@ class Transaction(Model):
     id = AutoField()
     user_id = CharField(unique=False, max_length=64)
     transaction_id = CharField(unique=False, max_length=64)
-    amount = DoubleField(unique=False, default=0)
+    amount = DecimalField(unique=False, default=0)
     status = IntegerField(unique=False, default=0)  # 0: pending, 1: success, 2: failed 3: refunded 4: cancelled
     channel = CharField(unique=False, max_length=2)  # 0: lantu-wechat
     ip = CharField(unique=False, max_length=128)
