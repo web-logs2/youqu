@@ -42,7 +42,6 @@ from common.menu_functions.clear_memory import ClearMemory
 
 # OpenAI对话模型API (可用)
 class ChatGPTModel(Model):
-
     STREAM_LOOP_BREAK_OUT_LIMIT = 100
 
     def __init__(self):
@@ -84,10 +83,10 @@ class ChatGPTModel(Model):
             query = context['msg']
             functions_dict = Function.get_function_by_owner_and_function_id(user.user_id,
                                                                             context.get('function_call', None))
-            #functions_definition 是functions_dict 的value或者none
+            # functions_definition 是functions_dict 的value或者none
 
-            functions_definition=list(functions_dict.values()) if functions_dict else None
-            functions_name=list(functions_dict|functions_dict.keys()) if functions_dict else None
+            functions_definition = list(functions_dict.values()) if functions_dict else None
+            functions_name = list(functions_dict | functions_dict.keys()) if functions_dict else None
             user_session_id = user.user_id + conversation_id
             if query == '#清除记忆':
                 # Session.clear_session(user_session_id)
@@ -144,6 +143,8 @@ class ChatGPTModel(Model):
                 query_record.prompt_count = response['usage']['prompt_tokens']
                 query_record.set_cost()
                 query_record.save()
+                User.update(available_balance=User.available_balance - query_record.cost).where(
+                    User.id == user.id).execute()
             return reply_content
 
 
@@ -179,11 +180,11 @@ class ChatGPTModel(Model):
             model = context['model']
             query = context['msg']
             functions_dict = Function.get_function_by_owner_and_function_id(user.user_id,
-                                                                                  context.get('function_call', None))
-            #functions_definition 是functions_dict 的value或者none
+                                                                            context.get('function_call', None))
+            # functions_definition 是functions_dict 的value或者none
 
-            functions_definition=list(functions_dict.values()) if functions_dict else None
-            functions_name=list(functions_dict|functions_dict.keys()) if functions_dict else None
+            functions_definition = list(functions_dict.values()) if functions_dict else None
+            functions_name = list(functions_dict | functions_dict.keys()) if functions_dict else None
             user_session_id = user.user_id + conversation_id
             if query == '#清除记忆':
                 # Session.clear_session(user_session_id)
@@ -214,7 +215,8 @@ class ChatGPTModel(Model):
                 reply="",
                 ip=ip,
                 model_name=model,
-                prompt_count=num_tokens_from_messages(new_query, model)+num_tokens_from_string(str(functions_definition)),
+                prompt_count=num_tokens_from_messages(new_query, model) + num_tokens_from_string(
+                    str(functions_definition)),
                 created_time=datetime.datetime.now(),
                 updated_time=datetime.datetime.now(),
             )
@@ -247,6 +249,11 @@ class ChatGPTModel(Model):
                     query_record.complication_count = num_tokens_from_string(full_response)
                     query_record.set_cost()
                     query_record.save()
+                    # deduct cost from user balance
+                    # user.available_balance = user.available_balance - query_record.cost
+                    # user.save()
+                    User.update(available_balance=User.available_balance - query_record.cost).where(
+                        User.id == user.id).execute()
                     removeStopMessages(user.user_id)
                 yield final, reply
 
