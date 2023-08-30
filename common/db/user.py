@@ -6,9 +6,12 @@ from peewee import (
     Model,
     CharField,
     DateTimeField,
-    AutoField
+    AutoField,
+    DecimalField, FieldAccessor
 )
+from playhouse.migrate import MySQLMigrator, migrate
 
+from common.db.db_utils import add_field_if_not_exist
 from common.db.dbconfig import db
 
 
@@ -20,6 +23,8 @@ class User(Model):
     phone = CharField(unique=True, max_length=64)
     password = CharField(unique=False, max_length=512)
     available_models = CharField(null=True, max_length=1024, default='["gpt-3.5-turbo"]')
+    available_balance = DecimalField(null=False, default=0, max_digits=18, decimal_places=10)
+    avatar = CharField(max_length=1024, default='')
     deleted = CharField(max_length=1, default='0')
     last_login = DateTimeField()
     created_time = DateTimeField()
@@ -32,6 +37,14 @@ class User(Model):
         if self.available_models is not None:
             return json.loads(self.available_models)
         return None
+
+    def set_available_balance(self, balance):
+        self.available_balance = json.dumps(balance)
+
+    def get_available_balance(self):
+        if self.available_balance is not None:
+            return json.loads(self.available_balance)
+        return 0
 
     def save_in_session(self):
         if self is not None:
@@ -80,6 +93,8 @@ class User(Model):
         user.email = user_json["email"]
         user.phone = user_json["phone"]
         user.available_models = user_json["available_models"]
+        user.available_balance = user_json["available_balance"]
+        user.avatar = user_json["avatar"]
         user.deleted = user_json["deleted"]
         user.last_login = user_json["last_login"]
         user.created_time = user_json["created_time"]
@@ -94,6 +109,8 @@ class User(Model):
             "email": self.email,
             "phone": self.phone,
             "available_models": self.get_available_models(),
+            "available_balance": self.get_available_balance(),
+            "avatar": self.avatar,
             "deleted": self.deleted,
             "last_login": self.last_login,
             "created_time": self.created_time,
@@ -115,4 +132,6 @@ class User(Model):
 # 如果数据库中不存在表，则创建表
 db.connect()
 db.create_tables([User], safe=True)
+add_field_if_not_exist("user", "avatar", CharField(max_length=1024, default=''))
+add_field_if_not_exist("user", "available_balance", DecimalField(null=False, default=0, max_digits=18, decimal_places=10))
 db.close()
