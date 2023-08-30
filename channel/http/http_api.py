@@ -355,7 +355,6 @@ def handle_payment_create():
     body = "充值{}元".format(total_fee)
     tran = Transaction(user_id=current_user.user_id, transaction_id=generate_uuid_no_dash(), amount=total_fee,
                        status=0, channel=0, ip=request.headers.get("X-Forwarded-For", request.remote_addr),
-                       ip_location="",
                        created_time=datetime.datetime.now(),
                        updated_time=datetime.datetime.now())
     tran.update_ip_location()

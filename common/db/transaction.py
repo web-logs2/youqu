@@ -30,7 +30,8 @@ class Transaction(Model):
         try:
             self.ip_location = get_city_name_in_chinese(self.ip)
         except:
-            self.ip_location=""
+            self.ip_location = ""
+
     class Meta:
         database = db
         table_name = "transaction"
