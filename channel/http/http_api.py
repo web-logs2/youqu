@@ -369,9 +369,8 @@ def handle_payment_notify():
 
 
     # 获取请求数据
+    logger.info("got lantu call back data:{}".format(request.get_data()))
     data = request.get_json(force=True)
-    logger.info("got lantu call back data:{}".format(data))
-
     # 验证签名
     sign = data.pop('sign', '')
     sorted_data = sorted(data.items(), key=lambda x: x[0], reverse=False)
