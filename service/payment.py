@@ -41,7 +41,7 @@ def get_payment_qr(transaction_id, total_fee, body, attach, time_expire, develop
     data = json.loads(res.read())
     if data['code'] != 0:
         logger.error(data['msg'])
-        return None
+        return data['msg']
     logger.info("request id:{}".format(data['request_id']))
     logger.info("url:{}".format(data['data']['QRcode_url']))
     return data['data']['QRcode_url']
