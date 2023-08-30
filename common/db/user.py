@@ -41,9 +41,13 @@ class User(Model):
     def set_available_balance(self, balance):
         self.available_balance = json.dumps(balance)
 
-    def get_available_balance(self):
+    def get_available_balance_json(self):
         if self.available_balance is not None:
             return json.loads(self.available_balance)
+        return 0
+    def get_available_balance(self):
+        if self.available_balance is not None:
+            return round(self.available_balance, 2)
         return 0
 
     def save_in_session(self):
@@ -109,7 +113,7 @@ class User(Model):
             "email": self.email,
             "phone": self.phone,
             "available_models": self.get_available_models(),
-            "available_balance": self.get_available_balance(),
+            "available_balance": self.get_available_balance_json(),
             "avatar": self.avatar,
             "deleted": self.deleted,
             "last_login": self.last_login,

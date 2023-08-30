@@ -194,6 +194,7 @@ def register():
 
     current_user = User(user_id=generate_uuid(), user_name=username, email=email, phone=phone,
                         password=sha256_encrypt(password), last_login=datetime.datetime.now(),
+                        available_balance=0,
                         created_time=datetime.datetime.now(),
                         updated_time=datetime.datetime.now())
     current_user.save()
