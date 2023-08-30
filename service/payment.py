@@ -9,7 +9,7 @@ import hashlib
 import urllib.parse
 
 
-def get_payment_qr(transaction_id, total_fee, body, attach, time_expire='30m'):
+def get_payment_qr(transaction_id, total_fee, body, attach, time_expire='10m'):
     host = project_conf("payment_gateway")
 
     conn = http.client.HTTPSConnection(host)
