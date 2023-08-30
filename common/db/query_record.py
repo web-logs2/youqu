@@ -52,7 +52,6 @@ class QueryRecord(Model):
         self.ip_location = get_city_name_in_chinese(self.ip)
 
     def set_cost(self):
-        #if model_name start with
         if self.model_name is MODEL_GPT_35_TURBO :
             self.cost = MODEL_GPT_35_TURBO_COMPLETION_PRICE * self.complication_count+MODEL_GPT_35_TURBO_PROMPT_PRICE * self.prompt_count
         elif self.model_name is MODEL_GPT_35_turbo_16K:
