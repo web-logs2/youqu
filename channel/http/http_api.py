@@ -1,6 +1,7 @@
 # encoding:utf-8
 import base64
 import datetime
+import hashlib
 import io
 import json
 import time
@@ -24,17 +25,20 @@ from common.db.dbconfig import db
 from common.db.document_record import DocumentRecord
 from common.db.function import Function
 from common.db.prompt import Prompt
+from common.db.transaction import Transaction
 from common.db.user import User
 from common.functions import is_valid_password, is_valid_email, is_valid_username, is_valid_phone
-from common.generator import generate_uuid
+from common.generator import generate_uuid, generate_uuid_no_dash
 from common.log import logger
 from model import model_factory
 from model.azure.azure_model import AZURE
 from service.file_training_service import upload_file_service
+from service.payment import sign_lantu_payment, get_payment_qr
 
 api = Blueprint('api', __name__)
-# azure=AZURE()
 
+
+# azure=AZURE()
 
 
 @api.route("/bot/text", methods=['POST'])
@@ -64,9 +68,9 @@ def text():
         data['response_type'] = "text"
         data['conversation_id'] = user.user_id
         data['messageID'] = generate_uuid()
-        data['model']= MODEL_GPT_35_turbo_16K
+        data['model'] = MODEL_GPT_35_turbo_16K
         data['system_prompt'] = BOT_SYSTEM_PROMPT
-        data['user']=user
+        data['user'] = user
         reply_text = handle_text(data=data)
         return {'content': reply_text}
     else:
@@ -91,10 +95,6 @@ def text():
 #     audio_data = AZURE().synthesize_speech(reply).audio_data
 #     logger.info("audio_data generated")
 #     return send_file(io.BytesIO(audio_data), mimetype='audio/mpeg')
-
-
-
-
 
 
 @api.route("/picture", methods=['POST'])
@@ -194,6 +194,7 @@ def register():
 
     current_user = User(user_id=generate_uuid(), user_name=username, email=email, phone=phone,
                         password=sha256_encrypt(password), last_login=datetime.datetime.now(),
+                        available_balance=0,
                         created_time=datetime.datetime.now(),
                         updated_time=datetime.datetime.now())
     current_user.save()
@@ -236,6 +237,7 @@ def login():
             {"content": "success", "username": current_user.user_name, "user_id": current_user.user_id, "token": token,
              "email": current_user.email,
              "phone": current_user.phone,
+             "available_balance": current_user.get_available_balance_round2(),
              "available_models": current_user.get_available_models()}), 200
 
 
@@ -282,12 +284,13 @@ def get_user_info():
     if current_user is None:
         return jsonify({"error": "Invalid user"}), 401
     available_prompts = Prompt.get_available_prompts(current_user.user_id)
-    available_functions= Function.get_available_functions(current_user.user_id)
+    available_functions = Function.get_available_functions(current_user.user_id)
     return jsonify({"username": current_user.user_name, "user_id": current_user.user_id, "email": current_user.email,
                     "phone": current_user.phone,
                     "available_models": current_user.get_available_models(),
                     "available_documents": DocumentRecord.query_all_available_documents(current_user.user_id),
                     "available_prompts": available_prompts,
+                    "available_balance": current_user.get_available_balance_round2(),
                     "available_functions": available_functions
                     }), 200
 
@@ -297,28 +300,108 @@ def teardown_request(exception):
     db.close()
 
 
-@api.route('/webhook/card', methods=['POST'])
-def webhook_card():
-    log.info("/webhook/card:" + request.data.decode())
-    oapi_request = OapiRequest(uri=request.path, body=request.data, header=OapiHeader(request.headers))
-    resp = make_response()
-    oapi_resp = handle_card(conf, oapi_request)
-    resp.headers['Content-Type'] = oapi_resp.content_type
-    resp.data = oapi_resp.body
-    resp.status_code = oapi_resp.status_code
-    return resp
+# @api.before_request
+# def log_request_info():
+#     logger.info('Headers: %s' % request.headers)
+#     logger.info('Body: %s' % request.get_data())
 
 
-@api.route('/webhook/event', methods=['GET', 'POST'])
-def webhook_event():
-    log.info("/webhook/event:" + request.data.decode())
-    oapi_request = OapiRequest(uri=request.path, body=request.data, header=OapiHeader(request.headers))
-    resp = make_response()
-    oapi_resp = handle_event(conf, oapi_request)
-    resp.headers['Content-Type'] = oapi_resp.content_type
-    resp.data = oapi_resp.body
-    resp.status_code = oapi_resp.status_code
-    return resp
+@api.route("/api/payment/notify", methods=['POST'])
+def handle_payment_notify():
+    try:
+        # 获取请求数据
+        data = request.form.to_dict()
+        logger.info("data:{}".format(data))
+        sign = data['sign']
+        request_dict = {
+            "code": data['code'],
+            "timestamp": data['timestamp'],
+            "mch_id": data['mch_id'],
+            "order_no": data['order_no'],
+            "out_trade_no": data['out_trade_no'],
+            "pay_no": data['pay_no'],
+            "total_fee": data['total_fee']
+        }
+    except:
+        logger.error("Invalid request data")
+        return 'FAIL'
+
+    if sign_lantu_payment(request_dict) != sign:
+        return 'FAIL'
+
+    # 验证签名
+    # 检查支付结果并处理业务逻辑
+    if data['code'] == '0':
+        out_trade_no = data['out_trade_no']
+        transaction = Transaction.get_or_none(Transaction.transaction_id == out_trade_no)
+        if not transaction:
+            logger.error("out_trade_no:{} not found".format(out_trade_no))
+            return 'FAIL'
+
+        affected_rows = Transaction.update(status=1, updated_time=datetime.datetime.now()).where(
+            Transaction.transaction_id == out_trade_no).execute()
+
+        if affected_rows != 0:
+            user_id = transaction.user_id
+            affected_rows = User.update(available_balance=User.available_balance + float(data['total_fee'])).where(
+                User.user_id == user_id).execute()
+            if affected_rows == 0:
+                logger.error("user_id:{} not found".format(user_id))
+            else:
+                logger.info("out_trade_no:{} updated".format(out_trade_no))
+        return 'SUCCESS'
+    else:
+        return 'FAIL'
+
+
+@api.route("/api/payment/create", methods=['POST'])
+def handle_payment_create():
+    data = json.loads(request.data)
+    token = data.get('token', 0)
+    current_user = auth.identify(token)
+    if current_user is None:
+        return jsonify({"error": "Invalid user"}), 401
+    total_fee = data.get('total_fee', '')
+    if not total_fee or not isinstance(total_fee, float) or total_fee < 0.01:
+        return jsonify({"error": "最小充值金额0.01元"}), 401
+    body = "充值{}元".format(total_fee)
+    tran = Transaction(user_id=current_user.user_id, transaction_id=generate_uuid_no_dash(), amount=total_fee,
+                       status=0, channel=0, ip=request.headers.get("X-Forwarded-For", request.remote_addr),
+                       created_time=datetime.datetime.now(),
+                       updated_time=datetime.datetime.now())
+    tran.update_ip_location()
+    picture_url = get_payment_qr(tran.transaction_id, total_fee, body, current_user.user_id)
+    if picture_url:
+        tran.save()
+        return jsonify({"picture_url": picture_url}), 200
+    else:
+        tran.status = 2
+        tran.save()
+        return jsonify({"error": "创建支付二维码失败"}), 401
+
+
+# @api.route('/webhook/card', methods=['POST'])
+# def webhook_card():
+#     log.info("/webhook/card:" + request.data.decode())
+#     oapi_request = OapiRequest(uri=request.path, body=request.data, header=OapiHeader(request.headers))
+#     resp = make_response()
+#     oapi_resp = handle_card(conf, oapi_request)
+#     resp.headers['Content-Type'] = oapi_resp.content_type
+#     resp.data = oapi_resp.body
+#     resp.status_code = oapi_resp.status_code
+#     return resp
+#
+#
+# @api.route('/webhook/event', methods=['GET', 'POST'])
+# def webhook_event():
+#     log.info("/webhook/event:" + request.data.decode())
+#     oapi_request = OapiRequest(uri=request.path, body=request.data, header=OapiHeader(request.headers))
+#     resp = make_response()
+#     oapi_resp = handle_event(conf, oapi_request)
+#     resp.headers['Content-Type'] = oapi_resp.content_type
+#     resp.data = oapi_resp.body
+#     resp.status_code = oapi_resp.status_code
+#     return resp
 
 
 def handle_text(data):

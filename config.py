@@ -68,3 +68,7 @@ def channel_conf_val(channel_type, key, default=None):
         return config.get('channel').get(key, default)
     return val
 
+
+
+def payment_conf(payment_type):
+    return config.get('channel').get(channel_type)

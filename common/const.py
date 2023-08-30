@@ -1,4 +1,8 @@
 # channel
+
+from decimal import Decimal
+
+
 TERMINAL = "terminal"
 WECHAT = "wechat"
 WECHAT_MP = "wechat_mp"
@@ -32,6 +36,16 @@ MODEL_GPT4_8K = "gpt-4"
 MODEL_GPT4_32K = "gpt-4-32k"
 MODEL_GPT4_0314 = "gpt-4-0314"
 MODEL_GPT_35_turbo_16K = "gpt-3.5-turbo-16k"
+USD_TO_CNY = 7.3
+
+MODEL_GPT_35_TURBO_COMPLETION_PRICE = Decimal(0.002/1000*USD_TO_CNY)
+MODEL_GPT_35_TURBO_PROMPT_PRICE = Decimal(0.0015/1000*USD_TO_CNY)
+
+MODEL_GPT_35_TURBO_16K_COMPLETION_PRICE = Decimal(0.004/1000*USD_TO_CNY)
+MODEL_GPT_35_TURBO_16K_PROMPT_PRICE = Decimal(0.003/1000*USD_TO_CNY)
+
+MODEL_GPT_4_COMPLETION_PRICE = Decimal(0.06/1000*USD_TO_CNY)
+MODEL_GPT_4_PROMPT_PRICE = Decimal(0.03/1000*USD_TO_CNY)
 
 
 
@@ -42,3 +56,5 @@ BOT_SYSTEM_PROMPT = "你是一个人工智能音响，你回复的所有文字�
 EMAIL_SENDER = "no-reply@youqu.app"
 EMAIL_SENDER_NAME = "YouQu"
 EMAIL_TEMPLATE_RESET_PASSWORD = "d-a054f2d7236d4ee7be847308bbbfc5f0"
+
+

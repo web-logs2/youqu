@@ -142,6 +142,7 @@ class ChatGPTModel(Model):
                 query_record.reply = reply_content
                 query_record.complication_count = response['usage']['completion_tokens']
                 query_record.prompt_count = response['usage']['prompt_tokens']
+                query_record.set_cost()
                 query_record.save()
             return reply_content
 
@@ -244,6 +245,7 @@ class ChatGPTModel(Model):
                     conversation.save()
                     query_record.reply = full_response
                     query_record.complication_count = num_tokens_from_string(full_response)
+                    query_record.set_cost()
                     query_record.save()
                     removeStopMessages(user.user_id)
                 yield final, reply
