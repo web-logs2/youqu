@@ -141,6 +141,9 @@ class socket_handler():
     def message(self, data):
         user = self.verify_stream()
         if user and data:
+            if user.available_balance < 0:
+                self.socketio.emit('final', {'content': "余额不足，请及时充值"}, room=request.sid, namespace='/chat')
+                return
             asyncio.run(self.return_stream(data, user))
 
     def stop(self, data):

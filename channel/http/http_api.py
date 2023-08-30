@@ -20,7 +20,7 @@ from channel.feishu.common_service import conf
 from channel.http import auth
 from channel.http.auth import sha256_encrypt, Auth
 from common import log
-from common.const import MODEL_GPT_35_turbo_16K, BOT_SYSTEM_PROMPT
+from common.const import MODEL_GPT_35_turbo_16K, BOT_SYSTEM_PROMPT, INITIAL_BALANCE
 from common.db.dbconfig import db
 from common.db.document_record import DocumentRecord
 from common.db.function import Function
@@ -194,7 +194,7 @@ def register():
 
     current_user = User(user_id=generate_uuid(), user_name=username, email=email, phone=phone,
                         password=sha256_encrypt(password), last_login=datetime.datetime.now(),
-                        available_balance=0,
+                        available_balance=INITIAL_BALANCE,
                         created_time=datetime.datetime.now(),
                         updated_time=datetime.datetime.now())
     current_user.save()
