@@ -343,7 +343,7 @@ def handle_payment_notify():
 
 
 @api.route("/api/payment/create", methods=['POST'])
-def handle_payment_notify():
+def handle_payment_create():
     data = json.loads(request.data)
     token = data.get('token', 0)
     current_user = auth.identify(token)
