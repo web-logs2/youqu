@@ -330,7 +330,7 @@ def handle_payment_notify():
     # 检查支付结果并处理业务逻辑
     if data['code'] == '0':
         out_trade_no = data['out_trade_no']
-        affected_rows=Transaction.update(status=1).where(Transaction.transaction_id == out_trade_no).execute()
+        affected_rows=Transaction.update(status=1,updated_time=datetime.datetime.now()).where(Transaction.transaction_id == out_trade_no).execute()
         if affected_rows==0:
             logger.error("out_trade_no:{} not found".format(out_trade_no))
         else:
@@ -355,8 +355,10 @@ def handle_payment_create():
     body = "充值{}元".format(total_fee)
     tran = Transaction(user_id=current_user.user_id, transaction_id=generate_uuid_no_dash(), amount=total_fee,
                        status=0, channel=0, ip=request.headers.get("X-Forwarded-For", request.remote_addr),
+                       ip_location="",
                        created_time=datetime.datetime.now(),
                        updated_time=datetime.datetime.now())
+    tran.update_ip_location()
     picture_url = get_payment_qr(tran.transaction_id, total_fee, body, current_user.user_id)
     if picture_url:
         tran.save()
