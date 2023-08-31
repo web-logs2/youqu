@@ -1,3 +1,4 @@
+import datetime
 
 from peewee import (
     Model,
@@ -18,6 +19,12 @@ class Conversation(Model):
     total_query = IntegerField()
     created_time = DateTimeField()
     updated_time = DateTimeField()
+
+
+
+    def save(self, *args, **kwargs):
+        self.updated_time = datetime.datetime.now()
+        return super(Conversation, self).save(*args, **kwargs)
 
     class Meta:
         database = db

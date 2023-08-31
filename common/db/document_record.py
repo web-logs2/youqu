@@ -1,3 +1,4 @@
+import datetime
 import json
 
 from peewee import (
@@ -46,6 +47,11 @@ class DocumentRecord(Model):
             document_list.append(document.dict())
         return document_list
 
+
+
+    def save(self, *args, **kwargs):
+        self.updated_time = datetime.datetime.now()
+        return super(DocumentRecord, self).save(*args, **kwargs)
 
     class Meta:
         database = db

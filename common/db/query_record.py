@@ -1,3 +1,4 @@
+import datetime
 import json
 from decimal import Decimal
 
@@ -51,6 +52,11 @@ class QueryRecord(Model):
 
     def update_ip_location(self):
         self.ip_location = get_city_name_in_chinese(self.ip)
+
+
+    def save(self, *args, **kwargs):
+        self.updated_time = datetime.datetime.now()
+        return super(QueryRecord, self).save(*args, **kwargs)
 
     def set_cost(self):
         # cost = new Decimal 0
