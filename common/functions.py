@@ -104,6 +104,8 @@ def num_tokens_from_messages(messages, model="gpt-3.5-turbo-0301"):
 
 
 def num_tokens_from_string(string: str, encoding_name="cl100k_base") -> int:
+    if not string:
+        return 0
     try:
         """Returns the number of tokens in a text string."""
         encoding = tiktoken.get_encoding(encoding_name)

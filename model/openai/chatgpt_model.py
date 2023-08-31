@@ -50,29 +50,6 @@ class ChatGPTModel(Model):
         if proxy:
             openai.proxy = proxy
 
-    def reply(self, query, context=None):
-        # acquire reply content
-        if not context or not context.get('type') or context.get('type') == 'TEXT':
-            log.info("[CHATGPT] query={}".format(query))
-            from_user_id = context['from_user_id']
-            if query == '#清除记忆':
-                Session.clear_session_by_user(from_user_id)
-                return '记忆已清除'
-            system_prompt = context['system_prompt']
-            new_query = Session.build_session_query(query, from_user_id, system_prompt)
-            log.debug("userid:{} [CHATGPT] session query={}".format(from_user_id, new_query))
-
-            # if context.get('stream'):
-            #     # reply in stream
-            #     return self.reply_text_stream(query, new_query, from_user_id)
-
-            reply_content = self.reply_text(new_query, from_user_id, 0)
-            log.debug("[CHATGPT] new_query={}, user={}, reply_cont={}".format(new_query, from_user_id, reply_content))
-            return reply_content
-
-        elif context.get('type', None) == 'IMAGE_CREATE':
-            return self.create_img(query, 0)
-
     def reply_text(self, context, retry_count=0):
 
         try:
@@ -104,6 +81,8 @@ class ChatGPTModel(Model):
                 reply="",
                 ip=ip,
                 model_name=model,
+                prompt_count=0,
+                complication_count=0,
                 created_time=datetime.datetime.now(),
                 updated_time=datetime.datetime.now(),
             )
@@ -113,7 +92,8 @@ class ChatGPTModel(Model):
 
             log.info("[chatgpt]: model={} query={}", model, new_query)
 
-            response = self.get_non_stream_full_response_for_one_question(model, new_query, functions_definition)
+            response = self.get_non_stream_full_response_for_one_question(model, new_query, functions_definition,
+                                                                          query_record)
             reply_content = response.choices[0]['message']['content']
 
             end_time = time.time()  # 记录结束时间
@@ -139,8 +119,8 @@ class ChatGPTModel(Model):
                     conversation.total_query = conversation.total_query + 1;
                 conversation.save()
                 query_record.reply = reply_content
-                query_record.complication_count = response['usage']['completion_tokens']
-                query_record.prompt_count = response['usage']['prompt_tokens']
+                # query_record.complication_count = response['usage']['completion_tokens']
+                # query_record.prompt_count = response['usage']['prompt_tokens']
                 query_record.set_cost()
                 query_record.save()
                 User.update(available_balance=User.available_balance - query_record.cost).where(
@@ -193,20 +173,7 @@ class ChatGPTModel(Model):
                 return
             new_query = Session.build_session_query(query, user_session_id, system_prompt, model=model)
 
-            #
-            # headers = request.headers
-            # # 遍历请求头并打印
-            # for key in headers:
-            #     print(f"{key}: {headers[key]}")
-
-            # for header in request.headers:
-            #     log.info(header)
             ip = request.headers.get("X-Forwarded-For", request.remote_addr)
-            # ip_location = ""
-            # try:
-            #     ip_location = ip_reader.city(ip).city.names.get('zh-CN', '')
-            # except Exception as e:
-            #     log.error("[http]ip:{}", e)
 
             query_record = QueryRecord(
                 user_id=context['user'].user_id,
@@ -215,8 +182,10 @@ class ChatGPTModel(Model):
                 reply="",
                 ip=ip,
                 model_name=model,
-                prompt_count=num_tokens_from_messages(new_query, model) + num_tokens_from_string(
-                    str(functions_definition)),
+                # prompt_count=num_tokens_from_messages(new_query, model) + num_tokens_from_string(
+                #     str(functions_definition)),
+                prompt_count=0,
+                complication_count=0,
                 created_time=datetime.datetime.now(),
                 updated_time=datetime.datetime.now(),
             )
@@ -246,7 +215,7 @@ class ChatGPTModel(Model):
                         conversation.total_query = conversation.total_query + 1;
                     conversation.save()
                     query_record.reply = full_response
-                    query_record.complication_count = num_tokens_from_string(full_response)
+                    query_record.complication_count = num_tokens_from_string(full_response)+query_record.complication_count
                     query_record.set_cost()
                     query_record.save()
                     # deduct cost from user balance
@@ -255,6 +224,7 @@ class ChatGPTModel(Model):
                     User.update(available_balance=User.available_balance - query_record.cost).where(
                         User.id == user.id).execute()
                     removeStopMessages(user.user_id)
+
                 yield final, reply
 
         except openai.error.RateLimitError as e:
@@ -314,10 +284,9 @@ class ChatGPTModel(Model):
             log.error(traceback.format_exc())
             return None
 
-    def get_non_stream_full_response_for_one_question(self, model, new_query, functions_definition):
+    def get_non_stream_full_response_for_one_question(self, model, new_query, functions_definition, query_record):
         is_stream = False
-        response = self.get_GPT_answer(model, new_query, is_stream, functions_definition)
-
+        response = self.get_GPT_answer(model, new_query, is_stream, functions_definition, query_record)
         function_call = {
             "name": "",
             "arguments": "",
@@ -330,21 +299,22 @@ class ChatGPTModel(Model):
             # count = count + 1
 
             reply_message = response.choices[0]['message']
+            query_record.complication_count = response['usage'][
+                                                  'completion_tokens'] + query_record.complication_count
             if "function_call" in reply_message:
                 if "name" in reply_message["function_call"]:
                     function_call["name"] = reply_message["function_call"]["name"]
                 if "arguments" in reply_message["function_call"]:
                     function_call["arguments"] = reply_message["function_call"]["arguments"]
-
                 response = self.get_GPT_function_call_answer(model, new_query, function_call, is_stream,
-                                                             functions_definition)
+                                                             functions_definition, query_record)
             else:
                 return response
 
-    async def get_stream_full_response_for_one_question(self, user, model, new_query, functions_definition):
+    async def get_stream_full_response_for_one_question(self, user, model, new_query, functions_definition,
+                                                        query_record):
         is_stream = True
-        res = self.get_GPT_answer(model, new_query, is_stream, functions_definition)
-
+        res = self.get_GPT_answer(model, new_query, is_stream, functions_definition, query_record)
         full_response = ""
 
         function_call = {
@@ -369,12 +339,14 @@ class ChatGPTModel(Model):
                         function_call["name"] += chunk['choices'][0]['delta']["function_call"]["name"]
                     if "arguments" in chunk['choices'][0]['delta']["function_call"]:
                         function_call["arguments"] += chunk['choices'][0]['delta']["function_call"]["arguments"]
-                    break
+                    query_record.complication_count = num_tokens_from_string(function_call["name"]) + query_record.complication_count
+                    query_record.complication_count = num_tokens_from_string(function_call["arguments"]) + query_record.complication_count
+                break
                 if chunk.choices[0].finish_reason == "function_call":
                     if function_call_flag:
                         # log.info("function call={}", function_call)
                         res = self.get_GPT_function_call_answer(model, new_query, function_call, is_stream,
-                                                                functions_definition)
+                                                                functions_definition, query_record)
                         function_call = {
                             "name": "",
                             "arguments": "",
@@ -412,7 +384,7 @@ class ChatGPTModel(Model):
                 yield True, full_response
                 return
 
-    def get_GPT_answer(self, model, new_query, is_stream, functions_definition):
+    def get_GPT_answer(self, model, new_query, is_stream, functions_definition, query_record=None):
         openai_params = {
             'model': model,
             'messages': new_query,
@@ -426,9 +398,14 @@ class ChatGPTModel(Model):
         if functions_definition is not None:
             openai_params['functions'] = functions_definition
 
+        if query_record is not None:
+            query_record.set_query_trail(new_query)
+            query_record.prompt_count = num_tokens_from_messages(new_query, model) + num_tokens_from_string(
+                str(functions_definition)) + query_record.prompt_count
         return openai.ChatCompletion.create(**openai_params)
 
-    def get_GPT_function_call_answer(self, model, new_query, function_call, is_stream, functions_definition):
+    def get_GPT_function_call_answer(self, model, new_query, function_call, is_stream, functions_definition,
+                                     query_record=None):
         new_query.append({
             "role": "assistant", "content": None, "function_call": function_call
         })
@@ -446,6 +423,11 @@ class ChatGPTModel(Model):
         new_query.append({
             "role": "function", "name": function_name, "content": content
         })
+
+        if query_record is not None:
+            query_record.set_query_trail(new_query)
+            query_record.prompt_count = num_tokens_from_messages(new_query, model) + num_tokens_from_string(
+                str(functions_definition)) + query_record.prompt_count
 
         return openai.ChatCompletion.create(
             model=model,
