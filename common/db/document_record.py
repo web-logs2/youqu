@@ -51,7 +51,7 @@ class DocumentRecord(Model):
 
     def save(self, *args, **kwargs):
         self.updated_time = datetime.datetime.now()
-        return super(DocumentRecord, self).save(*args, **kwargs)
+        return super().save(*args, **kwargs)
 
     class Meta:
         database = db

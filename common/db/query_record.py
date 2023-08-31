@@ -56,7 +56,7 @@ class QueryRecord(Model):
 
     def save(self, *args, **kwargs):
         self.updated_time = datetime.datetime.now()
-        return super(QueryRecord, self).save(*args, **kwargs)
+        return super().save(*args, **kwargs)
 
     def set_cost(self):
         # cost = new Decimal 0

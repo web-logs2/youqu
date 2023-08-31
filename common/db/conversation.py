@@ -24,7 +24,7 @@ class Conversation(Model):
 
     def save(self, *args, **kwargs):
         self.updated_time = datetime.datetime.now()
-        return super(Conversation, self).save(*args, **kwargs)
+        return super().save(*args, **kwargs)
 
     class Meta:
         database = db

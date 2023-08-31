@@ -33,7 +33,7 @@ class User(Model):
 
     def save(self, *args, **kwargs):
         self.updated_time = datetime.datetime.now()
-        return super(User, self).save(*args, **kwargs)
+        return super().save(*args, **kwargs)
 
     def set_available_models(self, models_list):
         self.available_models = json.dumps(models_list)
