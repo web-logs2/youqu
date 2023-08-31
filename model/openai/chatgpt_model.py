@@ -16,6 +16,7 @@ from typing import List
 
 from requests.exceptions import ChunkedEncodingError
 
+import common.log
 from common import const
 from common import log
 from common.db.conversation import Conversation
@@ -196,7 +197,7 @@ class ChatGPTModel(Model):
             log.info("[chatgpt]: model={} query={}", model, new_query)
 
             async for final, reply in self.get_stream_full_response_for_one_question(user, model, new_query,
-                                                                                     functions_definition):
+                                                                                     functions_definition,query_record):
                 if final:
                     full_response = reply
                     Session.save_session(full_response, user_session_id, model=model)
@@ -216,16 +217,14 @@ class ChatGPTModel(Model):
                     conversation.save()
                     query_record.reply = full_response
                     query_record.complication_count = num_tokens_from_string(full_response)+query_record.complication_count
+                    common.log.logger.info("Current query_record.complication_count={}".format(query_record.complication_count))
                     query_record.set_cost()
                     query_record.save()
-                    # deduct cost from user balance
-                    # user.available_balance = user.available_balance - query_record.cost
-                    # user.save()
                     User.update(available_balance=User.available_balance - query_record.cost).where(
                         User.id == user.id).execute()
                     removeStopMessages(user.user_id)
-
                 yield final, reply
+
 
         except openai.error.RateLimitError as e:
             # rate limit exception
@@ -299,8 +298,6 @@ class ChatGPTModel(Model):
             # count = count + 1
 
             reply_message = response.choices[0]['message']
-            query_record.complication_count = response['usage'][
-                                                  'completion_tokens'] + query_record.complication_count
             if "function_call" in reply_message:
                 if "name" in reply_message["function_call"]:
                     function_call["name"] = reply_message["function_call"]["name"]
@@ -339,12 +336,11 @@ class ChatGPTModel(Model):
                         function_call["name"] += chunk['choices'][0]['delta']["function_call"]["name"]
                     if "arguments" in chunk['choices'][0]['delta']["function_call"]:
                         function_call["arguments"] += chunk['choices'][0]['delta']["function_call"]["arguments"]
-                    query_record.complication_count = num_tokens_from_string(function_call["name"]) + query_record.complication_count
-                    query_record.complication_count = num_tokens_from_string(function_call["arguments"]) + query_record.complication_count
-                break
+                    break
                 if chunk.choices[0].finish_reason == "function_call":
                     if function_call_flag:
                         # log.info("function call={}", function_call)
+
                         res = self.get_GPT_function_call_answer(model, new_query, function_call, is_stream,
                                                                 functions_definition, query_record)
                         function_call = {
@@ -398,11 +394,15 @@ class ChatGPTModel(Model):
         if functions_definition is not None:
             openai_params['functions'] = functions_definition
 
-        if query_record is not None:
-            query_record.set_query_trail(new_query)
+        res = openai.ChatCompletion.create(**openai_params)
+        query_record.set_query_trail(new_query)
+        if is_stream:
             query_record.prompt_count = num_tokens_from_messages(new_query, model) + num_tokens_from_string(
                 str(functions_definition)) + query_record.prompt_count
-        return openai.ChatCompletion.create(**openai_params)
+        else:
+            query_record.prompt_count = res['usage']['prompt_tokens'] + query_record.prompt_count
+            query_record.complication_count = res['usage']['completion_tokens'] + query_record.complication_count
+        return res
 
     def get_GPT_function_call_answer(self, model, new_query, function_call, is_stream, functions_definition,
                                      query_record=None):
@@ -412,24 +412,25 @@ class ChatGPTModel(Model):
 
         function_name = function_call["name"]
 
+        if is_stream:
+            query_record.complication_count = num_tokens_from_string(
+                function_name) + query_record.complication_count
+            query_record.complication_count = num_tokens_from_string(function_call["arguments"]) + query_record.complication_count
+            common.log.logger.info("Current query_record.complication_count={}".format(query_record.complication_count))
+
         if function_name == "python":
             content = "不允许执行定义函数之外的代码"
         else:
             parameters = json.loads(function_call["arguments"])
             # call function
             content = detect_function_and_call(function_name, parameters, functions_definition)
-            # log.info("content={}", content)
+        # log.info("content={}", content)
 
         new_query.append({
             "role": "function", "name": function_name, "content": content
         })
 
-        if query_record is not None:
-            query_record.set_query_trail(new_query)
-            query_record.prompt_count = num_tokens_from_messages(new_query, model) + num_tokens_from_string(
-                str(functions_definition)) + query_record.prompt_count
-
-        return openai.ChatCompletion.create(
+        res = openai.ChatCompletion.create(
             model=model,
             functions=functions_definition,
             messages=new_query,
@@ -440,6 +441,26 @@ class ChatGPTModel(Model):
             stream=is_stream,
             timeout=5,
         )
+        query_record.set_query_trail(new_query)
+        if is_stream:
+            query_record.prompt_count = num_tokens_from_messages(new_query, model) + num_tokens_from_string(
+                str(functions_definition)) + query_record.prompt_count
+        else:
+            query_record.prompt_count = res['usage']['prompt_tokens'] + query_record.prompt_count
+            query_record.complication_count = res['usage']['completion_tokens'] + query_record.complication_count
+        return res
+
+    # return openai.ChatCompletion.create(
+    #         model=model,
+    #         functions=functions_definition,
+    #         messages=new_query,
+    #
+    #         temperature=model_conf(const.OPEN_AI).get("temperature", 0.8),
+    #         frequency_penalty=model_conf(const.OPEN_AI).get("frequency_penalty", 0.0),
+    #         presence_penalty=model_conf(const.OPEN_AI).get("presence_penalty", 1.0),
+    #         stream=is_stream,
+    #         timeout=5,
+    #     )
 
     def menuList(self, arg):
         return [PreTrainDcoumnet(), QueryDcoumnet(), DocumentList(),
