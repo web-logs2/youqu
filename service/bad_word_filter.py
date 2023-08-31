@@ -1,7 +1,3 @@
-import base64
-
-import ahocorasick
-from flashtext import KeywordProcessor
 import jieba
 
 
@@ -26,13 +22,6 @@ def check_blacklist(sentence):
     words = set(jieba.cut(sentence, cut_all=False))
     return len(words & bad_word_list) > 0
 
-
-def build_automaton(blacklist):
-    A = ahocorasick.Automaton()
-    for idx, word in enumerate(blacklist):
-        A.add_word(word, (idx, word))
-    A.make_automaton()
-    return A
 
 
 if __name__ == '__main__':
