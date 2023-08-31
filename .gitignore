@@ -9,7 +9,7 @@ data/
 device.json
 go-cqhttp
 logs/
-resources/
+bad_words.txt
 session.token
 .vscode
 /resources/bad_words.txt
