@@ -104,4 +104,4 @@ apscheduler
 googlesearch-python
 beautifulsoup4
 edge-tts
-flashtext
+jieba
