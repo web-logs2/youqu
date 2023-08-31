@@ -1,3 +1,4 @@
+import datetime
 import json
 
 from peewee import (
@@ -31,6 +32,10 @@ class Transaction(Model):
             self.ip_location = get_city_name_in_chinese(self.ip)
         except:
             self.ip_location = ""
+
+    def save(self, *args, **kwargs):
+        self.updated_time = datetime.datetime.now()
+        return super().save(*args, **kwargs)
 
     class Meta:
         database = db

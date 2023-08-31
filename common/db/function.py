@@ -1,3 +1,4 @@
+import datetime
 import json
 
 import jsonpickle
@@ -54,6 +55,11 @@ class Function(Model):
         else:
             return None
 
+
+
+    def save(self, *args, **kwargs):
+        self.updated_time = datetime.datetime.now()
+        return super().save(*args, **kwargs)
 
     def __str__(self):
         return jsonpickle.encode(self, unpicklable=False)

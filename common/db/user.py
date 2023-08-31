@@ -1,3 +1,4 @@
+import datetime
 import json
 
 import jsonpickle
@@ -29,6 +30,10 @@ class User(Model):
     last_login = DateTimeField()
     created_time = DateTimeField()
     updated_time = DateTimeField()
+
+    def save(self, *args, **kwargs):
+        self.updated_time = datetime.datetime.now()
+        return super().save(*args, **kwargs)
 
     def set_available_models(self, models_list):
         self.available_models = json.dumps(models_list)

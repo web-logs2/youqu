@@ -9,8 +9,10 @@ data/
 device.json
 go-cqhttp
 logs/
+bad_words.txt
 session.token
 .vscode
+/resources/bad_words.txt
 /channel/http/resources/fullchain.pem
 /channel/http/resources/privkey.pem
 /channel/http/resources/server.csr
