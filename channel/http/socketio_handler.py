@@ -143,9 +143,9 @@ class socket_handler():
     def message(self, data):
         user = self.verify_stream()
         if user and data:
-            if user.available_balance < 0:
-                self.socketio.emit('final', {'content': YU_ER_BU_ZU}, room=request.sid, namespace='/chat')
-                return
+            # if user.available_balance < 0:
+            #     self.socketio.emit('final', {'content': YU_ER_BU_ZU}, room=request.sid, namespace='/chat')
+            #     return
             if check_blacklist(data['msg']):
                 self.socketio.emit('final', {'content': MIN_GAN_CI}, room=request.sid,namespace='/chat')
                 return

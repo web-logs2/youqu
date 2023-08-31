@@ -65,13 +65,13 @@ def text():
                 "code": "0000003",
             }
             return response
-        if user.available_balance < 0:
-            response = {
-                "success": False,
-                "error": YU_ER_BU_ZU,
-                "code": "0000004",
-            }
-            return response
+        # if user.available_balance < 0:
+        #     response = {
+        #         "success": False,
+        #         "error": YU_ER_BU_ZU,
+        #         "code": "0000004",
+        #     }
+        #     return response
         if check_blacklist(msg):
             response = {
                 "success": False,
