@@ -10,6 +10,7 @@ from channel.channel import Channel
 from channel.http import auth
 from channel.http.http_api import handle_text
 from common import const, log
+from common.const import YU_ER_BU_ZU, MIN_GAN_CI
 
 from common.db.dbconfig import db
 from common.db.document_record import DocumentRecord
@@ -19,6 +20,7 @@ from common.menu_functions.public_train_methods import public_query_documents
 from config import model_conf
 from model.azure.azure_model import AZURE
 from model.openai.chatgpt_model import Session
+from service.bad_word_filter import check_blacklist
 from service.global_values import addStopMessages
 
 
@@ -142,16 +144,20 @@ class socket_handler():
         user = self.verify_stream()
         if user and data:
             if user.available_balance < 0:
-                self.socketio.emit('final', {'content': "余额不足，请及时充值"}, room=request.sid, namespace='/chat')
+                self.socketio.emit('final', {'content': YU_ER_BU_ZU}, room=request.sid, namespace='/chat')
                 return
-            asyncio.run(self.return_stream(data, user))
+            if check_blacklist(data['msg']):
+                self.socketio.emit('final', {'content': MIN_GAN_CI}, room=request.sid,namespace='/chat')
+                return
+            else:
+                asyncio.run(self.return_stream(data, user))
 
     def stop(self, data):
         user = self.verify_stream()
         if user:
             addStopMessages(user.user_id)
-            log.info("{} messages stopped",user.user_id)
-            #self.socketio.emit('stop', {'info': "stopped"}, room=request.sid, namespace='/chat')
+            log.info("{} messages stopped", user.user_id)
+            # self.socketio.emit('stop', {'info': "stopped"}, room=request.sid, namespace='/chat')
 
     def update_conversation(self, data):
         user = self.verify_stream()

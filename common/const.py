@@ -61,3 +61,11 @@ EMAIL_SENDER_NAME = "YouQu"
 EMAIL_TEMPLATE_RESET_PASSWORD = "d-a054f2d7236d4ee7be847308bbbfc5f0"
 
 
+YU_ER_BU_ZU="余额不足，请及时充值。"
+YU_ER_BU_ZU_EN="Insufficient balance, please recharge in time."
+
+MIN_GAN_CI="您的发言包含敏感词，请注意言行。"
+MIN_GAN_CI_EN="Your speech contains sensitive words, please pay attention to your words and deeds."
+
+ZUIXIAO_CHONGZHI="亲，最小充值金额0.01元"
+ZUIDA_CHONGZHI="土豪，最大充值金额10000元"

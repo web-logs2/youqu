@@ -20,7 +20,8 @@ from channel.feishu.common_service import conf
 from channel.http import auth
 from channel.http.auth import sha256_encrypt, Auth
 from common import log
-from common.const import MODEL_GPT_35_turbo_16K, BOT_SYSTEM_PROMPT, INITIAL_BALANCE
+from common.const import MODEL_GPT_35_turbo_16K, BOT_SYSTEM_PROMPT, INITIAL_BALANCE, YU_ER_BU_ZU, MIN_GAN_CI, \
+    ZUIXIAO_CHONGZHI, ZUIDA_CHONGZHI
 from common.db.dbconfig import db
 from common.db.document_record import DocumentRecord
 from common.db.function import Function
@@ -32,6 +33,7 @@ from common.generator import generate_uuid, generate_uuid_no_dash
 from common.log import logger
 from model import model_factory
 from model.azure.azure_model import AZURE
+from service.bad_word_filter import check_blacklist
 from service.file_training_service import upload_file_service
 from service.payment import sign_lantu_payment, get_payment_qr
 
@@ -55,7 +57,7 @@ def text():
         return jsonify(response)
     data = json.loads(request.data)
     if data:
-        msg = data.get("msg", ""),
+        msg = data.get("msg", "")
         if not msg:
             response = {
                 "success": False,
@@ -63,6 +65,21 @@ def text():
                 "code": "0000003",
             }
             return response
+        if user.available_balance < 0:
+            response = {
+                "success": False,
+                "error": YU_ER_BU_ZU,
+                "code": "0000004",
+            }
+            return response
+        if check_blacklist(msg):
+            response = {
+                "success": False,
+                "error": MIN_GAN_CI,
+                "code": "0000005",
+            }
+            return response
+
         data['uid'] = user.user_id
         data['request_type'] = "text"
         data['response_type'] = "text"
@@ -363,7 +380,9 @@ def handle_payment_create():
         return jsonify({"error": "Invalid user"}), 401
     total_fee = data.get('total_fee', '')
     if not total_fee or not isinstance(total_fee, float) or total_fee < 0.01:
-        return jsonify({"error": "最小充值金额0.01元"}), 401
+        return jsonify({"error": ZUIXIAO_CHONGZHI}), 401
+    if total_fee > 10000:
+        return jsonify({"error": ZUIDA_CHONGZHI}), 401
     body = "充值{}元".format(total_fee)
     tran = Transaction(user_id=current_user.user_id, transaction_id=generate_uuid_no_dash(), amount=total_fee,
                        status=0, channel=0, ip=request.headers.get("X-Forwarded-For", request.remote_addr),
