@@ -187,7 +187,7 @@ class socket_handler():
             self.socketio.emit('connected', {'info': "connected"}, room=request.sid, namespace='/chat')
 
     def heart_beat(self, message):
-        log.info("heart beat:{}", message)
+        #log.info("heart beat:{}", message)
         user = self.verify_stream()
         if user:
             log.info('{} {} heart beat', user.email,user.user_name)
