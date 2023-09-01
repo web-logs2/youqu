@@ -216,7 +216,7 @@ def register():
                         updated_time=datetime.datetime.now())
     current_user.save()
     # session["user"] = jsonpickle.encode(current_user)
-    token = Auth.encode_auth_token(current_user.user_id, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+    token = Auth.encode_auth_token(current_user.user_id,current_user.password, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
     log.info("Registration success: " + current_user.email)
     return jsonify(
         {"content": "success", "username": current_user.user_name, "token": token, "email": current_user.email,
@@ -248,7 +248,7 @@ def login():
     else:
         # add current user to session
         #        session['user'] = current_user
-        token = Auth.encode_auth_token(current_user.user_id, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+        token = Auth.encode_auth_token(current_user.user_id,current_user.password, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
         log.info("Login success: " + current_user.email)
         return jsonify(
             {"content": "success", "username": current_user.user_name, "user_id": current_user.user_id, "token": token,

@@ -21,7 +21,7 @@ class Auth:
         super(Auth, self).__init__()
 
     @staticmethod
-    def encode_auth_token(user_id, login_time, expire=24):
+    def encode_auth_token(user_id, password, login_time, expire=24):
         """
         生成认证Token
         :param user_id: int
@@ -35,6 +35,7 @@ class Auth:
                 'iat': datetime.datetime.utcnow(),  # 开始时间
                 'data': {
                     'id': user_id,
+                    'password': password,
                     'login_time': login_time
                 }
             }
@@ -58,7 +59,7 @@ class Auth:
             payload = jwt.decode(auth_token, channel_conf(const.HTTP).get(
                 'http_auth_secret_key'), algorithms='HS256',
                                  options={'verify_exp': False})  # options={'verify_exp': False} 加上后不验证token过期时间
-            if 'data' in payload and 'id' in payload['data']:
+            if 'data' in payload and 'id' in payload['data'] and 'password' in payload['data']:
                 return payload
             else:
                 raise jwt.InvalidTokenError
@@ -83,7 +84,7 @@ def identify(token: str) -> User:
         if token:
             payload = Auth.decode_auth_token(token)
             if not isinstance(payload, str):
-                current_user = User.select().where(User.user_id == payload['data']['id'], User.deleted != 1).first()
+                current_user = User.select().where(User.user_id == payload['data']['id'], User.deleted != 1,User.password == payload['data']['password']).first()
                 if current_user is None:
                     log.info("User not found:{}", payload['data']['id'])
                     return None
