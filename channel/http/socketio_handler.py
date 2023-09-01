@@ -190,7 +190,7 @@ class socket_handler():
         log.info("heart beat:{}", message)
         user = self.verify_stream()
         if user:
-            log.info('{} heart beat', user.user_id)
+            log.info('{} {} heart beat', user.email,user.user_name)
             self.socketio.server.emit(
                 'heartbeat',
                 'pang', request.sid,
