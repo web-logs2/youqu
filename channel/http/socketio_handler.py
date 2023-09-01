@@ -16,6 +16,7 @@ from common.db.dbconfig import db
 from common.db.document_record import DocumentRecord
 from common.db.user import User
 from common.functions import num_tokens_from_string
+from common.log import logger
 from common.menu_functions.public_train_methods import public_query_documents
 from config import model_conf
 from model.azure.azure_model import AZURE
@@ -37,6 +38,8 @@ class socket_handler():
         self.socketio.on_event('stop', self.stop, namespace='/chat')
         self.socketio.on_event('disconnect', self.disconnect, namespace='/chat')
         self.socketio.on_event('heartbeat', self.heart_beat, namespace='/chat')
+
+
 
     async def return_stream(self, data, user: User):
 
@@ -169,6 +172,15 @@ class socket_handler():
                                namespace='/chat')
 
     def connect(self):
+        # common.logger.info('Headers: {}', request.headers)
+        # common.logger.info('Body: {}', request.get_data())
+        logger.info('Headers:')
+        logger.info(request.headers)
+        # for key, value in request.headers:
+        #     logger.info(key+":"+value)
+        logger.info('Body:')
+        logger.info(request.get_data())
+
         user = self.verify_stream()
         if user:
             log.info('{} connected', user.email)

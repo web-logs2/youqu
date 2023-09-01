@@ -1,12 +1,12 @@
 import os
 
+import flask
 import nest_asyncio
 from flask import Flask
 from flask_cors import CORS
 from flask_socketio import SocketIO
 
 from channel.channel import Channel
-from channel.http import socketio_handler
 from channel.http.http_api import api
 from channel.http.socketio_handler import socket_handler
 
@@ -28,6 +28,13 @@ handler.register_socketio_events()  # 注册socket_handler类中的事件
 
 # 设置静态文件缓存过期时间
 http_app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+
+
+
+@http_app.before_request
+def log_request_info():
+    print('Headers: %s', flask.request.headers)
+    print('Body: %s', flask.request.get_data())
 
 
 class HttpChannel(Channel):
