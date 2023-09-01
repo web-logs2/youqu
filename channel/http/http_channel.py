@@ -2,7 +2,7 @@ import os
 
 import flask
 import nest_asyncio
-from flask import Flask
+from flask import Flask, request
 from flask_cors import CORS
 from flask_socketio import SocketIO
 
@@ -12,6 +12,7 @@ from channel.http.socketio_handler import socket_handler
 
 from common import const, log
 from common.functions import is_path_empty_or_nonexistent
+from common.log import logger
 from config import channel_conf
 
 nest_asyncio.apply()
@@ -33,8 +34,12 @@ http_app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
 @http_app.before_request
 def log_request_info():
-    print('Headers: %s', flask.request.headers)
-    print('Body: %s', flask.request.get_data())
+    logger.info('url:{}'.format(request.url))
+    logger.info('header:{}'.format(request.headers))
+    logger.info('data:{}'.format(request.get_data()))
+#
+# print('Headers: %s', flask.request.headers)
+#     print('Body: %s', flask.request.get_data())
 
 
 class HttpChannel(Channel):

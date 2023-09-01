@@ -144,6 +144,10 @@ class socket_handler():
                     yield final, audio_base64
 
     def message(self, data):
+        logger.info('url:{}'.format(request.url))
+        logger.info('header:{}'.format(request.headers))
+        logger.info('data:{}'.format(request.get_data()))
+
         user = self.verify_stream()
         if user and data:
             # if user.available_balance < 0:
@@ -172,14 +176,10 @@ class socket_handler():
                                namespace='/chat')
 
     def connect(self):
-        # common.logger.info('Headers: {}', request.headers)
-        # common.logger.info('Body: {}', request.get_data())
-        logger.info('Headers:')
-        logger.info(request.headers)
-        # for key, value in request.headers:
-        #     logger.info(key+":"+value)
-        logger.info('Body:')
-        logger.info(request.get_data())
+        logger.info('url:{}'.format(request.url))
+        logger.info('header:{}'.format(request.headers))
+        logger.info('data:{}'.format(request.get_data()))
+
 
         user = self.verify_stream()
         if user:
