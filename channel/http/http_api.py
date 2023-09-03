@@ -26,6 +26,7 @@ from common.db.dbconfig import db
 from common.db.document_record import DocumentRecord
 from common.db.function import Function
 from common.db.prompt import Prompt
+from common.db.query_record import QueryRecord
 from common.db.transaction import Transaction
 from common.db.user import User
 from common.functions import is_valid_password, is_valid_email, is_valid_username, is_valid_phone
@@ -88,8 +89,8 @@ def text():
         data['model'] = MODEL_GPT_35_turbo_16K
         data['system_prompt'] = BOT_SYSTEM_PROMPT
         data['user'] = user
-        reply_text = handle_text(data=data)
-        return {'content': reply_text}
+        query_record: QueryRecord = handle_text(data=data)
+        return {'content': query_record.get_query_record_dict()}
     else:
         response = {
             "success": False,

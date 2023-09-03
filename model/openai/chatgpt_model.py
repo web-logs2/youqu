@@ -66,10 +66,7 @@ class ChatGPTModel(Model):
             functions_definition = list(functions_dict.values()) if functions_dict else None
             functions_name = list(functions_dict | functions_dict.keys()) if functions_dict else None
             user_session_id = user.user_id + conversation_id
-            if query == '#清除记忆':
-                # Session.clear_session(user_session_id)
-                Session.clear_session(user_session_id)
-                return "记忆已清除"
+
             new_query = Session.build_session_query(query, user_session_id, system_prompt, model=model)
 
             ip = request.headers.get("X-Forwarded-For", request.remote_addr)
@@ -90,6 +87,13 @@ class ChatGPTModel(Model):
             query_record.update_ip_location()
             query_record.set_query_trail(new_query)
             query_record.set_functions(functions_name)
+
+            if query == '#清除记忆':
+            # Session.clear_session(user_session_id)
+                Session.clear_session(user_session_id)
+                query_record.reply = "记忆已清除"
+                query_record.save()
+                return query_record
 
             log.info("[chatgpt]: model={} query={}", model, new_query)
 
@@ -126,9 +130,7 @@ class ChatGPTModel(Model):
                 query_record.save()
                 User.update(available_balance=User.available_balance - query_record.cost).where(
                     User.id == user.id).execute()
-            return reply_content
-
-
+            return query_record
 
         except openai.error.RateLimitError as e:
             # rate limit exception
@@ -142,16 +144,22 @@ class ChatGPTModel(Model):
         except openai.error.APIConnectionError as e:
             log.warn(e)
             log.warn("[CHATGPT] APIConnection failed")
-            return "我连接不到网络，请稍后重试"
+            query_record.reply = "我连接不到网络，请稍后重试"
+            query_record.save()
+            return query_record
         except openai.error.Timeout as e:
             log.warn(e)
             log.warn("[CHATGPT] Timeout")
-            return "我没有收到消息，请稍后重试"
+            query_record.reply = "我没有收到消息，请稍后重试"
+            query_record.save()
+            return query_record
         except Exception as e:
             # unknown exception
             log.exception(e)
             Session.clear_session_by_user(user_session_id)
-            return "请再问我一次吧"
+            query_record.reply = "请再问我一次吧"
+            query_record.save()
+            return query_record
 
     async def reply_text_stream(self, context, retry_count=0):
         try:
@@ -167,15 +175,8 @@ class ChatGPTModel(Model):
             functions_definition = list(functions_dict.values()) if functions_dict else None
             functions_name = list(functions_dict | functions_dict.keys()) if functions_dict else None
             user_session_id = user.user_id + conversation_id
-            if query == '#清除记忆':
-                # Session.clear_session(user_session_id)
-                Session.clear_session(user_session_id)
-                yield True, '记忆已清除'
-                return
             new_query = Session.build_session_query(query, user_session_id, system_prompt, model=model)
-
             ip = request.headers.get("X-Forwarded-For", request.remote_addr)
-
             query_record = QueryRecord(
                 user_id=context['user'].user_id,
                 conversation_id=context['conversation_id'],
@@ -193,7 +194,13 @@ class ChatGPTModel(Model):
             query_record.update_ip_location()
             query_record.set_query_trail(new_query)
             query_record.set_functions(functions_name)
-
+            if query == '#清除记忆':
+            # Session.clear_session(user_session_id)
+                Session.clear_session(user_session_id)
+                query_record.reply = "记忆已清除"
+                query_record.save()
+                yield True , query_record
+                return
             log.info("[chatgpt]: model={} query={}", model, new_query)
 
             async for final, reply in self.get_stream_full_response_for_one_question(user, model, new_query,
@@ -223,42 +230,58 @@ class ChatGPTModel(Model):
                     User.update(available_balance=User.available_balance - query_record.cost).where(
                         User.id == user.id).execute()
                     removeStopMessages(user.user_id)
-                yield final, reply
+                else:
+                    query_record.reply= reply
+                yield final, query_record
 
 
         except openai.error.RateLimitError as e:
             # rate limit exception
             log.warn(e)
             if retry_count < 1:
-                yield False, "[CHATGPT] Connection broken, 第{}次重试，等待{}秒".format(retry_count + 1, 5)
+                query_record.reply = "[CHATGPT] Connection broken, 第{}次重试，等待{}秒".format(retry_count + 1, 5)
+                query_record.save()
+                yield False, query_record
                 time.sleep(5)
                 log.warn("[CHATGPT] RateLimit exceed, 第{}次重试".format(retry_count + 1))
                 yield True, self.reply_text_stream(context, retry_count + 1)
             else:
-                yield True, "提问太快啦，请休息一下再问我吧"
+                query_record.reply = "提问太快啦，请休息一下再问我吧"
+                query_record.save()
+                yield True, query_record
         except openai.error.APIConnectionError as e:
             log.warn(e)
             log.warn("[CHATGPT] APIConnection failed")
-            yield True, "我连接不到网络，请稍后重试"
+            query_record.reply = "我连接不到网络，请稍后重试"
+            query_record.save()
+            yield True, query_record
         except openai.error.Timeout as e:
             log.warn(e)
             log.warn("[CHATGPT] Timeout")
-            yield True, "我没有收到消息，请稍后重试"
+            query_record.reply = "我没有收到消息，请稍后重试"
+            query_record.save()
+            yield True, query_record
         except ChunkedEncodingError as e:
             log.warn(e)
             if retry_count < 1:
                 wait_time = (retry_count + 1) * 5
-                yield False, "[CHATGPT] Connection broken, 第{}次重试，等待{}秒".format(retry_count + 1, wait_time)
+                query_record.reply = "[CHATGPT] Connection broken, 第{}次重试，等待{}秒".format(retry_count + 1, wait_time)
+                query_record.save()
+                yield False, query_record
                 log.warn("[CHATGPT] Connection broken, 第{}次重试，等待{}秒".format(retry_count + 1, wait_time))
                 time.sleep(wait_time)
                 yield True, self.reply_text_stream(context, retry_count + 1)
             else:
-                yield True, "我连接不到网络，请稍后重试"
+                query_record.reply = "我连接不到网络，请稍后重试"
+                query_record.save()
+                yield True, query_record
         except Exception as e:
             # unknown exception
             log.error(traceback.format_exc())
             Session.clear_session_by_user(user_session_id)
-            yield True, "请再问我一次吧"
+            query_record.reply = "请再问我一次吧"
+            query_record.save()
+            yield True, query_record
 
     def create_img(self, query, retry_count=0):
         try:
