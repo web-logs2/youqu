@@ -56,9 +56,9 @@ class QueryRecord(Model):
     def get_query_record_dict(self):
         return {
             "reply": self.reply,
-            "cost": self.cost,
-            "prompt_count": self.prompt_count,
-            "complication_count": self.complication_count,
+            "cost": str(self.cost),
+            "prompt_count": str(self.prompt_count),
+            "complication_count": str(self.complication_count),
         }
 
     def save(self, *args, **kwargs):

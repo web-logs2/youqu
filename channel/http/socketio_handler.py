@@ -96,7 +96,7 @@ class socket_handler():
         # if context['response_type']=='voice':
         #     addStopMessages(context['msg'])
         if context["msg"] == "":
-            yield True, "请说话"
+            yield True, None
             return
 
         if context['conversation_type'] == 'reading':
@@ -130,15 +130,16 @@ class socket_handler():
         if context['response_type'] == "picture":
             yield True, Channel.build_picture_reply_content(context)
         else:
-            async for final, reply in Channel.build_reply_stream(context):
+            async for final, query_record in Channel.build_reply_stream(context):
                 if context['response_type'] == 'text':
-                    final and log.info("reply:" + reply)
-                    yield final, reply
+                    final and log.info("reply:" + query_record.reply)
+                    yield final, query_record.get_query_record_dict()
                 elif context['response_type'] == 'voice' and final:
-                    log.info("reply:" + reply)
-                    audio_data = AZURE().synthesize_speech(reply).audio_data
+                    log.info("reply:" + query_record)
+                    audio_data = AZURE().synthesize_speech(query_record.reply).audio_data
                     audio_base64 = base64.b64encode(audio_data).decode("utf-8")
-                    yield final, audio_base64
+                    query_record.reply = audio_base64
+                    yield final, query_record.get_query_record_dict()
 
     def message(self, data):
         user = self.verify_stream()
