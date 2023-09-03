@@ -16,6 +16,7 @@ from common.db.dbconfig import db
 from common.db.document_record import DocumentRecord
 from common.db.user import User
 from common.functions import num_tokens_from_string
+from common.log import logger
 from common.menu_functions.public_train_methods import public_query_documents
 from config import model_conf
 from model.azure.azure_model import AZURE
@@ -37,6 +38,8 @@ class socket_handler():
         self.socketio.on_event('stop', self.stop, namespace='/chat')
         self.socketio.on_event('disconnect', self.disconnect, namespace='/chat')
         self.socketio.on_event('heartbeat', self.heart_beat, namespace='/chat')
+
+
 
     async def return_stream(self, data, user: User):
 
@@ -141,6 +144,10 @@ class socket_handler():
                     yield final, audio_base64
 
     def message(self, data):
+        logger.info('url:{}'.format(request.url))
+        logger.info('header:{}'.format(request.headers))
+        logger.info('data:{}'.format(request.get_data()))
+
         user = self.verify_stream()
         if user and data:
             # if user.available_balance < 0:
@@ -169,16 +176,21 @@ class socket_handler():
                                namespace='/chat')
 
     def connect(self):
+        logger.info('url:{}'.format(request.url))
+        logger.info('header:{}'.format(request.headers))
+        logger.info('data:{}'.format(request.get_data()))
+
+
         user = self.verify_stream()
         if user:
             log.info('{} connected', user.email)
             self.socketio.emit('connected', {'info': "connected"}, room=request.sid, namespace='/chat')
 
     def heart_beat(self, message):
-        log.info("heart beat:{}", message)
+        #log.info("heart beat:{}", message)
         user = self.verify_stream()
         if user:
-            log.info('{} heart beat', user.user_id)
+            log.info('{} {} heart beat', user.email,user.user_name)
             self.socketio.server.emit(
                 'heartbeat',
                 'pang', request.sid,
