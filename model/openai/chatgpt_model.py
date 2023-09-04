@@ -221,14 +221,14 @@ class ChatGPTModel(Model):
                     else:
                         conversation.updated_time = datetime.datetime.now()
                         conversation.total_query = conversation.total_query + 1;
-                    conversation.save()
+                    #conversation.save()
                     query_record.reply = full_response
-                    query_record.complication_count = num_tokens_from_string(full_response)+query_record.complication_count
+                    #query_record.complication_count = num_tokens_from_string(full_response)+query_record.complication_count
                     common.log.logger.info("Current query_record.complication_count={}".format(query_record.complication_count))
-                    # query_record.set_cost()
-                    # query_record.save()
-                    # User.update(available_balance=User.available_balance - query_record.cost).where(
-                    #     User.id == user.id).execute()
+                    #query_record.set_cost()
+                    #query_record.save()
+                    #User.update(available_balance=User.available_balance - query_record.cost).where(
+                    #    User.id == user.id).execute()
                     removeStopMessages(user.user_id)
                 else:
                     query_record.reply= reply
