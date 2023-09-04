@@ -128,16 +128,18 @@ class socket_handler():
         if context['response_type'] == "picture":
             yield True, Channel.build_picture_reply_content(context)
         else:
-            async for final, query_record in Channel.build_reply_stream(context):
+            async for final, reply in Channel.build_reply_stream(context):
                 if context['response_type'] == 'text':
-                    final and log.info("reply:" + query_record.reply)
-                    yield final, query_record.get_query_record_dict()
+                    final and log.info("reply:" + reply.reply)
+                    #yield final, reply if reply is string else reply.get_query_record_dict()
+                    # yield final, reply.get_query_record_dict()
+                    yield (final, reply.get_query_record_dict()) if final else (final, reply)
                 elif context['response_type'] == 'voice' and final:
-                    log.info("reply:" + query_record)
-                    audio_data = AZURE().synthesize_speech(query_record.reply).audio_data
+                    log.info("reply:" + reply)
+                    audio_data = AZURE().synthesize_speech(reply.reply).audio_data
                     audio_base64 = base64.b64encode(audio_data).decode("utf-8")
-                    query_record.reply = audio_base64
-                    yield final, query_record.get_query_record_dict()
+                    reply.reply = audio_base64
+                    yield final, reply.get_query_record_dict()
 
     def message(self, data):
         user = self.verify_stream()
