@@ -16,14 +16,13 @@ from typing import List
 
 from requests.exceptions import ChunkedEncodingError
 
-import common.log
 from common import const
-from common import log
 from common.db.conversation import Conversation
 from common.db.function import Function
 from common.db.query_record import QueryRecord
 from common.db.user import User
 from common.functions import num_tokens_from_messages, num_tokens_from_string, get_max_token
+from common.log import logger
 from common.menu_functions.function_call_library import detect_function_and_call
 from model.openai.chat_session import Session
 from service.global_values import inStopMessages, removeStopMessages
@@ -95,7 +94,7 @@ class ChatGPTModel(Model):
                 query_record.save()
                 return query_record
 
-            log.info("[chatgpt]: model={} query={}", model, new_query)
+            logger.info("[chatgpt]: model={} query={}", model, new_query)
 
             response = self.get_non_stream_full_response_for_one_question(model, new_query, functions_definition,
                                                                           query_record)
@@ -103,8 +102,8 @@ class ChatGPTModel(Model):
 
             end_time = time.time()  # 记录结束时间
             execution_time = end_time - start_time  # 计算执行时间
-            log.info("[Execution Time] {:.4f} seconds", execution_time)  # 打印执行时间
-            log.debug(response)
+            logger.info("[Execution Time] {:.4f} seconds", execution_time)  # 打印执行时间
+            logger.debug(response)
             # log.info("[CHATGPT] reply={}", reply_content)
             if reply_content:
                 # save conversation
@@ -134,7 +133,7 @@ class ChatGPTModel(Model):
 
         except openai.error.RateLimitError as e:
             # rate limit exception
-            log.warn(e)
+            logger.warn(e)
             if retry_count < 1:
                 time.sleep(5)
                 log.warn("[CHATGPT] RateLimit exceed, 第{}次重试".format(retry_count + 1))
@@ -142,20 +141,20 @@ class ChatGPTModel(Model):
             else:
                 return "提问太快啦，请休息一下再问我吧"
         except openai.error.APIConnectionError as e:
-            log.warn(e)
-            log.warn("[CHATGPT] APIConnection failed")
+            logger.warn(e)
+            logger.warn("[CHATGPT] APIConnection failed")
             query_record.reply = "我连接不到网络，请稍后重试"
             query_record.save()
             return query_record
         except openai.error.Timeout as e:
-            log.warn(e)
-            log.warn("[CHATGPT] Timeout")
+            logger.warn(e)
+            logger.warn("[CHATGPT] Timeout")
             query_record.reply = "我没有收到消息，请稍后重试"
             query_record.save()
             return query_record
         except Exception as e:
             # unknown exception
-            log.exception(e)
+            logger.exception(e)
             Session.clear_session_by_user(user_session_id)
             query_record.reply = "请再问我一次吧"
             query_record.save()
@@ -201,7 +200,7 @@ class ChatGPTModel(Model):
                 query_record.save()
                 yield True , query_record
                 return
-            log.info("[chatgpt]: model={} query={}", model, new_query)
+            logger.info("[chatgpt]: model={} query={}", model, new_query)
 
             async for final, reply in self.get_stream_full_response_for_one_question(user, model, new_query,
                                                                                      functions_definition,query_record):
@@ -221,14 +220,14 @@ class ChatGPTModel(Model):
                     else:
                         conversation.updated_time = datetime.datetime.now()
                         conversation.total_query = conversation.total_query + 1;
-                    #conversation.save()
+                    conversation.save()
                     query_record.reply = full_response
-                    #query_record.complication_count = num_tokens_from_string(full_response)+query_record.complication_count
-                    common.log.logger.info("Current query_record.complication_count={}".format(query_record.complication_count))
-                    #query_record.set_cost()
-                    #query_record.save()
-                    #User.update(available_balance=User.available_balance - query_record.cost).where(
-                    #    User.id == user.id).execute()
+                    query_record.complication_count = num_tokens_from_string(full_response)+query_record.complication_count
+                    logger.info("Current query_record.complication_count={}".format(query_record.complication_count))
+                    query_record.set_cost()
+                    query_record.save()
+                    User.update(available_balance=User.available_balance - query_record.cost).where(
+                       User.id == user.id).execute()
                     removeStopMessages(user.user_id)
                 else:
                     query_record.reply= reply
@@ -237,38 +236,38 @@ class ChatGPTModel(Model):
 
         except openai.error.RateLimitError as e:
             # rate limit exception
-            log.warn(e)
+            logger.warn(e)
             if retry_count < 1:
                 query_record.reply = "[CHATGPT] Connection broken, 第{}次重试，等待{}秒".format(retry_count + 1, 5)
                 query_record.save()
                 yield False, query_record
                 time.sleep(5)
-                log.warn("[CHATGPT] RateLimit exceed, 第{}次重试".format(retry_count + 1))
+                logger.warn("[CHATGPT] RateLimit exceed, 第{}次重试".format(retry_count + 1))
                 yield True, self.reply_text_stream(context, retry_count + 1)
             else:
                 query_record.reply = "提问太快啦，请休息一下再问我吧"
                 query_record.save()
                 yield True, query_record
         except openai.error.APIConnectionError as e:
-            log.warn(e)
-            log.warn("[CHATGPT] APIConnection failed")
+            logger.warn(e)
+            logger.warn("[CHATGPT] APIConnection failed")
             query_record.reply = "我连接不到网络，请稍后重试"
             query_record.save()
             yield True, query_record
         except openai.error.Timeout as e:
-            log.warn(e)
-            log.warn("[CHATGPT] Timeout")
+            logger.warn(e)
+            logger.warn("[CHATGPT] Timeout")
             query_record.reply = "我没有收到消息，请稍后重试"
             query_record.save()
             yield True, query_record
         except ChunkedEncodingError as e:
-            log.warn(e)
+            logger.warn(e)
             if retry_count < 1:
                 wait_time = (retry_count + 1) * 5
                 query_record.reply = "[CHATGPT] Connection broken, 第{}次重试，等待{}秒".format(retry_count + 1, wait_time)
                 query_record.save()
                 yield False, query_record
-                log.warn("[CHATGPT] Connection broken, 第{}次重试，等待{}秒".format(retry_count + 1, wait_time))
+                logger.warn("[CHATGPT] Connection broken, 第{}次重试，等待{}秒".format(retry_count + 1, wait_time))
                 time.sleep(wait_time)
                 yield True, self.reply_text_stream(context, retry_count + 1)
             else:
@@ -277,7 +276,7 @@ class ChatGPTModel(Model):
                 yield True, query_record
         except Exception as e:
             # unknown exception
-            log.error(traceback.format_exc())
+            logger.error(traceback.format_exc())
             Session.clear_session_by_user(user_session_id)
             query_record.reply = "请再问我一次吧"
             query_record.save()
@@ -285,25 +284,25 @@ class ChatGPTModel(Model):
 
     def create_img(self, query, retry_count=0):
         try:
-            log.info("[OPEN_AI] image_query={}".format(query))
+            logger.info("[OPEN_AI] image_query={}".format(query))
             response = openai.Image.create(
                 prompt=query,  # 图片描述
                 n=1,  # 每次生成图片的数量
                 size="1024x1024"  # 图片大小,可选有 256x256, 512x512, 1024x1024
             )
             image_url = response['data'][0]['url']
-            log.info("[OPEN_AI] image_url={}".format(image_url))
+            logger.info("[OPEN_AI] image_url={}".format(image_url))
             return image_url
         except openai.error.RateLimitError as e:
-            log.warn(e)
+            logger.warn(e)
             if retry_count < 1:
                 time.sleep(5)
-                log.warn("[OPEN_AI] ImgCreate RateLimit exceed, 第{}次重试".format(retry_count + 1))
+                logger.warn("[OPEN_AI] ImgCreate RateLimit exceed, 第{}次重试".format(retry_count + 1))
                 return self.reply_text(query, retry_count + 1)
             else:
                 return "提问太快啦，请休息一下再问我吧"
         except Exception as e:
-            log.error(traceback.format_exc())
+            logger.error(traceback.format_exc())
             return None
 
     def get_non_stream_full_response_for_one_question(self, model, new_query, functions_definition, query_record):
@@ -351,7 +350,7 @@ class ChatGPTModel(Model):
             count = count + 1
             chunk_count = 0
             for chunk in res:
-                log.debug("query No. {}, chunk No.{}, {}".format(count, chunk_count, chunk))
+                logger.debug("query No. {}, chunk No.{}, {}".format(count, chunk_count, chunk))
                 chunk_count = chunk_count + 1
                 if "function_call" in chunk['choices'][0]['delta']:
                     function_call_flag = True
@@ -439,7 +438,7 @@ class ChatGPTModel(Model):
             query_record.complication_count = num_tokens_from_string(
                 function_name) + query_record.complication_count
             query_record.complication_count = num_tokens_from_string(function_call["arguments"]) + query_record.complication_count
-            common.log.logger.info("Current query_record.complication_count={}".format(query_record.complication_count))
+            logger.info("Current query_record.complication_count={}".format(query_record.complication_count))
 
         if function_name == "python":
             content = "不允许执行定义函数之外的代码"
