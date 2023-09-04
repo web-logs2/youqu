@@ -61,9 +61,9 @@ class Auth:
             else:
                 raise jwt.InvalidTokenError
         except jwt.ExpiredSignatureError:
-            return 'Token过期'
+            return 'Token expired'
         except jwt.InvalidTokenError:
-            return '无效Token'
+            return 'Invalid Token'
 
 
 def sha256_encrypt(password):
