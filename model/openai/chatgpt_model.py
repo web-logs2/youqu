@@ -136,7 +136,7 @@ class ChatGPTModel(Model):
             logger.warn(e)
             if retry_count < 1:
                 time.sleep(5)
-                log.warn("[CHATGPT] RateLimit exceed, 第{}次重试".format(retry_count + 1))
+                logger.warn("[CHATGPT] RateLimit exceed, 第{}次重试".format(retry_count + 1))
                 return self.reply_text(context, retry_count + 1)
             else:
                 return "提问太快啦，请休息一下再问我吧"
