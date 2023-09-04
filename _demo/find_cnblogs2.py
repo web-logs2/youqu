@@ -1,9 +1,11 @@
 # Author: Lovyya
 # File : blog_spider
-import requests
 import json
-from bs4 import BeautifulSoup
 import re
+
+import requests
+from bs4 import BeautifulSoup
+
 # 这个是为和老师的urls一致性 匹配urls里面的数字
 rule = re.compile("\d+")
 

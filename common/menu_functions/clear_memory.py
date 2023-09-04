@@ -3,9 +3,9 @@ import os
 from flask import session
 
 from common import const, log
+from common.menu_functions.menu_function import MenuFunction
 from config import model_conf, config
 from model import model_factory
-from common.menu_functions.menu_function import MenuFunction
 
 os.environ["OPENAI_API_KEY"] = model_conf(const.OPEN_AI).get('api_key')
 

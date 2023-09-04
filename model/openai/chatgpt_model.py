@@ -1,19 +1,11 @@
 # encoding:utf-8
 import datetime
 import json
-import os
-import re
-import subprocess
-import tempfile
 import time
 import traceback
 
 import openai
-import tiktoken
-from expiring_dict import ExpiringDict
 from flask import request
-from typing import List
-
 from requests.exceptions import ChunkedEncodingError
 
 from common import const
@@ -21,23 +13,21 @@ from common.db.conversation import Conversation
 from common.db.function import Function
 from common.db.query_record import QueryRecord
 from common.db.user import User
-from common.functions import num_tokens_from_messages, num_tokens_from_string, get_max_token
+from common.functions import num_tokens_from_messages, num_tokens_from_string
 from common.log import logger
-from common.menu_functions.function_call_library import detect_function_and_call
-from model.openai.chat_session import Session
-from service.global_values import inStopMessages, removeStopMessages
-from config import model_conf
+from common.menu_functions.clear_memory import ClearMemory
+from common.menu_functions.cnblogs_pre_train_document import CnblogsPreTrainDocument
+from common.menu_functions.cnblogs_query_document import CnblogsQueryDcoumnet
 from common.menu_functions.document_list import DocumentList
+from common.menu_functions.function_call_library import detect_function_and_call
 from common.menu_functions.pre_train_documnt import PreTrainDcoumnet
 from common.menu_functions.query_document import QueryDcoumnet
-from model.model import Model
-
-from common.menu_functions.cnblogs_query_document import CnblogsQueryDcoumnet
-from common.menu_functions.cnblogs_pre_train_document import CnblogsPreTrainDocument
-
 from common.menu_functions.wx_pre_train_document import WxPreTrainDocument
 from common.menu_functions.wx_query_document import WxQueryDocument
-from common.menu_functions.clear_memory import ClearMemory
+from config import model_conf
+from model.model import Model
+from model.openai.chat_session import Session
+from service.global_values import inStopMessages, removeStopMessages
 
 
 # OpenAI对话模型API (可用)

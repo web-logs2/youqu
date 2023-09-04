@@ -1,11 +1,9 @@
 import datetime
-import json
 
 from peewee import (
     Model,
     IntegerField,
     CharField,
-    BooleanField,
     DateTimeField,
     AutoField,
     DecimalField

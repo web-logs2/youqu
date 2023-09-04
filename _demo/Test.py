@@ -1,20 +1,11 @@
-from playhouse.pool import PooledMySQLDatabase
-
-import json
-from bson import json_util
-
-from playhouse.shortcuts import model_to_dict, dict_to_model
-
 from peewee import (
     Model,
     IntegerField,
     CharField,
-    BooleanField,
-    DateTimeField,
-    AutoField,
-    BlobField
+    DateTimeField
 )
-
+from playhouse.pool import PooledMySQLDatabase
+from playhouse.shortcuts import model_to_dict
 
 database = PooledMySQLDatabase(
     'test',

@@ -1,4 +1,5 @@
 import logging
+
 from common.db.document_record import DocumentRecord
 from common.menu_functions.menu_function import MenuFunction
 

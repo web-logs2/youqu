@@ -3,15 +3,13 @@ import base64
 import time
 import traceback
 
-from flask import request, jsonify
+from flask import request
 from flask_socketio import SocketIO
 
 from channel.channel import Channel
 from channel.http import auth
-from channel.http.http_api import handle_text
 from common import const, log
-from common.const import YU_ER_BU_ZU, MIN_GAN_CI
-
+from common.const import MIN_GAN_CI
 from common.db.dbconfig import db
 from common.db.document_record import DocumentRecord
 from common.db.user import User
