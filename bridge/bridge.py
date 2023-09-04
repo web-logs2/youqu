@@ -1,6 +1,6 @@
 import config
-from model import model_factory
 from common.menu_functions.menu_function import MenuFunction
+from model import model_factory
 
 
 class Bridge(object):

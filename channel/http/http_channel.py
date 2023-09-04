@@ -9,7 +9,6 @@ from flask_socketio import SocketIO
 from channel.channel import Channel
 from channel.http.http_api import api
 from channel.http.socketio_handler import socket_handler
-
 from common import const, log
 from common.functions import is_path_empty_or_nonexistent
 from common.log import logger

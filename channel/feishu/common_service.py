@@ -1,15 +1,6 @@
 import logging
-from typing import Any, Union, Dict
 
-from larksuiteoapi import Config, Context, DOMAIN_FEISHU, DefaultLogger, LEVEL_DEBUG, LEVEL_INFO
-
-from larksuiteoapi.card import Card, set_card_callback, handle_card
-from larksuiteoapi.event import set_event_callback
-
-from larksuiteoapi.model import OapiHeader, OapiRequest
-
-from flask import Flask, request
-from flask.helpers import make_response
+from larksuiteoapi import Config, DOMAIN_FEISHU, LEVEL_INFO
 
 # 企业自建应用的配置
 # AppID、AppSecret: "开发者后台" -> "凭证与基础信息" -> 应用凭证（AppID、AppSecret）

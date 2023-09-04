@@ -1,14 +1,11 @@
 import logging
-from typing import Any, Union, Dict
-
-from larksuiteoapi import Config, Context, DOMAIN_FEISHU, DefaultLogger, LEVEL_DEBUG
-
-from larksuiteoapi.card import Card, set_card_callback, handle_card
-
-from larksuiteoapi.model import OapiHeader, OapiRequest
+from typing import Union, Dict
 
 from flask import Flask, request
 from flask.helpers import make_response
+from larksuiteoapi import Config, Context, DOMAIN_FEISHU, LEVEL_DEBUG
+from larksuiteoapi.card import Card, set_card_callback, handle_card
+from larksuiteoapi.model import OapiHeader, OapiRequest
 
 import config
 

@@ -1,6 +1,6 @@
-from common.db.dbconfig import db
-
 from playhouse.migrate import MySQLMigrator, migrate
+
+from common.db.dbconfig import db
 
 
 def add_field_if_not_exist(table_name, field_name, field_properties):

@@ -1,9 +1,9 @@
+import requests
 from bs4 import BeautifulSoup
+from googlesearch import search
 
 from common.functions import num_tokens_from_string
 from common.log import logger
-from googlesearch import search
-import requests
 
 
 def get_content_by_url(url):

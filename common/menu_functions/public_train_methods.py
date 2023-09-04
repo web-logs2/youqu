@@ -3,11 +3,8 @@ import time
 
 from langchain import OpenAI
 from langchain.chat_models import ChatOpenAI
-from llama_index import StorageContext, load_index_from_storage, ResponseSynthesizer, ServiceContext, LLMPredictor, \
-    set_global_service_context
-from llama_index.indices.document_summary import GPTDocumentSummaryIndex, DocumentSummaryIndexRetriever, \
-    DocumentSummaryIndexEmbeddingRetriever
-from llama_index.indices.response import ResponseMode
+from llama_index import StorageContext, load_index_from_storage, ResponseSynthesizer, ServiceContext, LLMPredictor
+from llama_index.indices.document_summary import GPTDocumentSummaryIndex, DocumentSummaryIndexEmbeddingRetriever
 from llama_index.query_engine import RetrieverQueryEngine
 
 from app import query_engine_dict, query_engine_dict_size

@@ -3,15 +3,13 @@ import base64
 import time
 import traceback
 
-from flask import request, jsonify
+from flask import request
 from flask_socketio import SocketIO
 
 from channel.channel import Channel
 from channel.http import auth
-from channel.http.http_api import handle_text
 from common import const, log
-from common.const import YU_ER_BU_ZU, MIN_GAN_CI
-
+from common.const import MIN_GAN_CI
 from common.db.dbconfig import db
 from common.db.document_record import DocumentRecord
 from common.db.user import User
@@ -99,7 +97,7 @@ class socket_handler():
         # if context['response_type']=='voice':
         #     addStopMessages(context['msg'])
         if context["msg"] == "":
-            yield True, "请说话"
+            yield True, None
             return
 
         if context['conversation_type'] == 'reading':
@@ -135,13 +133,16 @@ class socket_handler():
         else:
             async for final, reply in Channel.build_reply_stream(context):
                 if context['response_type'] == 'text':
-                    final and log.info("reply:" + reply)
-                    yield final, reply
+                    final and log.info("reply:" + reply.reply)
+                    #yield final, reply if reply is string else reply.get_query_record_dict()
+                    # yield final, reply.get_query_record_dict()
+                    yield (final, reply.get_query_record_dict()) if final else (final, reply)
                 elif context['response_type'] == 'voice' and final:
                     log.info("reply:" + reply)
-                    audio_data = AZURE().synthesize_speech(reply).audio_data
+                    audio_data = AZURE().synthesize_speech(reply.reply).audio_data
                     audio_base64 = base64.b64encode(audio_data).decode("utf-8")
-                    yield final, audio_base64
+                    reply.reply = audio_base64
+                    yield final, reply.get_query_record_dict()
 
     def message(self, data):
         logger.info('url:{}'.format(request.url))
@@ -205,8 +206,8 @@ class socket_handler():
         token = request.args.get('token', '')
         user = auth.identify(token)
         if user is None:
-            log.info("Token error")
+            # log.info("Token error")
             self.socketio.emit('logout', {'error': "invalid cookie"}, room=request.sid, namespace='/chat')
-            time.sleep(10)
+            time.sleep(0.001)
             self.disconnect()
         return user

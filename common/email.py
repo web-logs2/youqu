@@ -1,11 +1,13 @@
-import os
+from sendgrid import SendGridAPIClient
+import ssl
+
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail, Email, To
 
-from common import log
-from config import project_conf,channel_conf
 import common.const as const
-import ssl
+from common import log
+from config import project_conf, channel_conf
+
 ssl._create_default_https_context = ssl._create_unverified_context
 
 def send_email_with_template(to_email, subject, template_id, dynamic_template_data=None):

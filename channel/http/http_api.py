@@ -1,38 +1,30 @@
 # encoding:utf-8
-import base64
 import datetime
-import hashlib
-import io
 import json
 import time
 
-from flask import jsonify, send_file
-from flask import request, render_template, make_response, session, redirect, Blueprint
-from larksuiteoapi import OapiHeader
-from larksuiteoapi.card import handle_card
-from larksuiteoapi.event import handle_event
-from larksuiteoapi.model import OapiRequest
+from flask import jsonify
+from flask import request, render_template, redirect, Blueprint
 
 import common.email
 import config
 from channel.channel import Channel
-from channel.feishu.common_service import conf
 from channel.http import auth
 from channel.http.auth import sha256_encrypt, Auth
 from common import log
-from common.const import MODEL_GPT_35_turbo_16K, BOT_SYSTEM_PROMPT, INITIAL_BALANCE, YU_ER_BU_ZU, MIN_GAN_CI, \
+from common.const import MODEL_GPT_35_turbo_16K, BOT_SYSTEM_PROMPT, INITIAL_BALANCE, MIN_GAN_CI, \
     ZUIXIAO_CHONGZHI, ZUIDA_CHONGZHI
 from common.db.dbconfig import db
 from common.db.document_record import DocumentRecord
 from common.db.function import Function
 from common.db.prompt import Prompt
+from common.db.query_record import QueryRecord
 from common.db.transaction import Transaction
 from common.db.user import User
 from common.functions import is_valid_password, is_valid_email, is_valid_username, is_valid_phone
 from common.generator import generate_uuid, generate_uuid_no_dash
 from common.log import logger
 from model import model_factory
-from model.azure.azure_model import AZURE
 from service.bad_word_filter import check_blacklist
 from service.file_training_service import upload_file_service
 from service.payment import sign_lantu_payment, get_payment_qr
@@ -88,8 +80,8 @@ def text():
         data['model'] = MODEL_GPT_35_turbo_16K
         data['system_prompt'] = BOT_SYSTEM_PROMPT
         data['user'] = user
-        reply_text = handle_text(data=data)
-        return {'content': reply_text}
+        query_record: QueryRecord = handle_text(data=data)
+        return {'content': query_record.get_query_record_dict()}
     else:
         response = {
             "success": False,

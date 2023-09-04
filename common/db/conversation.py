@@ -4,12 +4,12 @@ from peewee import (
     Model,
     IntegerField,
     CharField,
-    BooleanField,
     DateTimeField,
     AutoField
 )
 
 from common.db.dbconfig import db
+
 
 class Conversation(Model):
     id = AutoField()
