@@ -145,9 +145,9 @@ class socket_handler():
                     yield final, reply.get_query_record_dict()
 
     def message(self, data):
-        logger.info('url:{}'.format(request.url))
-        logger.info('header:{}'.format(request.headers))
-        logger.info('data:{}'.format(request.get_data()))
+        logger.debug('url:{}'.format(request.url))
+        logger.debug('header:{}'.format(request.headers))
+        logger.debug('data:{}'.format(request.get_data()))
 
         user = self.verify_stream()
         if user and data:
@@ -177,9 +177,9 @@ class socket_handler():
                                namespace='/chat')
 
     def connect(self):
-        logger.info('url:{}'.format(request.url))
-        logger.info('header:{}'.format(request.headers))
-        logger.info('data:{}'.format(request.get_data()))
+        logger.debug('url:{}'.format(request.url))
+        logger.debug('header:{}'.format(request.headers))
+        logger.debug('data:{}'.format(request.get_data()))
 
 
         user = self.verify_stream()
