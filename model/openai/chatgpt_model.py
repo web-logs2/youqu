@@ -190,8 +190,7 @@ class ChatGPTModel(Model):
                 query_record.save()
                 yield True , query_record
                 return
-            logger.info("[chatgpt]: model={} query={}", model, new_query)
-
+            logger.info("[chatgpt]: model=%s query=%s", model, new_query)
             async for final, reply in self.get_stream_full_response_for_one_question(user, model, new_query,
                                                                                      functions_definition,query_record):
                 if final:
