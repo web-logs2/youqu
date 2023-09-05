@@ -254,6 +254,7 @@ def login():
             {"content": "success", "username": current_user.user_name, "user_id": current_user.user_id, "token": token,
              "email": current_user.email,
              "phone": current_user.phone,
+             "avatar": current_user.avatar,
              "available_balance": current_user.get_available_balance_round2(),
              "available_models": current_user.get_available_models()}), 200
 
