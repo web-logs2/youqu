@@ -1,13 +1,12 @@
+import datetime
 import json
 
 import jsonpickle
-from flask import session
 from peewee import (
     Model,
     CharField,
     DateTimeField,
-    AutoField,
-    Index
+    AutoField
 )
 
 from common.db.dbconfig import db
@@ -33,6 +32,10 @@ class Prompt(Model):
                    )
         return list(prompts)
 
+
+    def save(self, *args, **kwargs):
+        self.updated_time = datetime.datetime.now()
+        return super().save(*args, **kwargs)
 
     def __str__(self):
         return jsonpickle.encode(self, unpicklable=False)

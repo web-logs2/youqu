@@ -3,12 +3,13 @@
 # @Author :王敬博
 # @File : test.py
 # @Software: PyCharm
-from bs4 import BeautifulSoup  #网页解析
-import re    #正则表表达式文字匹配
-import urllib.request,urllib.error  #指定url，获取网页数据
-import xlwt  #进行excel操作
-import sqlite3  #进行SQLite数据库操作
-import pymysql.cursors  #连接mysql数据库
+import re  # 正则表表达式文字匹配
+import urllib.error  # 指定url，获取网页数据
+import urllib.request
+
+import xlwt  # 进行excel操作
+from bs4 import BeautifulSoup  # 网页解析
+
 
 def main():
     baseurl = "https://www.cnblogs.com/wjingbo/default.html?page="

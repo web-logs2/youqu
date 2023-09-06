@@ -1,12 +1,9 @@
 import os
 import re
-import traceback
-from unicodedata import normalize
 
-import geoip2
+import geoip2.database
 import tiktoken
 from geoip2.errors import AddressNotFoundError
-import geoip2.database
 
 from common import const, log
 
@@ -104,10 +101,12 @@ def num_tokens_from_messages(messages, model="gpt-3.5-turbo-0301"):
 
 
 def num_tokens_from_string(string: str, encoding_name="cl100k_base") -> int:
+    if not string or string == "":
+        return 0
     try:
         """Returns the number of tokens in a text string."""
         encoding = tiktoken.get_encoding(encoding_name)
-        num_tokens = len(encoding.encode(string))
+        num_tokens = len(encoding.encode(str(string)))
         return num_tokens
     except Exception as e:
         # log.error(traceback.format_exc())

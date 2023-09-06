@@ -1,3 +1,4 @@
+import datetime
 import json
 
 import jsonpickle
@@ -7,9 +8,8 @@ from peewee import (
     CharField,
     DateTimeField,
     AutoField,
-    DecimalField, FieldAccessor
+    DecimalField
 )
-from playhouse.migrate import MySQLMigrator, migrate
 
 from common.db.db_utils import add_field_if_not_exist
 from common.db.dbconfig import db
@@ -17,10 +17,10 @@ from common.db.dbconfig import db
 
 class User(Model):
     id = AutoField()
-    user_id = CharField(unique=True, max_length=256)
-    user_name = CharField(unique=False, max_length=32)
-    email = CharField(unique=True, max_length=256)
-    phone = CharField(unique=True, max_length=64)
+    user_id = CharField(index=True,unique=True, max_length=256)
+    user_name = CharField(index=True,unique=False, max_length=32)
+    email = CharField(index=True,unique=True, max_length=256)
+    phone = CharField(index=True,unique=True, max_length=64)
     password = CharField(unique=False, max_length=512)
     available_models = CharField(null=True, max_length=1024, default='["gpt-3.5-turbo"]')
     available_balance = DecimalField(null=False, default=0, max_digits=18, decimal_places=10)
@@ -29,6 +29,10 @@ class User(Model):
     last_login = DateTimeField()
     created_time = DateTimeField()
     updated_time = DateTimeField()
+
+    def save(self, *args, **kwargs):
+        self.updated_time = datetime.datetime.now()
+        return super().save(*args, **kwargs)
 
     def set_available_models(self, models_list):
         self.available_models = json.dumps(models_list)
@@ -44,6 +48,10 @@ class User(Model):
     def get_available_balance(self):
         if self.available_balance is not None:
             return json.loads(self.available_balance)
+        return 0
+    def get_available_balance_round2(self):
+        if self.available_balance is not None:
+            return round(self.available_balance, 2)
         return 0
 
     def save_in_session(self):
@@ -109,7 +117,7 @@ class User(Model):
             "email": self.email,
             "phone": self.phone,
             "available_models": self.get_available_models(),
-            "available_balance": self.get_available_balance(),
+            "available_balance": self.get_available_balance_json(),
             "avatar": self.avatar,
             "deleted": self.deleted,
             "last_login": self.last_login,

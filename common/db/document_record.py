@@ -1,4 +1,4 @@
-import json
+import datetime
 
 from peewee import (
     Model,
@@ -10,6 +10,7 @@ from peewee import (
 )
 
 from common.db.dbconfig import db
+
 
 class DocumentRecord(Model):
     id = AutoField()
@@ -46,6 +47,11 @@ class DocumentRecord(Model):
             document_list.append(document.dict())
         return document_list
 
+
+
+    def save(self, *args, **kwargs):
+        self.updated_time = datetime.datetime.now()
+        return super().save(*args, **kwargs)
 
     class Meta:
         database = db

@@ -3,22 +3,19 @@ import logging
 import os
 import re
 import time
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 from unicodedata import normalize
 
 from flask import jsonify
 from llama_index import SimpleDirectoryReader
-from werkzeug.utils import secure_filename
 
 from common import log
 from common.db.document_record import DocumentRecord
 from common.log import logger
 from common.menu_functions.document_list import DocumentList
-
-from config import project_conf
-from pathlib import Path
-from concurrent.futures import ThreadPoolExecutor
-
 from common.menu_functions.public_train_methods import public_train_documents, store_query_engine
+from config import project_conf
 
 executor = ThreadPoolExecutor(8)
 

@@ -1,13 +1,12 @@
-import json
+import datetime
 
 from peewee import (
     Model,
     IntegerField,
     CharField,
-    BooleanField,
     DateTimeField,
     AutoField,
-    DoubleField
+    DecimalField
 )
 
 from common.db.dbconfig import db
@@ -17,8 +16,8 @@ from common.functions import get_city_name_in_chinese
 class Transaction(Model):
     id = AutoField()
     user_id = CharField(unique=False, max_length=64)
-    transaction_id = CharField(unique=False, max_length=64)
-    amount = DoubleField(unique=False, default=0)
+    transaction_id = CharField(index=True,unique=True, max_length=64)
+    amount = DecimalField(null=False, default=0, max_digits=18, decimal_places=2)
     status = IntegerField(unique=False, default=0)  # 0: pending, 1: success, 2: failed 3: refunded 4: cancelled
     channel = CharField(unique=False, max_length=2)  # 0: lantu-wechat
     ip = CharField(unique=False, max_length=128)
@@ -31,6 +30,10 @@ class Transaction(Model):
             self.ip_location = get_city_name_in_chinese(self.ip)
         except:
             self.ip_location = ""
+
+    def save(self, *args, **kwargs):
+        self.updated_time = datetime.datetime.now()
+        return super().save(*args, **kwargs)
 
     class Meta:
         database = db

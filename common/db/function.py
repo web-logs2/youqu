@@ -1,22 +1,20 @@
+import datetime
 import json
 
 import jsonpickle
-from flask import session
 from peewee import (
     Model,
     CharField,
     DateTimeField,
-    AutoField,
-    Index
+    AutoField
 )
 
 from common.db.dbconfig import db
-from common.log import logger
 
 
 class Function(Model):
     id = AutoField()
-    function_name = CharField(unique=False, max_length=32)
+    function_name = CharField(index=True,unique=False, max_length=32)
     available_models = CharField(null=True, max_length=1024, default='["gpt-3.5-turbo-16k"]')
     function_detail = CharField(null=False, max_length=10240)
     owner_id = CharField(index=True, null=True, max_length=32, default='system')
@@ -54,6 +52,11 @@ class Function(Model):
         else:
             return None
 
+
+
+    def save(self, *args, **kwargs):
+        self.updated_time = datetime.datetime.now()
+        return super().save(*args, **kwargs)
 
     def __str__(self):
         return jsonpickle.encode(self, unpicklable=False)

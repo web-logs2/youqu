@@ -3,22 +3,23 @@ import base64
 import time
 import traceback
 
-from flask import request, jsonify
+from flask import request
 from flask_socketio import SocketIO
 
 from channel.channel import Channel
 from channel.http import auth
-from channel.http.http_api import handle_text
 from common import const, log
-
+from common.const import MIN_GAN_CI
 from common.db.dbconfig import db
 from common.db.document_record import DocumentRecord
 from common.db.user import User
 from common.functions import num_tokens_from_string
+from common.log import logger
 from common.menu_functions.public_train_methods import public_query_documents
 from config import model_conf
 from model.azure.azure_model import AZURE
 from model.openai.chatgpt_model import Session
+from service.bad_word_filter import check_blacklist
 from service.global_values import addStopMessages
 
 
@@ -35,6 +36,8 @@ class socket_handler():
         self.socketio.on_event('stop', self.stop, namespace='/chat')
         self.socketio.on_event('disconnect', self.disconnect, namespace='/chat')
         self.socketio.on_event('heartbeat', self.heart_beat, namespace='/chat')
+
+
 
     async def return_stream(self, data, user: User):
 
@@ -94,7 +97,7 @@ class socket_handler():
         # if context['response_type']=='voice':
         #     addStopMessages(context['msg'])
         if context["msg"] == "":
-            yield True, "请说话"
+            yield True, None
             return
 
         if context['conversation_type'] == 'reading':
@@ -130,25 +133,39 @@ class socket_handler():
         else:
             async for final, reply in Channel.build_reply_stream(context):
                 if context['response_type'] == 'text':
-                    final and log.info("reply:" + reply)
-                    yield final, reply
+                    final and log.info("reply:" + reply.reply)
+                    #yield final, reply if reply is string else reply.get_query_record_dict()
+                    # yield final, reply.get_query_record_dict()
+                    yield (final, reply.get_query_record_dict()) if final else (final, reply)
                 elif context['response_type'] == 'voice' and final:
                     log.info("reply:" + reply)
-                    audio_data = AZURE().synthesize_speech(reply).audio_data
+                    audio_data = AZURE().synthesize_speech(reply.reply).audio_data
                     audio_base64 = base64.b64encode(audio_data).decode("utf-8")
-                    yield final, audio_base64
+                    reply.reply = audio_base64
+                    yield final, reply.get_query_record_dict()
 
     def message(self, data):
+        logger.debug('url:{}'.format(request.url))
+        logger.debug('header:{}'.format(request.headers))
+        logger.debug('data:{}'.format(request.get_data()))
+
         user = self.verify_stream()
         if user and data:
-            asyncio.run(self.return_stream(data, user))
+            # if user.available_balance < 0:
+            #     self.socketio.emit('final', {'content': YU_ER_BU_ZU}, room=request.sid, namespace='/chat')
+            #     return
+            if check_blacklist(data['msg']):
+                self.socketio.emit('final', {'content': MIN_GAN_CI}, room=request.sid,namespace='/chat')
+                return
+            else:
+                asyncio.run(self.return_stream(data, user))
 
     def stop(self, data):
         user = self.verify_stream()
         if user:
             addStopMessages(user.user_id)
-            log.info("{} messages stopped",user.user_id)
-            #self.socketio.emit('stop', {'info': "stopped"}, room=request.sid, namespace='/chat')
+            log.info("{} messages stopped", user.user_id)
+            # self.socketio.emit('stop', {'info': "stopped"}, room=request.sid, namespace='/chat')
 
     def update_conversation(self, data):
         user = self.verify_stream()
@@ -160,16 +177,21 @@ class socket_handler():
                                namespace='/chat')
 
     def connect(self):
+        logger.debug('url:{}'.format(request.url))
+        logger.debug('header:{}'.format(request.headers))
+        logger.debug('data:{}'.format(request.get_data()))
+
+
         user = self.verify_stream()
         if user:
             log.info('{} connected', user.email)
             self.socketio.emit('connected', {'info': "connected"}, room=request.sid, namespace='/chat')
 
     def heart_beat(self, message):
-        log.info("heart beat:{}", message)
+        #log.info("heart beat:{}", message)
         user = self.verify_stream()
         if user:
-            log.info('{} heart beat', user.user_id)
+            log.info('{} {} heart beat', user.email,user.user_name)
             self.socketio.server.emit(
                 'heartbeat',
                 'pang', request.sid,
@@ -184,8 +206,8 @@ class socket_handler():
         token = request.args.get('token', '')
         user = auth.identify(token)
         if user is None:
-            log.info("Token error")
+            # log.info("Token error")
             self.socketio.emit('logout', {'error': "invalid cookie"}, room=request.sid, namespace='/chat')
-            time.sleep(10)
+            time.sleep(0.001)
             self.disconnect()
         return user

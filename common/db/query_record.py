@@ -1,28 +1,33 @@
+import datetime
 import json
+from decimal import Decimal
 
 from peewee import (
     Model,
     IntegerField,
     CharField,
-    BooleanField,
     DateTimeField,
-    AutoField
+    AutoField, DecimalField
 )
 
+from common.const import MODEL_GPT_35_TURBO, MODEL_GPT_35_TURBO_COMPLETION_PRICE, MODEL_GPT_35_TURBO_PROMPT_PRICE, \
+    MODEL_GPT_35_turbo_16K, MODEL_GPT_4_PROMPT_PRICE, MODEL_GPT_4_COMPLETION_PRICE, \
+    MODEL_GPT_35_TURBO_16K_COMPLETION_PRICE, MODEL_GPT_35_TURBO_16K_PROMPT_PRICE
 from common.db.dbconfig import db
 from common.functions import get_city_name_in_chinese
 
 
 class QueryRecord(Model):
     id = AutoField()
-    user_id = CharField(unique=False, max_length=64)
-    conversation_id = CharField(unique=False, max_length=64)
+    user_id = CharField(index=True, unique=False, max_length=64)
+    conversation_id = CharField(index=True, unique=False, max_length=64)
     query = CharField(unique=False, max_length=30000)
     reply = CharField(unique=False, max_length=30000)
     ip = CharField(unique=False, max_length=128)
     ip_location = CharField(unique=False, max_length=1024)
     query_trail = CharField(unique=False, max_length=100000)
     model_name = CharField(unique=False, max_length=64)
+    cost = DecimalField(null=False, default=0, max_digits=18, decimal_places=10)
     prompt_count = IntegerField(unique=False, default=0)
     functions = CharField(unique=False, max_length=1024)
     complication_count = IntegerField(unique=False, default=0)
@@ -47,6 +52,29 @@ class QueryRecord(Model):
 
     def update_ip_location(self):
         self.ip_location = get_city_name_in_chinese(self.ip)
+
+    def get_query_record_dict(self):
+        return {
+            "reply": self.reply,
+            "cost": str(self.cost),
+            "prompt_count": str(self.prompt_count),
+            "complication_count": str(self.complication_count),
+        }
+
+    def save(self, *args, **kwargs):
+        self.updated_time = datetime.datetime.now()
+        return super().save(*args, **kwargs)
+
+    def set_cost(self):
+        # cost = new Decimal 0
+        cost = Decimal(0)
+
+        if self.model_name == MODEL_GPT_35_TURBO:
+            self.cost = MODEL_GPT_35_TURBO_COMPLETION_PRICE * self.complication_count + MODEL_GPT_35_TURBO_PROMPT_PRICE * self.prompt_count
+        elif self.model_name == MODEL_GPT_35_turbo_16K:
+            self.cost = MODEL_GPT_35_TURBO_16K_COMPLETION_PRICE * self.complication_count + MODEL_GPT_35_TURBO_16K_PROMPT_PRICE * self.prompt_count
+        else:
+            self.cost = MODEL_GPT_4_COMPLETION_PRICE * self.complication_count + MODEL_GPT_4_PROMPT_PRICE * self.prompt_count
 
     class Meta:
         database = db
