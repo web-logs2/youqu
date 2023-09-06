@@ -39,6 +39,6 @@ def update_user_profile():
             return jsonify({"message": "Update user information success"}), HTTPStatusCode.ok.value
 
 
-@user_api.route("/upload_user_avatar", methods=['POST'])
+# @user_api.route("/upload_user_avatar", methods=['POST'])
 def upload_user_avatar():
-    upload_user_avatar()
+    user_setting_service.upload_user_avatar()
