@@ -1,12 +1,11 @@
+import hashlib
 import http.client
 import json
 import time
+import urllib.parse
 
 from common.log import logger
 from config import project_conf
-
-import hashlib
-import urllib.parse
 
 
 def get_payment_qr(transaction_id, total_fee, body, attach, time_expire='10m'):

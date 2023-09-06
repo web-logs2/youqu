@@ -1,15 +1,15 @@
 import datetime
-
-from apscheduler.schedulers.background import BackgroundScheduler
 import threading
 import time
+
+from apscheduler.schedulers.background import BackgroundScheduler
 
 import config
 from common import log
 
 config.load_config()
 from common.db.document_record import DocumentRecord
-from service.file_training_service import training_service, train_work
+from service.file_training_service import train_work
 
 
 def scan_database():

@@ -12,7 +12,7 @@ query_engine_dict_size = 20
 if __name__ == '__main__':
     try:
         # load config
-        config.load_config()
+        # config.load_config()
 
         model_type = config.conf().get("model").get("type")
         channel_type = config.conf().get("channel").get("type")

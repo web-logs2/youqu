@@ -1,38 +1,30 @@
 # encoding:utf-8
-import base64
 import datetime
-import hashlib
-import io
 import json
 import time
 
-from flask import jsonify, send_file
-from flask import request, render_template, make_response, session, redirect, Blueprint
-from larksuiteoapi import OapiHeader
-from larksuiteoapi.card import handle_card
-from larksuiteoapi.event import handle_event
-from larksuiteoapi.model import OapiRequest
+from flask import jsonify
+from flask import request, render_template, redirect, Blueprint
 
 import common.email
 import config
 from channel.channel import Channel
-from channel.feishu.common_service import conf
 from channel.http import auth
 from channel.http.auth import sha256_encrypt, Auth
 from common import log
-from common.const import MODEL_GPT_35_turbo_16K, BOT_SYSTEM_PROMPT, INITIAL_BALANCE, YU_ER_BU_ZU, MIN_GAN_CI, \
-    ZUIXIAO_CHONGZHI, ZUIDA_CHONGZHI
+from common.const import MODEL_GPT_35_turbo_16K, BOT_SYSTEM_PROMPT, INITIAL_BALANCE, MIN_GAN_CI, \
+    ZUIXIAO_CHONGZHI, ZUIDA_CHONGZHI, INVALID_INPUT
 from common.db.dbconfig import db
 from common.db.document_record import DocumentRecord
 from common.db.function import Function
 from common.db.prompt import Prompt
+from common.db.query_record import QueryRecord
 from common.db.transaction import Transaction
 from common.db.user import User
 from common.functions import is_valid_password, is_valid_email, is_valid_username, is_valid_phone
 from common.generator import generate_uuid, generate_uuid_no_dash
 from common.log import logger
 from model import model_factory
-from model.azure.azure_model import AZURE
 from service.bad_word_filter import check_blacklist
 from service.file_training_service import upload_file_service
 from service.payment import sign_lantu_payment, get_payment_qr
@@ -88,8 +80,8 @@ def text():
         data['model'] = MODEL_GPT_35_turbo_16K
         data['system_prompt'] = BOT_SYSTEM_PROMPT
         data['user'] = user
-        reply_text = handle_text(data=data)
-        return {'content': reply_text}
+        query_record: QueryRecord = handle_text(data=data)
+        return {'content': query_record.get_query_record_dict()}
     else:
         response = {
             "success": False,
@@ -216,7 +208,8 @@ def register():
                         updated_time=datetime.datetime.now())
     current_user.save()
     # session["user"] = jsonpickle.encode(current_user)
-    token = Auth.encode_auth_token(current_user.user_id,current_user.password, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+    token = Auth.encode_auth_token(current_user.user_id, current_user.password,
+                                   time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
     log.info("Registration success: " + current_user.email)
     return jsonify(
         {"content": "success", "username": current_user.user_name, "token": token, "email": current_user.email,
@@ -248,7 +241,8 @@ def login():
     else:
         # add current user to session
         #        session['user'] = current_user
-        token = Auth.encode_auth_token(current_user.user_id,current_user.password, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+        token = Auth.encode_auth_token(current_user.user_id, current_user.password,
+                                       time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
         log.info("Login success: " + current_user.email)
         return jsonify(
             {"content": "success", "username": current_user.user_name, "user_id": current_user.user_id, "token": token,
@@ -393,11 +387,29 @@ def handle_payment_create():
     picture_url = get_payment_qr(tran.transaction_id, total_fee, body, current_user.user_id)
     if picture_url:
         tran.save()
-        return jsonify({"picture_url": picture_url}), 200
+        return jsonify({"picture_url": picture_url, "transaction_id": tran.transaction_id}), 200
     else:
         tran.status = 2
         tran.save()
         return jsonify({"error": "创建支付二维码失败"}), 401
+
+
+@api.route("/api/payment/query", methods=['POST'])
+def get_payment_info():
+    data = json.loads(request.data)
+    token = data.get('token', 0)
+    current_user = auth.identify(token)
+    if current_user is None:
+        return jsonify({"error": "Invalid user"}), 401
+    transaction_id = data.get('transaction_id', '')
+    if not transaction_id:
+        return jsonify({"error": INVALID_INPUT}), 401
+
+    tran = Transaction.get_or_none(Transaction.transaction_id == transaction_id, Transaction.user_id == current_user.user_id)
+    if not tran:
+        return jsonify({"error": "Invalid transaction_id"}), 401
+    return jsonify({"transaction_id": tran.transaction_id, "amount": tran.amount, "status": tran.status}), 200
+
 
 
 # @api.route('/webhook/card', methods=['POST'])

@@ -2,17 +2,14 @@ import datetime
 import json
 
 import jsonpickle
-from flask import session
 from peewee import (
     Model,
     CharField,
     DateTimeField,
-    AutoField,
-    Index
+    AutoField
 )
 
 from common.db.dbconfig import db
-from common.log import logger
 
 
 class Function(Model):

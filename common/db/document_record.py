@@ -1,5 +1,4 @@
 import datetime
-import json
 
 from peewee import (
     Model,
@@ -11,6 +10,7 @@ from peewee import (
 )
 
 from common.db.dbconfig import db
+
 
 class DocumentRecord(Model):
     id = AutoField()

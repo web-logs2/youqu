@@ -9,7 +9,6 @@ from flask_socketio import SocketIO
 from channel.channel import Channel
 from channel.http.http_api import api
 from channel.http.socketio_handler import socket_handler
-
 from common import const, log
 from common.functions import is_path_empty_or_nonexistent
 from common.log import logger
@@ -34,9 +33,9 @@ http_app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
 @http_app.before_request
 def log_request_info():
-    logger.info('url:{}'.format(request.url))
-    logger.info('header:{}'.format(request.headers))
-    logger.info('data:{}'.format(request.get_data()))
+    logger.debug('url:{}'.format(request.url))
+    logger.debug('header:{}'.format(request.headers))
+    logger.debug('data:{}'.format(request.get_data()))
 #
 # print('Headers: %s', flask.request.headers)
 #     print('Body: %s', flask.request.get_data())

@@ -1,12 +1,9 @@
 import os
 import re
-import traceback
-from unicodedata import normalize
 
-import geoip2
+import geoip2.database
 import tiktoken
 from geoip2.errors import AddressNotFoundError
-import geoip2.database
 
 from common import const, log
 

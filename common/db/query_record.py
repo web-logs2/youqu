@@ -53,6 +53,13 @@ class QueryRecord(Model):
     def update_ip_location(self):
         self.ip_location = get_city_name_in_chinese(self.ip)
 
+    def get_query_record_dict(self):
+        return {
+            "reply": self.reply,
+            "cost": str(self.cost),
+            "prompt_count": str(self.prompt_count),
+            "complication_count": str(self.complication_count),
+        }
 
     def save(self, *args, **kwargs):
         self.updated_time = datetime.datetime.now()

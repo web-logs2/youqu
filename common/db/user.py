@@ -8,9 +8,8 @@ from peewee import (
     CharField,
     DateTimeField,
     AutoField,
-    DecimalField, FieldAccessor
+    DecimalField
 )
-from playhouse.migrate import MySQLMigrator, migrate
 
 from common.db.db_utils import add_field_if_not_exist
 from common.db.dbconfig import db

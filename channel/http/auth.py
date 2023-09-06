@@ -2,11 +2,8 @@
 
 import datetime
 import hashlib
-import json
 
-import jsonpickle
 import jwt
-from flask import session
 
 from common import const, log
 from common.db.user import User
@@ -64,9 +61,9 @@ class Auth:
             else:
                 raise jwt.InvalidTokenError
         except jwt.ExpiredSignatureError:
-            return 'Token过期'
+            return 'Token expired'
         except jwt.InvalidTokenError:
-            return '无效Token'
+            return 'Invalid Token'
 
 
 def sha256_encrypt(password):

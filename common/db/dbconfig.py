@@ -1,6 +1,7 @@
+from playhouse.pool import PooledMySQLDatabase
+
 from common import const
 from config import config
-from playhouse.pool import PooledMySQLDatabase
 
 host = config.get(const.MYSQL).get('host')
 userName = config.get(const.MYSQL).get('userName')

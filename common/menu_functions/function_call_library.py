@@ -1,4 +1,3 @@
-import logging
 from datetime import datetime
 
 import pytz
@@ -10,7 +9,6 @@ from common.log import logger
 from config import conf
 from service.google_search import search_google
 from service.tencent_stock import get_cn_quotes, get_us_quotes
-
 
 
 def detect_function_and_call(function_name, parameters,functions_definition):
