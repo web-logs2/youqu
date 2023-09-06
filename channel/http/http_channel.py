@@ -7,6 +7,7 @@ from flask_cors import CORS
 from flask_socketio import SocketIO
 
 from channel.channel import Channel
+from channel.http.api_controller.user_setting_api import user_api
 from channel.http.http_api import api
 from channel.http.socketio_handler import socket_handler
 from common import const, log
@@ -17,6 +18,7 @@ from config import channel_conf
 nest_asyncio.apply()
 http_app = Flask(__name__, template_folder='templates', static_folder='static')
 http_app.register_blueprint(api)  # 注册蓝图
+http_app.register_blueprint(user_api)  # 注册蓝图
 socketio = SocketIO(http_app, ping_timeout=5 * 60, ping_interval=30, cors_allowed_origins="*")
 
 # 自动重载模板文件

@@ -8,8 +8,8 @@ from common.error_code import ErrorCode, HTTPStatusCode
 
 
 def update_user_profile(user_profile):
-    user_profile = User.from_dict(user_profile)
-    user_id = user_profile.user_id
+    # user_profile = User.from_dict(user)
+    user_id = user_profile.get('user_id')
 
     current_user = User.select().where((User.user_id == user_id)).first()
 
@@ -17,21 +17,19 @@ def update_user_profile(user_profile):
     if current_user is None:
         return ErrorCode.no_user_found
 
-    updated_user = User()
-
     is_updated = False
 
     # field validations
     fields_to_update = {
-        'user_name': user_profile.user_name,
-        'email': user_profile.email,
-        'phone': user_profile.phone,
-        'avatar': user_profile.avatar,
-        'password': sha256_encrypt(user_profile.password) if user_profile.password is not None else None
+        'user_name': user_profile.get('name'),
+        'email': user_profile.get('email'),
+        'phone': user_profile.get('phone'),
+        'avatar': user_profile.get('avatar'),
+        'password': sha256_encrypt(user_profile.get('password')) if user_profile.get('password') is not None else None
     }
     for field, value in fields_to_update.items():
         if value is not None and value != getattr(current_user, field):
-            setattr(updated_user, field, value)
+            setattr(current_user, field, value)
             is_updated = True
 
     # if user_profile.user_name != current_user.user_name:
@@ -52,12 +50,11 @@ def update_user_profile(user_profile):
 
     # need to update, set id and updated time
     if is_updated:
-        updated_user.user_id = current_user.user_id
-        updated_user.updated_time = datetime.datetime.now()
+        current_user.updated_time = datetime.datetime.now()
     else:
         return ErrorCode.no_information_update
 
-    if updated_user.save():
+    if current_user.save():
         return HTTPStatusCode.ok
     else:
         return ErrorCode.database_operation_error
