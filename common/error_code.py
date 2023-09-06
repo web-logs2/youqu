@@ -17,6 +17,7 @@ class ErrorCode(Enum):
     # 5xx series, server error
     database_operation_error = 50001
 
+
 class HTTPStatusCode(Enum):
     ok = 200
 
