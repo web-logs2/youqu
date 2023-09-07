@@ -12,17 +12,17 @@ from channel.http.socketio_handler import socket_handler
 from common import const, log
 from common.functions import is_path_empty_or_nonexistent
 from common.log import logger
-from config import channel_conf
+from config import channel_conf, project_conf
 
 nest_asyncio.apply()
-http_app = Flask(__name__, template_folder='templates', static_folder='static')
+http_app = Flask(__name__, template_folder=project_conf("www_template"),static_folder=project_conf("www_static"))
+CORS(http_app)
 http_app.register_blueprint(api)  # 注册蓝图
 socketio = SocketIO(http_app, ping_timeout=5 * 60, ping_interval=30, cors_allowed_origins="*")
 
 # 自动重载模板文件
 http_app.jinja_env.auto_reload = True
 http_app.config['TEMPLATES_AUTO_RELOAD'] = True
-CORS(http_app)
 handler = socket_handler(socketio)
 handler.register_socketio_events()  # 注册socket_handler类中的事件
 
@@ -30,12 +30,20 @@ handler.register_socketio_events()  # 注册socket_handler类中的事件
 http_app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
 
-
 @http_app.before_request
 def log_request_info():
     logger.debug('url:{}'.format(request.url))
     logger.debug('header:{}'.format(request.headers))
     logger.debug('data:{}'.format(request.get_data()))
+
+
+@http_app.after_request
+def apply_cors(response):
+    response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+    response.headers["Cross-Origin-Embedder-Policy"] = "require-corp"
+    return response
+
+
 #
 # print('Headers: %s', flask.request.headers)
 #     print('Body: %s', flask.request.get_data())

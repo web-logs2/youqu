@@ -4,14 +4,14 @@ import azure.cognitiveservices.speech as speechsdk
 
 import config
 from common import const
+from common.log import logger
 from config import model_conf
 
 os.environ['AZURE_C_SHARED_LOG_LEVEL'] = 'LOG_INFO'
 
-class AZURE:
 
+class AZURE:
     def __init__(self):
-        config.load_config()
         self.speech_key = model_conf(const.AZURE).get('api_key')
         self.service_region = model_conf(const.AZURE).get('region')
         self.style = model_conf(const.AZURE).get('style')
@@ -45,6 +45,38 @@ class AZURE:
         # with open(filename, "wb") as f:
         #     f.write(speech_synthesis_result.audio_data)
         return speech_synthesis_result
+
+    def speech_recognized(self, file_name):
+
+        speech_config = speechsdk.SpeechConfig(subscription=self.speech_key, region=self.service_region)
+        audio_config = speechsdk.audio.AudioConfig(filename=file_name)
+        # Creates a speech recognizer using a file as audio input, also specify the speech language
+        speech_recognizer = speechsdk.SpeechRecognizer(
+            speech_config=speech_config, language=self.xml_lang, audio_config=audio_config)
+
+        # Starts speech recognition, and returns after a single utterance is recognized. The end of a
+        # single utterance is determined by listening for silence at the end or until a maximum of 15
+        # seconds of audio is processed. It returns the recognition text as result.
+        # Note: Since recognize_once() returns only a single utterance, it is suitable only for single
+        # shot recognition like command or query.
+        # For long-running multi-utterance recognition, use start_continuous_recognition() instead.
+        result = speech_recognizer.recognize_once()
+
+        # Check the result
+        if result.reason == speechsdk.ResultReason.RecognizedSpeech:
+            logger.info("Recognized: {}".format(result.text))
+            return result.text
+        elif result.reason == speechsdk.ResultReason.NoMatch:
+            logger.info("No speech could be recognized: {}".format(result.no_match_details))
+        elif result.reason == speechsdk.ResultReason.Canceled:
+            cancellation_details = result.cancellation_details
+            logger.info("Speech Recognition canceled: {}".format(cancellation_details.reason))
+            if cancellation_details.reason == speechsdk.CancellationReason.Error:
+                logger.info("Error details: {}".format(cancellation_details.error_details))
+        return ""
+
+
+azure = AZURE()
 
 
 # - Affectionate：感情风格，温柔感人；
