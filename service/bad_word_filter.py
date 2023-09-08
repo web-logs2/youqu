@@ -18,7 +18,7 @@ bad_word_list = load_bad_word()
 
 def check_blacklist(sentence):
     if sentence is None or len(sentence) == 0:
-        return False
+        return True
     words = set(jieba.cut(sentence, cut_all=False))
     return len(words & bad_word_list) > 0
 

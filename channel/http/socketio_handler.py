@@ -3,8 +3,10 @@ import base64
 import time
 import traceback
 
+import moviepy.editor as mp
 from flask import request
 from flask_socketio import SocketIO
+from moviepy.video.io.VideoFileClip import VideoFileClip
 
 from channel.channel import Channel
 from channel.http import auth
@@ -36,8 +38,6 @@ class socket_handler():
         self.socketio.on_event('stop', self.stop, namespace='/chat')
         self.socketio.on_event('disconnect', self.disconnect, namespace='/chat')
         self.socketio.on_event('heartbeat', self.heart_beat, namespace='/chat')
-
-
 
     async def return_stream(self, data, user: User):
 
@@ -86,17 +86,20 @@ class socket_handler():
             'function_call': data.get("function_call", ""),
         }
         if context['request_type'] == 'voice':
-            if not context["msg"].startswith("data:audio/webm;codecs=opus;base64,") or len(context["msg"]) < 24 or len(
-                    context["msg"]) > 10000000:
+            if len(context["msg"]) < 24:
                 log.error("语音格式错误")
                 yield True, INVALID_INPUT
                 return
-            audio_bytes = base64.b64decode(context["msg"].split(",")[-1])
-            filename = "tmp/audio/" + user.user_name + "_" + str(time.time()) + ".mkv"
+            # audio_bytes = base64.b64decode(context["msg"].split(",")[-1])
+            filename = "tmp/audio/" + user.user_name + "_" + str(time.time()) + ".wav"
             stream = open(filename, 'wb')
-            stream.write(audio_bytes)
+            stream.write(context["msg"])
             stream.close()
-            context["msg"] = await azure.speech_recognized(filename)
+            logger.info("语音文件:{}写入 长度{}".format(filename, len(context["msg"])))
+            # clip = mp.VideoFileClip(filename)
+            # # wav_filename=filename.replace(".webm", ".wav")
+            # clip.audio.write_audiofile(filename)
+            context["msg"] = azure.speech_recognized(filename)
 
         if check_blacklist(context["msg"]):
             self.socketio.emit('final', {'content': MIN_GAN_CI}, room=request.sid, namespace='/chat')
