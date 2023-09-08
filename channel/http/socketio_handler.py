@@ -155,9 +155,9 @@ class socket_handler():
                     yield (final, reply.get_query_record_dict()) if final else (final, reply)
                 elif context['response_type'] == 'voice' and final:
                     log.info("reply:" + reply)
-                    audio_data = AZURE().synthesize_speech(reply.reply).audio_data
-                    audio_base64 = base64.b64encode(audio_data).decode("utf-8")
-                    reply.reply = audio_base64
+                    # audio_data = edge_tts.communicateAZURE().synthesize_speech(reply.reply).audio_data
+                    # audio_base64 = base64.b64encode(audio_data).decode("utf-8")
+                    # reply.reply = audio_base64
                     yield final, reply.get_query_record_dict()
 
     def message(self, data):

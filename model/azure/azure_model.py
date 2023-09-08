@@ -91,68 +91,32 @@ class AZURE:
         self.styledegree = model_conf(const.AZURE).get('styledegree')
         self.xml_lang = model_conf(const.AZURE).get('xml_lang')
         self.voice_name = model_conf(const.AZURE).get('voice_name')
-        speech_config = speechsdk.SpeechConfig(subscription=self.speech_key, region=self.service_region)
-        self.speech_synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config)
 
 
-
-    class BinaryFileReaderCallback(speechsdk.audio.PullAudioInputStreamCallback):
-        def __init__(self, filename: str):
-            super().__init__()
-            self._file_h = open(filename, "rb")
-
-        def read(self, buffer: memoryview) -> int:
-            try:
-                size = buffer.nbytes
-                frames = self._file_h.read(size)
-
-                buffer[:len(frames)] = frames
-
-                return len(frames)
-            except Exception as ex:
-                print('Exception in `read`: {}'.format(ex))
-                raise
-
-        def close(self) -> None:
-            print('closing file')
-            try:
-                self._file_h.close()
-            except Exception as ex:
-                print('Exception in `close`: {}'.format(ex))
-                raise
-
-    # Creates an audio stream format. For an example we are using MP3 compressed file here
-
-
-
-
-
-
-
-    def synthesize_speech(self, text, style='chat', voice_name='zh-CN-XiaoxiaoNeural'):
-        # 创建一个合成器实例
-
-        # 设置语音合成参数
-        ssml_string = f'''<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis"
-                   xmlns:mstts="https://www.w3.org/2001/mstts" xml:lang="{self.xml_lang}">
-                <voice name="{self.voice_name}">
-                    <mstts:express-as style="{self.style}" styledegree="{self.styledegree}">
-                        <mstts:prosody rate="5.00%" rate-as="48kHz">
-                            {text}
-                        </mstts:prosody>
-                    </mstts:express-as>
-                </voice>
-            </speak>'''
-
-        # 执行语音合成并获取合成后的音频流
-        speech_synthesis_result = self.speech_synthesizer.speak_ssml_async(ssml_string).get()
-
-        # 保存音频流为 WAV 格式文件
-        # timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        # filename = "{}_{}_{}.wav".format("output", text[:10], timestamp)
-        # with open(filename, "wb") as f:
-        #     f.write(speech_synthesis_result.audio_data)
-        return speech_synthesis_result
+    # def synthesize_speech(self, text, style='chat', voice_name='zh-CN-XiaoxiaoNeural'):
+    #     # 创建一个合成器实例
+    #
+    #     # 设置语音合成参数
+    #     ssml_string = f'''<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis"
+    #                xmlns:mstts="https://www.w3.org/2001/mstts" xml:lang="{self.xml_lang}">
+    #             <voice name="{self.voice_name}">
+    #                 <mstts:express-as style="{self.style}" styledegree="{self.styledegree}">
+    #                     <mstts:prosody rate="5.00%" rate-as="48kHz">
+    #                         {text}
+    #                     </mstts:prosody>
+    #                 </mstts:express-as>
+    #             </voice>
+    #         </speak>'''
+    #
+    #     # 执行语音合成并获取合成后的音频流
+    #     speech_synthesis_result = self.speech_synthesizer.speak_ssml_async(ssml_string).get()
+    #
+    #     # 保存音频流为 WAV 格式文件
+    #     # timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    #     # filename = "{}_{}_{}.wav".format("output", text[:10], timestamp)
+    #     # with open(filename, "wb") as f:
+    #     #     f.write(speech_synthesis_result.audio_data)
+    #     return speech_synthesis_result
 
     def speech_recognized(self, file_name):
         speech_config = speechsdk.SpeechConfig(subscription=self.speech_key, region=self.service_region)
