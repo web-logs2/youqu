@@ -101,6 +101,7 @@ class socket_handler():
 
         if check_blacklist(context["msg"]):
             self.socketio.emit('final', {'content': MIN_GAN_CI}, room=request.sid, namespace='/chat')
+            return
 
         if context['model'] not in user.get_available_models():
             context['model'] = const.MODEL_GPT_35_TURBO
