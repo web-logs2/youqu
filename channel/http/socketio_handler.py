@@ -100,7 +100,7 @@ class socket_handler():
             context["msg"] = azure.speech_recognized(filename)
 
         if check_blacklist(context["msg"]):
-            self.socketio.emit('final', {'content': MIN_GAN_CI}, room=request.sid, namespace='/chat')
+            self.socketio.emit('final', {'content': INVALID_INPUT}, room=request.sid, namespace='/chat')
             return
 
         if context['model'] not in user.get_available_models():
