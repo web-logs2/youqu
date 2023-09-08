@@ -3,10 +3,8 @@ import base64
 import time
 import traceback
 
-import moviepy.editor as mp
 from flask import request
 from flask_socketio import SocketIO
-from moviepy.video.io.VideoFileClip import VideoFileClip
 
 from channel.channel import Channel
 from channel.http import auth
