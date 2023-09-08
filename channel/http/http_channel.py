@@ -15,11 +15,12 @@ from common.log import logger
 from config import channel_conf, project_conf
 
 nest_asyncio.apply()
-http_app = Flask(__name__, template_folder=project_conf("www_template"),static_folder=project_conf("www_static"))
+http_app = Flask(__name__, template_folder=project_conf("www_template"), static_folder=project_conf("www_static"))
 CORS(http_app)
 http_app.register_blueprint(api)  # 注册蓝图
 http_app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
-socketio = SocketIO(http_app, ping_timeout=5 * 60, ping_interval=30, cors_allowed_origins="*",max_http_buffer_size=10 * 1024 * 1024)
+socketio = SocketIO(http_app, ping_timeout=5 * 60, ping_interval=30, cors_allowed_origins="*",
+                    max_http_buffer_size=10 * 1024 * 1024)
 
 # 自动重载模板文件
 http_app.jinja_env.auto_reload = True
