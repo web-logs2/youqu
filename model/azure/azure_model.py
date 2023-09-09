@@ -116,14 +116,13 @@ class AZURE:
             'Content-Type': 'audio/wav'
         }
         response = requests.post(speech_api_url, headers=headers, data=audio_data)
-        # 处理返回的结果
-        logger.debug("response status code: "+str(response.status_code))
-        logger.debug("response content: "+str(response.content))
+        if response.status_code != 200:
+            logger.error("response status code: "+str(response.status_code))
+            logger.error("response content: "+str(response.content))
+            return ""
         result = response.json()
-        logger.debug(result)
-        transcript = result['DisplayText']
-        logger.info("Recognized: {}".format(transcript))
-        return transcript
+        logger.info("Recognized: {}".format(result['DisplayText']))
+        return result['DisplayText']
 
     # def synthesize_speech(self, text, style='chat', voice_name='zh-CN-XiaoxiaoNeural'):
     #     # 创建一个合成器实例
