@@ -97,7 +97,7 @@ class socket_handler():
             # clip = mp.VideoFileClip(filename)
             # # wav_filename=filename.replace(".webm", ".wav")
             # clip.audio.write_audiofile(filename)
-            context["msg"] = azure.speech_recognized(filename)
+            context["msg"] = azure.speech_recognize_through_api(filename)
 
         if check_blacklist(context["msg"]):
             self.socketio.emit('final', {'content': INVALID_INPUT}, room=request.sid, namespace='/chat')

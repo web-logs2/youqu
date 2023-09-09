@@ -1,6 +1,8 @@
 import os
 import time
 
+import requests
+
 from common import const
 from common.log import logger
 from config import model_conf
@@ -92,6 +94,33 @@ class AZURE:
         self.xml_lang = model_conf(const.AZURE).get('xml_lang')
         self.voice_name = model_conf(const.AZURE).get('voice_name')
 
+    def speech_recognize_through_api(self, file_name):
+
+        url = f'https://{self.service_region}.api.cognitive.microsoft.com/sts/v1.0/issueToken'
+
+        # 获取访问令牌
+        headers = {
+            'Ocp-Apim-Subscription-Key': self.speech_key
+        }
+        response = requests.post(url, headers=headers)
+        access_token = response.text
+
+        # 使用访问令牌调用语音识别API
+        speech_api_url = f'https://{self.service_region}.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language={self.xml_lang}'
+
+        with open(file_name, 'rb') as audio_file:
+            audio_data = audio_file.read()
+
+        headers = {
+            'Authorization': 'Bearer ' + access_token,
+            'Content-Type': 'audio/wav'
+        }
+        response = requests.post(speech_api_url, headers=headers, data=audio_data)
+        # 处理返回的结果
+        result = response.json()
+        transcript = result['DisplayText']
+        logger.info("Recognized: {}".format(transcript))
+        return transcript
 
     # def synthesize_speech(self, text, style='chat', voice_name='zh-CN-XiaoxiaoNeural'):
     #     # 创建一个合成器实例
@@ -146,6 +175,7 @@ class AZURE:
             if cancellation_details.reason == speechsdk.CancellationReason.Error:
                 logger.info("Error details: {}".format(cancellation_details.error_details))
         return ""
+
 
 azure = AZURE()
 
