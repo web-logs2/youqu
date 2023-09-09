@@ -13,12 +13,14 @@ from peewee import (
 from common.const import MODEL_GPT_35_TURBO, MODEL_GPT_35_TURBO_COMPLETION_PRICE, MODEL_GPT_35_TURBO_PROMPT_PRICE, \
     MODEL_GPT_35_turbo_16K, MODEL_GPT_4_PROMPT_PRICE, MODEL_GPT_4_COMPLETION_PRICE, \
     MODEL_GPT_35_TURBO_16K_COMPLETION_PRICE, MODEL_GPT_35_TURBO_16K_PROMPT_PRICE
+from common.db.db_utils import add_field_if_not_exist
 from common.db.dbconfig import db
 from common.functions import get_city_name_in_chinese
 
 
 class QueryRecord(Model):
     id = AutoField()
+    message_id = CharField(index=True, unique=False, default="", max_length=64)  # 用户自己生成的 不可靠
     user_id = CharField(index=True, unique=False, max_length=64)
     conversation_id = CharField(index=True, unique=False, max_length=64)
     query = CharField(unique=False, max_length=30000)
@@ -84,4 +86,5 @@ class QueryRecord(Model):
 # 如果数据库中不存在表，则创建表
 db.connect()
 db.create_tables([QueryRecord], safe=True)
+add_field_if_not_exist("query_record", "message_id", CharField(index=True, unique=False, default="", max_length=64))
 db.close()
