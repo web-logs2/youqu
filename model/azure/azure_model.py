@@ -117,6 +117,8 @@ class AZURE:
         }
         response = requests.post(speech_api_url, headers=headers, data=audio_data)
         # 处理返回的结果
+        logger.debug("response status code: "+str(response.status_code))
+        logger.debug("response content: "+str(response.content))
         result = response.json()
         logger.debug(result)
         transcript = result['DisplayText']
