@@ -82,6 +82,7 @@ class socket_handler():
             'conversation_type': data.get("conversation_type", "chat"),
             'document': data.get("document", ""),
             'function_call': data.get("function_call", ""),
+            "message_id": data.get("messageID", ""),
         }
         if context['request_type'] == 'voice':
             if len(context["msg"]) < 24:
@@ -89,7 +90,7 @@ class socket_handler():
                 yield True, INVALID_INPUT
                 return
             # audio_bytes = base64.b64decode(context["msg"].split(",")[-1])
-            filename = "tmp/audio/" + user.user_name + "_" + str(time.time()) + ".wav"
+            filename = "tmp/audio/" + user.user_name + "_" + str(context["message_id"]) + ".wav"
             stream = open(filename, 'wb')
             stream.write(context["msg"])
             stream.close()
