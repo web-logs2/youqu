@@ -9,7 +9,7 @@ from flask_socketio import SocketIO
 from channel.channel import Channel
 from channel.http import auth
 from common import const, log
-from common.const import MIN_GAN_CI
+from common.const import MIN_GAN_CI, INVALID_INPUT
 from common.db.dbconfig import db
 from common.db.document_record import DocumentRecord
 from common.db.user import User
@@ -17,7 +17,7 @@ from common.functions import num_tokens_from_string
 from common.log import logger
 from common.menu_functions.public_train_methods import public_query_documents
 from config import model_conf
-from model.azure.azure_model import AZURE
+from model.azure.azure_model import AZURE, azure
 from model.openai.chatgpt_model import Session
 from service.bad_word_filter import check_blacklist
 from service.global_values import addStopMessages
@@ -36,8 +36,6 @@ class socket_handler():
         self.socketio.on_event('stop', self.stop, namespace='/chat')
         self.socketio.on_event('disconnect', self.disconnect, namespace='/chat')
         self.socketio.on_event('heartbeat', self.heart_beat, namespace='/chat')
-
-
 
     async def return_stream(self, data, user: User):
 
@@ -84,7 +82,27 @@ class socket_handler():
             'conversation_type': data.get("conversation_type", "chat"),
             'document': data.get("document", ""),
             'function_call': data.get("function_call", ""),
+            "message_id": data.get("messageID", ""),
         }
+        if context['request_type'] == 'voice':
+            if len(context["msg"]) < 24:
+                log.error("语音格式错误")
+                yield True, INVALID_INPUT
+                return
+            # audio_bytes = base64.b64decode(context["msg"].split(",")[-1])
+            filename = "tmp/audio/" + user.user_name + "_" + str(context["message_id"]) + ".wav"
+            stream = open(filename, 'wb')
+            stream.write(context["msg"])
+            stream.close()
+            logger.info("语音文件:{}写入 长度{}".format(filename, len(context["msg"])))
+            # clip = mp.VideoFileClip(filename)
+            # # wav_filename=filename.replace(".webm", ".wav")
+            # clip.audio.write_audiofile(filename)
+            context["msg"] = azure.speech_recognize_through_api(filename)
+
+        if check_blacklist(context["msg"]):
+            self.socketio.emit('final', {'content': INVALID_INPUT}, room=request.sid, namespace='/chat')
+            return
 
         if context['model'] not in user.get_available_models():
             context['model'] = const.MODEL_GPT_35_TURBO
@@ -134,14 +152,14 @@ class socket_handler():
             async for final, reply in Channel.build_reply_stream(context):
                 if context['response_type'] == 'text':
                     final and log.info("reply:" + reply.reply)
-                    #yield final, reply if reply is string else reply.get_query_record_dict()
+                    # yield final, reply if reply is string else reply.get_query_record_dict()
                     # yield final, reply.get_query_record_dict()
                     yield (final, reply.get_query_record_dict()) if final else (final, reply)
                 elif context['response_type'] == 'voice' and final:
                     log.info("reply:" + reply)
-                    audio_data = AZURE().synthesize_speech(reply.reply).audio_data
-                    audio_base64 = base64.b64encode(audio_data).decode("utf-8")
-                    reply.reply = audio_base64
+                    # audio_data = edge_tts.communicateAZURE().synthesize_speech(reply.reply).audio_data
+                    # audio_base64 = base64.b64encode(audio_data).decode("utf-8")
+                    # reply.reply = audio_base64
                     yield final, reply.get_query_record_dict()
 
     def message(self, data):
@@ -150,15 +168,12 @@ class socket_handler():
         logger.debug('data:{}'.format(request.get_data()))
 
         user = self.verify_stream()
-        if user and data:
-            # if user.available_balance < 0:
-            #     self.socketio.emit('final', {'content': YU_ER_BU_ZU}, room=request.sid, namespace='/chat')
-            #     return
-            if check_blacklist(data['msg']):
-                self.socketio.emit('final', {'content': MIN_GAN_CI}, room=request.sid,namespace='/chat')
-                return
-            else:
-                asyncio.run(self.return_stream(data, user))
+        if user and data and data['msg']:
+            asyncio.run(self.return_stream(data, user))
+        else:
+            log.error("user or data is None")
+            self.socketio.emit('final', {'content': INVALID_INPUT}, room=request.sid, namespace='/chat')
+            return
 
     def stop(self, data):
         user = self.verify_stream()
@@ -181,17 +196,16 @@ class socket_handler():
         logger.debug('header:{}'.format(request.headers))
         logger.debug('data:{}'.format(request.get_data()))
 
-
         user = self.verify_stream()
         if user:
             log.info('{} connected', user.email)
             self.socketio.emit('connected', {'info': "connected"}, room=request.sid, namespace='/chat')
 
     def heart_beat(self, message):
-        #log.info("heart beat:{}", message)
+        # log.info("heart beat:{}", message)
         user = self.verify_stream()
         if user:
-            log.info('{} {} heart beat', user.email,user.user_name)
+            log.info('{} {} heart beat', user.email, user.user_name)
             self.socketio.server.emit(
                 'heartbeat',
                 'pang', request.sid,
