@@ -70,7 +70,7 @@ def sha256_encrypt(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
 
-def identify(token: str) -> User:
+def identify(token: str,verify_password=True) -> User:
     """
     用户鉴权
     :return: list
@@ -81,9 +81,13 @@ def identify(token: str) -> User:
         if token:
             payload = Auth.decode_auth_token(token)
             if not isinstance(payload, str):
-                current_user = User.select().where(User.user_id == payload['data']['id'], User.deleted != 1,User.password == payload['data']['password']).first()
+                current_user = User.select().where(User.user_id == payload['data']['id'], User.deleted != 1).first()
+
                 if current_user is None:
                     log.info("User not found:{}", payload['data']['id'])
+                    return None
+                elif verify_password and current_user.password != payload['data']['password']:
+                    log.info("User password expired", payload['data']['id'])
                     return None
                 else:
                     current_user.last_login = datetime.datetime.now()
@@ -103,6 +107,7 @@ def identify(token: str) -> User:
         log.info("Invalid token {}", token)
         # result = '没有提供认证token'
         return None
+
 
 
 def identify_token(token: str):
