@@ -105,3 +105,4 @@ googlesearch-python
 beautifulsoup4
 edge-tts
 jieba
+redis-py

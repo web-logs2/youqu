@@ -6,7 +6,6 @@ import time
 from flask import jsonify
 from flask import request, render_template, redirect, Blueprint
 
-import common.email
 import config
 from channel.channel import Channel
 from channel.http import auth
@@ -26,6 +25,7 @@ from common.generator import generate_uuid, generate_uuid_no_dash
 from common.log import logger
 from model import model_factory
 from service.bad_word_filter import check_blacklist
+from service.email_sms import send_reset_password
 from service.file_training_service import upload_file_service
 from service.payment import sign_lantu_payment, get_payment_qr
 
@@ -268,7 +268,7 @@ def send_code():
         return jsonify({"content": "Reset password email sent"}), 200
     reset_token = Auth.encode_auth_token(current_user.user_id, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), 1)
     # reset_url = f'{channel_conf(const.HTTP).get("domain_name")}={reset_token}'
-    common.email.send_reset_password(reset_token, email)
+    send_reset_password(reset_token,current_user.email, current_user.user_name)
     return jsonify({"message": "Reset password email sent"}), 200
 
 
