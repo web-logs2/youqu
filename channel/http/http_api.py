@@ -1,6 +1,7 @@
 # encoding:utf-8
 import datetime
 import json
+import random
 import time
 
 from flask import jsonify
@@ -20,14 +21,16 @@ from common.db.prompt import Prompt
 from common.db.query_record import QueryRecord
 from common.db.transaction import Transaction
 from common.db.user import User
+from common.error_code import HTTPStatusCode
 from common.functions import is_valid_password, is_valid_email, is_valid_username, is_valid_phone
 from common.generator import generate_uuid, generate_uuid_no_dash
 from common.log import logger
 from model import model_factory
 from service.bad_word_filter import check_blacklist
-from service.email_sms import send_reset_password
+from service.email_sms import send_reset_password, send_verify_code_email
 from service.file_training_service import upload_file_service
 from service.payment import sign_lantu_payment, get_payment_qr
+from service.redis import get_connection
 
 api = Blueprint('api', __name__)
 
@@ -268,7 +271,7 @@ def send_code():
         return jsonify({"content": "Reset password email sent"}), 200
     reset_token = Auth.encode_auth_token(current_user.user_id, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), 1)
     # reset_url = f'{channel_conf(const.HTTP).get("domain_name")}={reset_token}'
-    send_reset_password(reset_token,current_user.email, current_user.user_name)
+    send_reset_password(reset_token, current_user.email, current_user.user_name)
     return jsonify({"message": "Reset password email sent"}), 200
 
 
@@ -305,6 +308,27 @@ def get_user_info():
                     "available_balance": current_user.get_available_balance_round2(),
                     "available_functions": available_functions
                     }), 200
+
+
+@api.route("/send_verify_code_to_email", methods=['POST'])
+def send_verify_code_to_email():
+    data = json.loads(request.data)
+    email = data.get('email', '')
+    # code = data.get('code', '')
+    if User.select().where(User.email == email).first():
+        return jsonify({"error": "Email already exists"}), 400
+    ip = request.headers.get("X-Forwarded-For", request.remote_addr)
+
+    r = get_connection()
+    if r.get(ip + "code"):
+        return jsonify(
+            {"error": "Too many attempts, please try again in one minute."}), HTTPStatusCode.too_many_requests
+
+    verify_code = random.randint(10 ** 4, (10 ** 4) - 1)
+    r.set(email + "code", verify_code, ex=600)  # expires after 600 seconds
+    r.set(ip + "code", email, ex=60)  # expires after 60 seconds
+    send_verify_code_email(email, verify_code)
+    return jsonify({"message": "Verify code sent"}), 200
 
 
 @api.teardown_request
