@@ -62,6 +62,7 @@ class ChatGPTModel(Model):
 
             start_time = time.time()  # 记录结束时间
             query_record = QueryRecord(
+                message_id=context['message_id'],
                 user_id=context['user'].user_id,
                 conversation_id=context['conversation_id'],
                 query=query,
@@ -167,6 +168,7 @@ class ChatGPTModel(Model):
             new_query = Session.build_session_query(query, user_session_id, system_prompt, model=model)
             ip = request.headers.get("X-Forwarded-For", request.remote_addr)
             query_record = QueryRecord(
+                message_id=context['message_id'],
                 user_id=context['user'].user_id,
                 conversation_id=context['conversation_id'],
                 query=query,

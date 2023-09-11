@@ -275,7 +275,7 @@ def send_code():
 @api.route("/reset_password", methods=['POST'])
 def reset_password():
     token = json.loads(request.data).get('token', '')
-    current_user = auth.identify(token)
+    current_user = auth.identify(token, False)
     if current_user is None:
         return jsonify({"error": "Invalid token"}), 401
     data = json.loads(request.data)
@@ -405,11 +405,11 @@ def get_payment_info():
     if not transaction_id:
         return jsonify({"error": INVALID_INPUT}), 401
 
-    tran = Transaction.get_or_none(Transaction.transaction_id == transaction_id, Transaction.user_id == current_user.user_id)
+    tran = Transaction.get_or_none(Transaction.transaction_id == transaction_id,
+                                   Transaction.user_id == current_user.user_id)
     if not tran:
         return jsonify({"error": "Invalid transaction_id"}), 401
     return jsonify({"transaction_id": tran.transaction_id, "amount": tran.amount, "status": tran.status}), 200
-
 
 
 # @api.route('/webhook/card', methods=['POST'])
