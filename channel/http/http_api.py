@@ -11,7 +11,7 @@ import config
 from channel.channel import Channel
 from channel.http import auth
 from channel.http.auth import sha256_encrypt, Auth
-from common import log
+import common.log as logger
 from common.const import MODEL_GPT_35_turbo_16K, BOT_SYSTEM_PROMPT, INITIAL_BALANCE, MIN_GAN_CI, \
     ZUIXIAO_CHONGZHI, ZUIDA_CHONGZHI, INVALID_INPUT
 from common.db.dbconfig import db
@@ -30,7 +30,7 @@ from service.bad_word_filter import check_blacklist
 from service.email_sms import send_reset_password, send_verify_code_email
 from service.file_training_service import upload_file_service
 from service.payment import sign_lantu_payment, get_payment_qr
-from service.redis import get_connection
+from service.redisDB import get_connection
 
 api = Blueprint('api', __name__)
 
@@ -315,16 +315,17 @@ def send_verify_code_to_email():
     data = json.loads(request.data)
     email = data.get('email', '')
     # code = data.get('code', '')
-    if User.select().where(User.email == email).first():
-        return jsonify({"error": "Email already exists"}), 400
-    ip = request.headers.get("X-Forwarded-For", request.remote_addr)
-
     r = get_connection()
+    ip = request.headers.get("X-Forwarded-For", request.remote_addr)
     if r.get(ip + "code"):
         return jsonify(
             {"error": "Too many attempts, please try again in one minute."}), HTTPStatusCode.too_many_requests
+    if User.select().where(User.email == email).first():
+        return jsonify({"error": "Email already exists"}), 400
 
-    verify_code = random.randint(10 ** 4, (10 ** 4) - 1)
+
+
+    verify_code = random.randint(1000, 9999)
     r.set(email + "code", verify_code, ex=600)  # expires after 600 seconds
     r.set(ip + "code", email, ex=60)  # expires after 60 seconds
     send_verify_code_email(email, verify_code)

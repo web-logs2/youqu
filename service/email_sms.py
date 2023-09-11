@@ -8,9 +8,8 @@ from sendgrid.helpers.mail import Mail, Email, To
 from twilio.rest import Client
 
 import common.const as const
+import common.log as logger
 import config
-from common import log
-from common.log import logger
 from config import project_conf, channel_conf
 
 
@@ -32,23 +31,23 @@ def send_email_with_template(to_email, subject, template_id, dynamic_template_da
         sendgrid_client = SendGridAPIClient(api_key)
         response = sendgrid_client.send(message)
 
-        log.info("Request headers:{}", sendgrid_client.client.default_headers)
-        log.info("Request body:{}", message.get())
+        logger.info("Request headers:{}", sendgrid_client.client.default_headers)
+        logger.info("Request body:{}", message.get())
         # 也可以使用下面的方式打印请求体
         # print("Request body:", json.dumps(message.get(), indent=4))
 
-        log.info("Email sent successfully!")
+        logger.info("Email sent successfully!")
         return response.status_code
 
     except Exception as e:
-        log.info("Error occurred while sending email: ", e)
+        logger.info("Error occurred while sending email: ", e)
 
 
 def send_reset_password(token: str, recipient_email: str, first_name: str):
     template_id = const.EMAIL_TEMPLATE_RESET_PASSWORD  # 替换为您的SendGrid模板ID
     domain_name = channel_conf(const.HTTP).get('domain_name')
     reset_password_url = f"{domain_name}#/reset_password?token={token}"
-    log.info("reset_password_url:{} ", reset_password_url)
+    logger.info("reset_password_url:{} ", reset_password_url)
     dynamic_template_data = {"first_name": first_name, "url": reset_password_url}  # 您要替换的动态模板数据
     subject = "Reset your password"
     send_email_with_template(recipient_email, subject, template_id, dynamic_template_data)
