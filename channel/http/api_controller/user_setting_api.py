@@ -30,15 +30,34 @@ def update_user_profile():
 
     result = user_setting_service.update_user_profile(updated_user_profile)
 
-    match result:
-        case ErrorCode.no_information_update:
-            return jsonify({"error": "There is no information to update."}), HTTPStatusCode.ok.value
-        case ErrorCode.no_user_found:
-            return jsonify({"error": "User not exist"}), HTTPStatusCode.unauthorized.value
-        case HTTPStatusCode.ok:
-            return jsonify({"message": "Update user information success"}), HTTPStatusCode.ok.value
+    if result == ErrorCode.no_information_update:
+        return jsonify({"error": "There is no information to update."}), HTTPStatusCode.ok.value
+    elif result == ErrorCode.no_user_found:
+        return jsonify({"error": "User not exist"}), HTTPStatusCode.unauthorized.value
+    elif result == HTTPStatusCode.ok:
+        return jsonify({"message": "Update user information success"}), HTTPStatusCode.ok.value
+    else:
+        return jsonify({"error": "Unknown error"}), HTTPStatusCode.internal_server_error.value
 
 
-# @user_api.route("/upload_user_avatar", methods=['POST'])
+@user_api.route("/upload_user_avatar", methods=['POST'])
 def upload_user_avatar():
-    user_setting_service.upload_user_avatar()
+    data = {'token': request.headers.get('Authorization')}
+    current_user = verify_user(data)
+    if current_user is None:
+        return jsonify({"error": "Invalid user"}), HTTPStatusCode.unauthorized
+    # avatar = data.get('avatar', None)
+    file = request.files.get('avatar', None)
+    if file is None:
+        return jsonify({"error": "Invalid avatar"}), HTTPStatusCode.bad_request
+
+    result = user_setting_service.upload_user_avatar(file, current_user)
+
+    if type(result) is str:
+        return jsonify({"message": result}), HTTPStatusCode.ok.value
+    elif result == ErrorCode.file_invalid:
+        return jsonify({"error": "Invalid avatar"}), HTTPStatusCode.bad_request.value
+    elif result == ErrorCode.file_exist:
+        return jsonify({"error": "Avatar already exist"}), HTTPStatusCode.ok.value
+    elif result == ErrorCode.IO_operation_error:
+        return jsonify({"error": "Save avatar fail, please try with another avatar"}), HTTPStatusCode.internal_server_error.value

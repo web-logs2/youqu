@@ -1,10 +1,11 @@
 import datetime
-
-from flask import jsonify
+import os
+from pathlib import Path
 
 from channel.http.auth import sha256_encrypt
 from common.db.user import User
 from common.error_code import ErrorCode, HTTPStatusCode
+from config import project_conf
 
 
 def update_user_profile(user_profile):
@@ -32,22 +33,6 @@ def update_user_profile(user_profile):
             setattr(current_user, field, value)
             is_updated = True
 
-    # if user_profile.user_name != current_user.user_name:
-    #     updated_user.user_name = user_profile.user_name
-    #     is_updated = True
-    # if user_profile.email != current_user.email:
-    #     updated_user.email = user_profile.email
-    #     is_updated = True
-    # if user_profile.phone != current_user.phone:
-    #     updated_user.phone = user_profile.phone
-    #     is_updated = True
-    # if user_profile.avatar != current_user.avatar:
-    #     updated_user.avatar = user_profile.avatar
-    #     is_updated = True
-    # if user_profile.password is not None and sha256_encrypt(user_profile.password) != current_user.passwrod:
-    #     updated_user.password = sha256_encrypt(user_profile.password)
-    #     is_updated = True
-
     # need to update, set id and updated time
     if is_updated:
         current_user.updated_time = datetime.datetime.now()
@@ -61,4 +46,26 @@ def update_user_profile(user_profile):
 
 
 def upload_user_avatar(file, user):
-    pass
+    try:
+        filename = file.filename
+
+    except Exception as e:
+        return ErrorCode.file_invalid
+
+    # save path with user id
+    folder_path = project_conf("www_static") + project_conf("upload_customer_avatar_folder") + Path(user.user_id).stem + "/"
+    upload_avatar_dir = "./" + folder_path
+
+    file_path = os.path.join(upload_avatar_dir, filename)
+
+    # check if file exist
+    if os.path.exists(file_path):
+        return ErrorCode.file_exist
+    # create dir if not exist
+    if not os.path.exists(upload_avatar_dir):
+        os.mkdir(upload_avatar_dir)
+    if file.save(file_path):
+        url = os.path.join(project_conf("endpoint"), folder_path, filename)
+        return url
+    else:
+        return ErrorCode.IO_operation_error
