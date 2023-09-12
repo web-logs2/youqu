@@ -194,10 +194,16 @@ def register():
     password = data.get('password', '')
     username = data.get('username', '')
     phone = data.get('phone', '')
+    verify_code=data.get('code', '')
 
     if not (is_valid_email(email) and is_valid_password(password) and is_valid_username(username) and is_valid_phone(
-            phone)):
+            phone)) and len(verify_code) != 4:
         return jsonify({"error": "Invalid input format"}), 400
+    r = get_connection()
+    code_in_redis=r.get("code:"+email).decode()
+    if code_in_redis != verify_code:
+        return jsonify({"error": "Invalid verify code"}), 400
+
 
     if User.select().where(User.email == email).first() is not None:
         return jsonify({"error": "Email already exists"}), 400
@@ -329,8 +335,8 @@ def send_verify_code_to_email():
 
 
     verify_code = random.randint(1000, 9999)
-    r.set(email + "code", verify_code, ex=600)  # expires after 600 seconds
-    r.set(ip + "code", email, ex=30)  # expires after 60 seconds
+    r.set("code:"+email, str(verify_code), ex=600)  # expires after 600 seconds
+    r.set("code:"+ip, email, ex=30)  # expires after 60 seconds
     send_verify_code_email(email, verify_code)
     return jsonify({"message": "Verify code sent"}), HTTPStatusCode.ok.value
 
