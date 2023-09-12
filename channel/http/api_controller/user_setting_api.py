@@ -30,13 +30,13 @@ def update_user_profile():
 
     result = user_setting_service.update_user_profile(updated_user_profile)
 
-    match result:
-        case ErrorCode.no_information_update:
-            return jsonify({"error": "There is no information to update."}), HTTPStatusCode.ok.value
-        case ErrorCode.no_user_found:
-            return jsonify({"error": "User not exist"}), HTTPStatusCode.unauthorized.value
-        case HTTPStatusCode.ok:
-            return jsonify({"message": "Update user information success"}), HTTPStatusCode.ok.value
+    # match result:
+    #     case ErrorCode.no_information_update:
+    #         return jsonify({"error": "There is no information to update."}), HTTPStatusCode.ok.value
+    #     case ErrorCode.no_user_found:
+    #         return jsonify({"error": "User not exist"}), HTTPStatusCode.unauthorized.value
+    #     case HTTPStatusCode.ok:
+    #         return jsonify({"message": "Update user information success"}), HTTPStatusCode.ok.value
 
 
 # @user_api.route("/upload_user_avatar", methods=['POST'])
