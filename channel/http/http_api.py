@@ -1,17 +1,17 @@
 # encoding:utf-8
 import datetime
 import json
+import random
 import time
 
 from flask import jsonify
 from flask import request, render_template, redirect, Blueprint
 
-import common.email
 import config
 from channel.channel import Channel
 from channel.http import auth
 from channel.http.auth import sha256_encrypt, Auth
-from common import log
+import common.log as logger
 from common.const import MODEL_GPT_35_turbo_16K, BOT_SYSTEM_PROMPT, INITIAL_BALANCE, MIN_GAN_CI, \
     ZUIXIAO_CHONGZHI, ZUIDA_CHONGZHI, INVALID_INPUT
 from common.db.dbconfig import db
@@ -21,13 +21,16 @@ from common.db.prompt import Prompt
 from common.db.query_record import QueryRecord
 from common.db.transaction import Transaction
 from common.db.user import User
+from common.error_code import HTTPStatusCode
 from common.functions import is_valid_password, is_valid_email, is_valid_username, is_valid_phone
 from common.generator import generate_uuid, generate_uuid_no_dash
 from common.log import logger
 from model import model_factory
 from service.bad_word_filter import check_blacklist
+from service.email_sms import send_reset_password, send_verify_code_email
 from service.file_training_service import upload_file_service
 from service.payment import sign_lantu_payment, get_payment_qr
+from service.redisDB import get_connection
 
 api = Blueprint('api', __name__)
 
@@ -40,7 +43,7 @@ def text():
     token = request.headers.get('token', '')
     user = auth.identify(token)
     if user is None:
-        log.info("Token error")
+        logger.info("Token error")
         response = {
             "success": False,
             "error": "invalid token",
@@ -110,7 +113,7 @@ def text():
 def picture():
     user = auth.identify(request)
     if user is None:
-        log.INFO("Cookie error")
+        logger.INFO("Cookie error")
         return
     data = json.loads(request.data)
     if data:
@@ -166,7 +169,7 @@ def upload_file():
 
     user = auth.identify(token)
     if user is None:
-        log.info("Token error")
+        logger.info("Token error")
         return jsonify({"error": "Invalid token"}), 403
 
     if 'file' not in request.files:
@@ -191,10 +194,16 @@ def register():
     password = data.get('password', '')
     username = data.get('username', '')
     phone = data.get('phone', '')
+    verify_code=data.get('code', '')
 
     if not (is_valid_email(email) and is_valid_password(password) and is_valid_username(username) and is_valid_phone(
-            phone)):
+            phone)) and len(verify_code) != 4:
         return jsonify({"error": "Invalid input format"}), 400
+    r = get_connection()
+    code_in_redis=r.get("code:"+email).decode()
+    if code_in_redis != verify_code:
+        return jsonify({"error": "Invalid verify code"}), 400
+
 
     if User.select().where(User.email == email).first() is not None:
         return jsonify({"error": "Email already exists"}), 400
@@ -210,7 +219,7 @@ def register():
     # session["user"] = jsonpickle.encode(current_user)
     token = Auth.encode_auth_token(current_user.user_id, current_user.password,
                                    time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
-    log.info("Registration success: " + current_user.email)
+    logger.info("Registration success: " + current_user.email)
     return jsonify(
         {"content": "success", "username": current_user.user_name, "token": token, "email": current_user.email,
          "phone": current_user.phone,
@@ -223,10 +232,10 @@ def sign_out():
     token = json.loads(request.data).get('token', '')
     user = auth.identify(token)
     if user is None:
-        log.info("Token error")
+        logger.info("Token error")
         return
     model_factory.create_bot(config.conf().get("model").get("type")).clear_session_by_user_id(user.user_id)
-    log.info("Login out: ")
+    logger.info("Login out: ")
     return jsonify({"content": "success"})
 
 
@@ -243,7 +252,7 @@ def login():
         #        session['user'] = current_user
         token = Auth.encode_auth_token(current_user.user_id, current_user.password,
                                        time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
-        log.info("Login success: " + current_user.email)
+        logger.info("Login success: " + current_user.email)
         return jsonify(
             {"content": "success", "username": current_user.user_name, "user_id": current_user.user_id, "token": token,
              "email": current_user.email,
@@ -255,7 +264,7 @@ def login():
 
 @api.route("/login", methods=['get'])
 def login_get():
-    log.info("Login success: ")
+    logger.info("Login success: ")
     return redirect('/#/login')
 
 
@@ -268,7 +277,7 @@ def send_code():
         return jsonify({"content": "Reset password email sent"}), 200
     reset_token = Auth.encode_auth_token(current_user.user_id, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), 1)
     # reset_url = f'{channel_conf(const.HTTP).get("domain_name")}={reset_token}'
-    common.email.send_reset_password(reset_token, email)
+    send_reset_password(reset_token, current_user.email, current_user.user_name)
     return jsonify({"message": "Reset password email sent"}), 200
 
 
@@ -305,6 +314,31 @@ def get_user_info():
                     "available_balance": current_user.get_available_balance_round2(),
                     "available_functions": available_functions
                     }), 200
+
+
+@api.route("/send_verify_code_to_email", methods=['POST'])
+def send_verify_code_to_email():
+    data = json.loads(request.data)
+    email = data.get('email', '')
+    if not is_valid_email(email):
+        return jsonify(
+            {"error": "Invalid input"}), HTTPStatusCode.bad_request
+    # code = data.get('code', '')
+    r = get_connection()
+    ip = request.headers.get("X-Forwarded-For", request.remote_addr)
+    if r.get(ip + "code"):
+        return jsonify(
+            {"error": "Too many attempts, please try again in one minute."}), HTTPStatusCode.too_many_requests.value
+    if User.select().where(User.email == email).first():
+        return jsonify({"error": "Email already exists"}), HTTPStatusCode.bad_request.value
+
+
+
+    verify_code = random.randint(1000, 9999)
+    r.set("code:"+email, str(verify_code), ex=600)  # expires after 600 seconds
+    r.set("code:"+ip, email, ex=30)  # expires after 60 seconds
+    send_verify_code_email(email, verify_code)
+    return jsonify({"message": "Verify code sent"}), HTTPStatusCode.ok.value
 
 
 @api.teardown_request
