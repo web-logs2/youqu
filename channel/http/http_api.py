@@ -314,7 +314,9 @@ def get_user_info():
 def send_verify_code_to_email():
     data = json.loads(request.data)
     email = data.get('email', '')
-    if not email:
+    #if email is not valid email
+
+    if not is_valid_email(email):
         return jsonify(
             {"error": "Invalid input"}), HTTPStatusCode.bad_request
     # code = data.get('code', '')
