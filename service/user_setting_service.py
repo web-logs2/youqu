@@ -48,24 +48,26 @@ def update_user_profile(user_profile):
 def upload_user_avatar(file, user):
     try:
         filename = file.filename
-
+        # could add verify file logic here
     except Exception as e:
         return ErrorCode.file_invalid
 
     # save path with user id
-    folder_path = project_conf("www_static") + project_conf("upload_customer_avatar_folder") + Path(user.user_id).stem + "/"
+    folder_path = project_conf("upload_customer_avatar_folder") + Path(user.user_id).stem + "/"
     upload_avatar_dir = "./" + folder_path
 
     file_path = os.path.join(upload_avatar_dir, filename)
 
-    # check if file exist
-    if os.path.exists(file_path):
-        return ErrorCode.file_exist
-    # create dir if not exist
-    if not os.path.exists(upload_avatar_dir):
-        os.mkdir(upload_avatar_dir)
-    if file.save(file_path):
-        url = os.path.join(project_conf("endpoint"), folder_path, filename)
+    try:
+        # check if file exist
+        if os.path.exists(file_path):
+            return ErrorCode.file_exist
+        # create dir if not exist
+        if not os.path.exists(upload_avatar_dir):
+            os.makedirs(upload_avatar_dir)
+        # save file
+        file.save(file_path)
+        url = os.path.join(project_conf("endpoint"), "cdn", Path(user.user_id).stem, filename)
         return url
-    else:
+    except Exception as e:
         return ErrorCode.IO_operation_error

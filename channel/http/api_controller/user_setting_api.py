@@ -61,3 +61,5 @@ def upload_user_avatar():
         return jsonify({"error": "Avatar already exist"}), HTTPStatusCode.ok.value
     elif result == ErrorCode.IO_operation_error:
         return jsonify({"error": "Save avatar fail, please try with another avatar"}), HTTPStatusCode.internal_server_error.value
+    else:
+        return jsonify({"error": "Unknown error"}), HTTPStatusCode.internal_server_error.value

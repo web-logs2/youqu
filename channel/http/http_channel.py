@@ -8,6 +8,7 @@ from flask_socketio import SocketIO
 
 from channel.channel import Channel
 from channel.http.api_controller.user_setting_api import user_api
+from channel.http.http_route.http_route import route_api
 from channel.http.http_api import api
 from channel.http.socketio_handler import socket_handler
 from common import const, log
@@ -20,6 +21,7 @@ http_app = Flask(__name__, template_folder=project_conf("www_template"), static_
 CORS(http_app)
 http_app.register_blueprint(api)  # 注册蓝图
 http_app.register_blueprint(user_api)  # 注册蓝图
+http_app.register_blueprint(route_api)  # 注册蓝图
 http_app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
 socketio = SocketIO(http_app, ping_timeout=5 * 60, ping_interval=30, cors_allowed_origins="*",
                     max_http_buffer_size=10 * 1024 * 1024)
