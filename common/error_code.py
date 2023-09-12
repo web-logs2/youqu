@@ -7,15 +7,19 @@ class ErrorCode(Enum):
     # 2xx series, successful
     #   200, request succeed but business error
     no_information_update = 20001
+    file_exist = 20002
 
     # 3xx series, redirection
 
     # 4xx series, client error
+    #   400, bad request
+    file_invalid = 40001
     #   401, unauthorized
     no_user_found = 40101
 
     # 5xx series, server error
     database_operation_error = 50001
+    IO_operation_error = 50002
 
 
 class HTTPStatusCode(Enum):
