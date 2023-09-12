@@ -43,7 +43,7 @@ def text():
     token = request.headers.get('token', '')
     user = auth.identify(token)
     if user is None:
-        log.info("Token error")
+        logger.info("Token error")
         response = {
             "success": False,
             "error": "invalid token",
@@ -113,7 +113,7 @@ def text():
 def picture():
     user = auth.identify(request)
     if user is None:
-        log.INFO("Cookie error")
+        logger.INFO("Cookie error")
         return
     data = json.loads(request.data)
     if data:
@@ -169,7 +169,7 @@ def upload_file():
 
     user = auth.identify(token)
     if user is None:
-        log.info("Token error")
+        logger.info("Token error")
         return jsonify({"error": "Invalid token"}), 403
 
     if 'file' not in request.files:
@@ -213,7 +213,7 @@ def register():
     # session["user"] = jsonpickle.encode(current_user)
     token = Auth.encode_auth_token(current_user.user_id, current_user.password,
                                    time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
-    log.info("Registration success: " + current_user.email)
+    logger.info("Registration success: " + current_user.email)
     return jsonify(
         {"content": "success", "username": current_user.user_name, "token": token, "email": current_user.email,
          "phone": current_user.phone,
@@ -226,10 +226,10 @@ def sign_out():
     token = json.loads(request.data).get('token', '')
     user = auth.identify(token)
     if user is None:
-        log.info("Token error")
+        logger.info("Token error")
         return
     model_factory.create_bot(config.conf().get("model").get("type")).clear_session_by_user_id(user.user_id)
-    log.info("Login out: ")
+    logger.info("Login out: ")
     return jsonify({"content": "success"})
 
 
@@ -246,7 +246,7 @@ def login():
         #        session['user'] = current_user
         token = Auth.encode_auth_token(current_user.user_id, current_user.password,
                                        time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
-        log.info("Login success: " + current_user.email)
+        logger.info("Login success: " + current_user.email)
         return jsonify(
             {"content": "success", "username": current_user.user_name, "user_id": current_user.user_id, "token": token,
              "email": current_user.email,
@@ -258,7 +258,7 @@ def login():
 
 @api.route("/login", methods=['get'])
 def login_get():
-    log.info("Login success: ")
+    logger.info("Login success: ")
     return redirect('/#/login')
 
 
@@ -314,6 +314,9 @@ def get_user_info():
 def send_verify_code_to_email():
     data = json.loads(request.data)
     email = data.get('email', '')
+    if not email:
+        return jsonify(
+            {"error": "Invalid input"}), HTTPStatusCode.bad_request
     # code = data.get('code', '')
     r = get_connection()
     ip = request.headers.get("X-Forwarded-For", request.remote_addr)
