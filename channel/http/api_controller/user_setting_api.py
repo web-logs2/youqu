@@ -40,7 +40,7 @@ def update_user_profile():
         return jsonify({"error": "Unknown error"}), HTTPStatusCode.internal_server_error.value
 
 
-@user_api.route("/upload_user_avatar", methods=['POST'])
+# @user_api.route("/upload_user_avatar", methods=['POST'])
 def upload_user_avatar():
     data = {'token': request.headers.get('Authorization')}
     current_user = verify_user(data)

@@ -54,6 +54,7 @@ BOT_SYSTEM_PROMPT = "你是一个人工智能音响，你回复的所有文字�
 EMAIL_SENDER = "no-reply@youqu.app"
 EMAIL_SENDER_NAME = "YouQu"
 EMAIL_TEMPLATE_RESET_PASSWORD = "d-a054f2d7236d4ee7be847308bbbfc5f0"
+EMAIL_TEMPLATE_VERIFY_CODE = "d-92a43b8451ab467bb05a9c131a5960e1"
 
 YU_ER_BU_ZU = "余额不足，请及时充值。"
 YU_ER_BU_ZU_EN = "Insufficient balance, please recharge in time."

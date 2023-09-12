@@ -12,6 +12,7 @@ logs/
 bad_words.txt
 session.token
 .vscode
+tmp/
 /resources/bad_words.txt
 /channel/http/resources/fullchain.pem
 /channel/http/resources/privkey.pem
