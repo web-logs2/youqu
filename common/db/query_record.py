@@ -29,6 +29,8 @@ class QueryRecord(Model):
     ip_location = CharField(unique=False, max_length=1024)
     query_trail = CharField(unique=False, max_length=100000)
     model_name = CharField(unique=False, max_length=64)
+    prompt_id = IntegerField(index=True,unique=False, default=0)
+    like_or_dislike = CharField(unique=False, max_length=1, default='0')  # 0: no like or dislike, 1: like, 2: dislike
     cost = DecimalField(null=False, default=0, max_digits=18, decimal_places=10)
     prompt_count = IntegerField(unique=False, default=0)
     functions = CharField(unique=False, max_length=1024)
@@ -87,4 +89,6 @@ class QueryRecord(Model):
 db.connect()
 db.create_tables([QueryRecord], safe=True)
 add_field_if_not_exist("query_record", "message_id", CharField(index=True, unique=False, default="", max_length=64))
+add_field_if_not_exist("query_record", "prompt_id", IntegerField(index=True,unique=False, default=0))
+add_field_if_not_exist("query_record", "like_or_dislike", CharField(unique=False, max_length=1, default='0'))
 db.close()

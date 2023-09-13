@@ -7,7 +7,7 @@ from peewee import (
     CharField,
     DateTimeField,
     AutoField,
-    TextField
+    TextField, IntegerField
 )
 
 from common.db.db_utils import add_field_if_not_exist
@@ -20,6 +20,8 @@ class Prompt(Model):
     prompt = TextField(null=False)
     category = CharField(null=False, max_length=64, default='')
     owner_id = CharField(index=True, null=True, max_length=32, default='system')
+    like_count = IntegerField(unique=False, default=0)
+    dislike_count = IntegerField(unique=False, default=0)
     description = TextField(null=False, default='')
     disabled = CharField(max_length=1, default='0')
     created_time = DateTimeField()
@@ -59,4 +61,7 @@ db.connect()
 db.create_tables([Prompt], safe=True)
 add_field_if_not_exist("prompt", "category", CharField(null=False, max_length=64, default=''))
 add_field_if_not_exist("prompt", "description", TextField(null=False, default=''))
+add_field_if_not_exist("prompt", "like_count", IntegerField(unique=False, default=0))
+add_field_if_not_exist("prompt", "dislike_count", IntegerField(unique=False, default=0))
+
 db.close()
