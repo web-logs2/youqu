@@ -183,7 +183,7 @@ class socket_handler():
             message_id = data.get('message_id', '')
             like_or_dislike = data.get('like_or_dislike', '0')
             if like_or_dislike not in ['1', '2'] or message_id == '':
-                log.error("like_or_dislike:" + message_id + " " + like_or_dislike + " invalid")
+                log.info("like_or_dislike:" + message_id + " " + like_or_dislike + " invalid")
                 return
             query_record = QueryRecord.select().where(QueryRecord.message_id == message_id,
                                                       QueryRecord.user_id == user.user_id)
@@ -192,7 +192,7 @@ class socket_handler():
                 query_record[0].save()
                 log.info("like_or_dislike:" + message_id + " " + like_or_dislike)
             else:
-                log.error("like_or_dislike:" + message_id + " " + like_or_dislike + " not found")
+                log.info("like_or_dislike:" + message_id + " " + like_or_dislike + " not found")
 
     def stop(self, data):
         user = self.verify_stream()
