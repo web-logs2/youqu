@@ -20,12 +20,17 @@ def update_user_profile(user_profile):
 
     is_updated = False
 
+    avatar_url = None
+    if user_profile.get('avatar') is not None:
+        avatar_name = user_profile.get('avatar').get('file').get('name')
+        avatar_url = os.path.join(project_conf("endpoint"), "cdn", Path(user_id).stem, avatar_name)
+
     # field validations
     fields_to_update = {
         'user_name': user_profile.get('name'),
         'email': user_profile.get('email'),
         'phone': user_profile.get('phone'),
-        'avatar': user_profile.get('avatar'),
+        'avatar': avatar_url,
         'password': sha256_encrypt(user_profile.get('password')) if user_profile.get('password') is not None else None
     }
     for field, value in fields_to_update.items():
@@ -69,5 +74,6 @@ def upload_user_avatar(file, user):
         file.save(file_path)
         url = os.path.join(project_conf("endpoint"), "cdn", Path(user.user_id).stem, filename)
         return url
+        # return HTTPStatusCode.ok
     except Exception as e:
         return ErrorCode.IO_operation_error

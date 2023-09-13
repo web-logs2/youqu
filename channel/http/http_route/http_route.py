@@ -7,6 +7,7 @@ from config import project_conf
 
 route_api = Blueprint('route_api', __name__)
 
+
 @route_api.route("/", methods=['GET'])
 def index():
     return render_template('index.html')

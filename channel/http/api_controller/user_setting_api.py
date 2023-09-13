@@ -7,7 +7,6 @@ from channel.http import auth
 from common.error_code import ErrorCode, HTTPStatusCode
 from common.log import logger
 from service import user_setting_service
-from service.user_setting_service import upload_user_avatar
 
 user_api = Blueprint('user', __name__, url_prefix='/user')
 
@@ -35,6 +34,7 @@ def update_user_profile():
     elif result == ErrorCode.no_user_found:
         return jsonify({"error": "User not exist"}), HTTPStatusCode.unauthorized.value
     elif result == HTTPStatusCode.ok:
+        logger.info("User {} updated profile".format(current_user.user_id))
         return jsonify({"message": "Update user information success"}), HTTPStatusCode.ok.value
     else:
         return jsonify({"error": "Unknown error"}), HTTPStatusCode.internal_server_error.value
@@ -53,8 +53,10 @@ def upload_user_avatar():
 
     result = user_setting_service.upload_user_avatar(file, current_user)
 
+    # if result == HTTPStatusCode.ok.value:
     if type(result) is str:
-        return jsonify({"message": result}), HTTPStatusCode.ok.value
+        logger.info("User upload avatar")
+        return jsonify({"message": "Upload avatar succeed"}), HTTPStatusCode.ok.value
     elif result == ErrorCode.file_invalid:
         return jsonify({"error": "Invalid avatar"}), HTTPStatusCode.bad_request.value
     elif result == ErrorCode.file_exist:
