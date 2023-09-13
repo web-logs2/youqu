@@ -60,7 +60,7 @@ class socket_handler():
                          'final': final, "response_type": data.get("response_type", "text")}, request.sid,
                         namespace="/chat")
                 else:
-                    self.socketio.sleep(0.001)
+                    self.socketio.sleep(0)
                     self.socketio.server.emit(
                         'reply',
                         {'content': response, 'messageID': data['messageID'],
