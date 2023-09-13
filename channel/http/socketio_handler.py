@@ -106,7 +106,7 @@ class socket_handler():
 
         if context['model'] not in user.get_available_models():
             context['model'] = const.MODEL_GPT_35_TURBO
-        if num_tokens_from_string(context['system_prompt']) > 2048:
+        if num_tokens_from_string(context['system_prompt']) > 10000:
             context['system_prompt'] = model_conf(const.OPEN_AI).get("character_desc", "")
         # if context['request_type'] == "voice":
         # context["msg"] = await get_voice_text(data["voice_message"])
