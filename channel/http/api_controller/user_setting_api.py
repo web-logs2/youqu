@@ -56,7 +56,7 @@ def upload_user_avatar():
     # if result == HTTPStatusCode.ok.value:
     if type(result) is str:
         logger.info("User upload avatar")
-        return jsonify({"message": "Upload avatar succeed"}), HTTPStatusCode.ok.value
+        return jsonify({"message": result}), HTTPStatusCode.ok.value
     elif result == ErrorCode.file_invalid:
         return jsonify({"error": "Invalid avatar"}), HTTPStatusCode.bad_request.value
     elif result == ErrorCode.file_exist:

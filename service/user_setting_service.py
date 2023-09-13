@@ -64,9 +64,9 @@ def upload_user_avatar(file, user):
     file_path = os.path.join(upload_avatar_dir, filename)
 
     try:
-        # check if file exist
-        if os.path.exists(file_path):
-            return ErrorCode.file_exist
+        # # check if file exist
+        # if os.path.exists(file_path):
+        #     return ErrorCode.file_exist
         # create dir if not exist
         if not os.path.exists(upload_avatar_dir):
             os.makedirs(upload_avatar_dir)
