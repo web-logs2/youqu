@@ -294,6 +294,15 @@ def reset_password():
     return jsonify({"message": "Reset password success"}), 200
 
 
+@api.route("/validate_cookie", methods=['POST'])
+def validate_cookie():
+    token = json.loads(request.data).get('token', '')
+    current_user = auth.identify(token)
+    if current_user is None:
+        return jsonify({"error": "Invalid user"}), 401
+    return jsonify({"message": "Validate cookie success"}), 200
+
+
 @api.route("/get_user_info", methods=['POST'])
 def get_user_info():
     token = json.loads(request.data).get('token', '')
