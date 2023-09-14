@@ -1,5 +1,4 @@
 import asyncio
-import base64
 import time
 import traceback
 
@@ -9,15 +8,16 @@ from flask_socketio import SocketIO
 from channel.channel import Channel
 from channel.http import auth
 from common import const, log
-from common.const import MIN_GAN_CI, INVALID_INPUT
+from common.const import INVALID_INPUT
 from common.db.dbconfig import db
 from common.db.document_record import DocumentRecord
+from common.db.query_record import QueryRecord
 from common.db.user import User
 from common.functions import num_tokens_from_string
 from common.log import logger
 from common.menu_functions.public_train_methods import public_query_documents
 from config import model_conf
-from model.azure.azure_model import AZURE, azure
+from model.azure.azure_model import azure
 from model.openai.chatgpt_model import Session
 from service.bad_word_filter import check_blacklist
 from service.global_values import addStopMessages
@@ -36,6 +36,7 @@ class socket_handler():
         self.socketio.on_event('stop', self.stop, namespace='/chat')
         self.socketio.on_event('disconnect', self.disconnect, namespace='/chat')
         self.socketio.on_event('heartbeat', self.heart_beat, namespace='/chat')
+        self.socketio.on_event('like_or_dislike', self.like_or_dislike, namespace='/chat')
 
     async def return_stream(self, data, user: User):
 
@@ -174,6 +175,25 @@ class socket_handler():
             log.error("user or data is None")
             self.socketio.emit('final', {'content': INVALID_INPUT}, room=request.sid, namespace='/chat')
             return
+
+    def like_or_dislike(self, data):
+        user = self.verify_stream()
+        if user and data:
+            message_id = data.get('message_id', '')
+            like_or_dislike = data.get('like_or_dislike', '0')
+            if like_or_dislike not in ['1', '2'] or message_id == '':
+                log.info("like_or_dislike:" + message_id + " " + like_or_dislike + " invalid")
+                return
+            self.socketio.emit('like_or_dislike_final', {'message_id': message_id, "like_or_dislike": like_or_dislike},
+                               room=request.sid, namespace='/chat')
+            query_record = QueryRecord.select().where(QueryRecord.message_id == message_id,
+                                                      QueryRecord.user_id == user.user_id)
+            if query_record.count() > 0:
+                query_record[0].like_or_dislike = like_or_dislike
+                query_record[0].save()
+                log.info("like_or_dislike:" + message_id + " " + like_or_dislike)
+            else:
+                log.info("like_or_dislike:" + message_id + " " + like_or_dislike + " not found")
 
     def stop(self, data):
         user = self.verify_stream()
