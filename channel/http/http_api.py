@@ -5,7 +5,7 @@ import random
 import time
 
 from flask import jsonify
-from flask import request, render_template, redirect, Blueprint
+from flask import request, redirect, Blueprint
 
 import config
 from channel.channel import Channel
@@ -182,10 +182,6 @@ def upload_file():
     return upload_file_service(file, user)
 
 
-@api.route("/", methods=['GET'])
-def index():
-    return render_template('index.html')
-
 
 @api.route('/register', methods=['POST'])
 def register():
@@ -298,6 +294,15 @@ def reset_password():
     return jsonify({"message": "Reset password success"}), 200
 
 
+@api.route("/validate_cookie", methods=['POST'])
+def validate_cookie():
+    token = json.loads(request.data).get('token', '')
+    current_user = auth.identify(token)
+    if current_user is None:
+        return jsonify({"error": "Invalid user"}), 401
+    return jsonify({"message": "Validate cookie success"}), 200
+
+
 @api.route("/get_user_info", methods=['POST'])
 def get_user_info():
     token = json.loads(request.data).get('token', '')
@@ -331,8 +336,6 @@ def send_verify_code_to_email():
             {"error": "Too many attempts, please try again in one minute."}), HTTPStatusCode.too_many_requests.value
     if User.select().where(User.email == email).first():
         return jsonify({"error": "Email already exists"}), HTTPStatusCode.bad_request.value
-
-
 
     verify_code = random.randint(1000, 9999)
     r.set("code:"+email, str(verify_code), ex=600)  # expires after 600 seconds

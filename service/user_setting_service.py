@@ -20,12 +20,17 @@ def update_user_profile(user_profile):
 
     is_updated = False
 
+    avatar_url = None
+    if user_profile.get('avatar') is not None:
+        avatar_name = user_profile.get('avatar').get('file').get('name')
+        avatar_url = os.path.join(project_conf("endpoint"), "cdn", Path(user_id).stem, avatar_name)
+
     # field validations
     fields_to_update = {
         'user_name': user_profile.get('name'),
         'email': user_profile.get('email'),
         'phone': user_profile.get('phone'),
-        'avatar': user_profile.get('avatar'),
+        'avatar': avatar_url,
         'password': sha256_encrypt(user_profile.get('password')) if user_profile.get('password') is not None else None
     }
     for field, value in fields_to_update.items():
@@ -48,24 +53,27 @@ def update_user_profile(user_profile):
 def upload_user_avatar(file, user):
     try:
         filename = file.filename
-
+        # could add verify file logic here
     except Exception as e:
         return ErrorCode.file_invalid
 
     # save path with user id
-    folder_path = project_conf("www_static") + project_conf("upload_customer_avatar_folder") + Path(user.user_id).stem + "/"
+    folder_path = project_conf("upload_customer_avatar_folder") + Path(user.user_id).stem + "/"
     upload_avatar_dir = "./" + folder_path
 
     file_path = os.path.join(upload_avatar_dir, filename)
 
-    # check if file exist
-    if os.path.exists(file_path):
-        return ErrorCode.file_exist
-    # create dir if not exist
-    if not os.path.exists(upload_avatar_dir):
-        os.mkdir(upload_avatar_dir)
-    if file.save(file_path):
-        url = os.path.join(project_conf("endpoint"), folder_path, filename)
+    try:
+        # # check if file exist
+        # if os.path.exists(file_path):
+        #     return ErrorCode.file_exist
+        # create dir if not exist
+        if not os.path.exists(upload_avatar_dir):
+            os.makedirs(upload_avatar_dir)
+        # save file
+        file.save(file_path)
+        url = os.path.join(project_conf("endpoint"), "cdn", Path(user.user_id).stem, filename)
         return url
-    else:
+        # return HTTPStatusCode.ok
+    except Exception as e:
         return ErrorCode.IO_operation_error
